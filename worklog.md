@@ -111,3 +111,29 @@ Stage Summary:
 - Health check endpoint on port 8001
 - Stream key authentication placeholder ready for DB integration
 - Uses Node.js runtime (not Bun) due to CJS compatibility
+---
+Task ID: 1
+Agent: Main Agent
+Task: Remove Login UI from Sportix Live
+
+Work Log:
+- Removed AuthGate wrapper from page.tsx that was blocking unauthenticated access
+- Removed LoginPage and SignupPage imports from page.tsx
+- Removed entire AuthGate function component (lines 776-841)
+- Unwrapped Home component return from <AuthGate> tags
+- Removed signOut import from page.tsx
+- Removed Logout button from SettingsPage
+- Removed user menu dropdown (avatar + logout) from Header.tsx
+- Removed useSession and signOut imports from Header.tsx
+- Cleaned up unused state (showUserMenu) and effects (outside click handler)
+- Session kept optional in SettingsPage with fallbacks ("Sportix User")
+- Verified zero lint errors
+
+Stage Summary:
+- App now loads directly without any login requirement
+- No login/signup pages shown to users
+- No logout buttons anywhere in the UI
+- Header is clean with just search functionality
+- Settings page shows default profile info when no session
+- Admin panel (via logo easter egg) still works independently
+

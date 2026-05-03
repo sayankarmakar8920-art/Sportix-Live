@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef, lazy, Suspense } from 'react'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { useAppStore } from '@/lib/store'
 import { io as socketIo } from 'socket.io-client'
 import Header from '@/components/sportix/Header'
@@ -11,8 +11,6 @@ import HeroBanner from '@/components/sportix/HeroBanner'
 import CategoryTabs from '@/components/sportix/CategoryTabs'
 import VideoPlayer from '@/components/sportix/VideoPlayer'
 import BottomNav from '@/components/sportix/BottomNav'
-import LoginPage from '@/components/auth/LoginPage'
-import SignupPage from '@/components/auth/SignupPage'
 import { ContentSection, VideoCard } from '@/components/sportix/VideoCard'
 import {
   Star, Clock, Flame, TrendingUp, Play, ArrowLeft,
@@ -703,20 +701,6 @@ function SettingsPage({ session }: { session: any }) {
         </div>
       </div>
 
-      {/* Logout Button */}
-      <button
-        onClick={() => signOut({ callbackUrl: '/' })}
-        className="w-full glass-card p-4 flex items-center gap-3 transition-all hover:bg-[#ff3b3b]/5 hover:border-[#ff3b3b]/20"
-        style={{ borderColor: 'rgba(255, 59, 59, 0.1)' }}
-      >
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#ff3b3b]/10">
-          <Settings className="h-5 w-5 text-[#ff3b3b]" />
-        </div>
-        <div className="flex-1 text-left">
-          <p className="text-sm font-semibold text-[#ff3b3b]">Log Out</p>
-          <p className="text-xs text-white/40">Sign out of your account</p>
-        </div>
-      </button>
     </div>
   )
 }
@@ -771,73 +755,6 @@ function AdminLoadingFallback() {
       </div>
     </div>
   )
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   ║                     AUTH GATE WRAPPER                           ║
-   ═══════════════════════════════════════════════════════════════════ */
-
-function AuthGate({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession()
-  const [authPage, setAuthPage] = useState<'login' | 'signup'>('login')
-
-  // Heartbeat: keep user marked as online while they're active
-  useEffect(() => {
-    if (!session?.user) return
-    const userId = (session.user as any).id
-    if (!userId) return
-
-    const sendHeartbeat = () => {
-      fetch('/api/users/track', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
-      }).catch(() => {})
-    }
-
-    // Send immediately
-    sendHeartbeat()
-    // Then every 60 seconds
-    const interval = setInterval(sendHeartbeat, 60000)
-
-    // Mark as offline when tab closes
-    const handleUnload = () => {
-      fetch('/api/users/track', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, action: 'logout' }),
-      }).catch(() => {})
-    }
-    window.addEventListener('beforeunload', handleUnload)
-
-    return () => {
-      clearInterval(interval)
-      window.removeEventListener('beforeunload', handleUnload)
-      handleUnload()
-    }
-  }, [session])
-
-  if (status === 'loading') {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#0B0F14' }}>
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#00C853] to-[#00a844] shadow-lg" style={{ boxShadow: '0 0 30px rgba(0, 200, 83, 0.3)' }}>
-            <span className="text-white text-lg font-black">S</span>
-          </div>
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#00C853]/30 border-t-[#00C853]" />
-        </div>
-      </div>
-    )
-  }
-
-  if (!session) {
-    if (authPage === 'signup') {
-      return <SignupPage onSwitchToLogin={() => setAuthPage('login')} />
-    }
-    return <LoginPage onSwitchToSignup={() => setAuthPage('signup')} />
-  }
-
-  return <>{children}</>
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1175,7 +1092,6 @@ export default function Home() {
 
   // ── Shared layout for ALL non-player/admin views ──
   return (
-    <AuthGate>
       <div className="sportix-bg min-h-screen flex flex-col">
         <Header />
         <div className="flex flex-1 overflow-hidden">
@@ -1202,6 +1118,5 @@ export default function Home() {
 
         <BottomNav />
       </div>
-    </AuthGate>
   )
 }

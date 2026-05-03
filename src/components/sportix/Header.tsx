@@ -1,16 +1,13 @@
 'use client'
 
 import { useAppStore } from '@/lib/store'
-import { useSession, signOut } from 'next-auth/react'
-import { Search, X, Calendar, ChevronDown, LogOut } from 'lucide-react'
+import { Search, X, Calendar } from 'lucide-react'
 import { useState, useRef, useEffect, useCallback } from 'react'
 
 export default function Header() {
   const { currentView, incrementLogoClicks, resetLogoClicks } = useAppStore()
-  const { data: session } = useSession()
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [showUserMenu, setShowUserMenu] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -33,18 +30,9 @@ export default function Header() {
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
   }, [])
 
-  // Close user menu on outside click
-  useEffect(() => {
-    if (!showUserMenu) return
-    const handleClick = () => setShowUserMenu(false)
-    document.addEventListener('click', handleClick)
-    return () => document.removeEventListener('click', handleClick)
-  }, [showUserMenu])
-
   if (currentView === 'admin' || currentView === 'live-control-room') return null
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-  const userInitial = session?.user?.name?.charAt(0)?.toUpperCase() || 'U'
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/[0.06] bg-[#0a0e1a]/90 backdrop-blur-xl">
@@ -105,53 +93,6 @@ export default function Header() {
           <button onClick={() => setSearchOpen(!searchOpen)} className="rounded-lg p-2 text-white/40 transition-all hover:bg-white/5 hover:text-white/70 md:hidden">
             <Search className="h-[18px] w-[18px]" />
           </button>
-
-          {/* User Menu */}
-          <div className="relative">
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowUserMenu(!showUserMenu) }}
-              className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all hover:bg-white/5"
-            >
-              <div className="h-7 w-7 rounded-full bg-gradient-to-br from-[#00ff88]/40 to-[#00ff88]/10 ring-1 ring-white/10 cursor-pointer">
-                <div className="flex h-full w-full items-center justify-center text-[10px] font-bold text-white/70">{userInitial}</div>
-              </div>
-              <ChevronDown className="hidden h-3 w-3 text-white/30 lg:block" />
-            </button>
-
-            {/* Dropdown Menu */}
-            {showUserMenu && (
-              <div
-                className="absolute right-0 top-full mt-2 w-56 rounded-xl overflow-hidden z-50 fade-in-up"
-                style={{
-                  background: 'rgba(15, 20, 30, 0.95)',
-                  backdropFilter: 'blur(24px)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.5)',
-                }}
-              >
-                <div className="p-3 border-b border-white/[0.06]">
-                  <p className="text-sm font-semibold text-white truncate">{session?.user?.name || 'User'}</p>
-                  <p className="text-xs text-white/40 truncate">{session?.user?.email || ''}</p>
-                </div>
-                <div className="p-1.5">
-                  <button
-                    onClick={() => { setShowUserMenu(false); useAppStore.getState().setCurrentView('settings') }}
-                    className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-white/60 hover:bg-white/5 hover:text-white transition-all"
-                  >
-                    <Calendar className="h-4 w-4" />
-                    Settings
-                  </button>
-                  <button
-                    onClick={() => signOut({ callbackUrl: '/' })}
-                    className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-[#ff5252]/80 hover:bg-[#ff5252]/5 hover:text-[#ff5252] transition-all"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Log Out
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </header>
