@@ -2,7 +2,7 @@
   "name": "rtmp-service",
   "version": "1.0.0",
   "scripts": {
-    "dev": "node index.js",
+    "dev": "bun --hot index.ts",
     "start": "node index.js"
   },
   "dependencies": {

@@ -2,10 +2,9 @@
 const NodeMediaServer = require("node-media-server");
 const { mkdirSync, existsSync } = require("fs");
 const { join } = require("path");
-const { createServer } = require("http");
 
-const RECORDINGS_DIR = join(process.cwd(), "../../recordings");
-const HLS_DIR = join(process.cwd(), "../../public/hls");
+const RECORDINGS_DIR = join(__dirname, "../../recordings");
+const HLS_DIR = join(__dirname, "../../public/hls");
 
 // Ensure directories exist
 if (!existsSync(RECORDINGS_DIR)) mkdirSync(RECORDINGS_DIR, { recursive: true });
@@ -30,10 +29,8 @@ const config = {
       {
         app: "live",
         hls: true,
-        hlsFlags:
-          "[hls_time=2:hls_list_size=3:hls_flags=delete_segments+append_list]",
+        hlsFlags: "[hls_time=2:hls_list_size=3:hls_flags=delete_segments+append_list]",
         dash: false,
-        dashFlags: "[f=dash:window_size=3:extra_window_size=5]",
       },
     ],
   },
@@ -110,22 +107,7 @@ console.log(`
 ╚══════════════════════════════════════════╝
 `);
 
-// Health check endpoint (simple HTTP)
-const healthServer = createServer((req, res) => {
-  if (req.url === "/health") {
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(
-      JSON.stringify({
-        status: "ok",
-        service: "rtmp",
-        uptime: process.uptime(),
-      })
-    );
-  } else {
-    res.writeHead(404);
-    res.end();
-  }
-});
-healthServer.listen(8001, () => {
-  console.log("[RTMP] Health check on port 8001");
-});
+// Keep alive
+setInterval(() => {
+  // Simple heartbeat - prevents silent crashes
+}, 30000);

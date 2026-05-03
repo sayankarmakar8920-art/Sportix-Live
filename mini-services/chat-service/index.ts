@@ -227,6 +227,62 @@ io.on('connection', (socket) => {
   })
 })
 
+// ─── HTTP API for internal Next.js notifications ───
+httpServer.on('request', (req, res) => {
+  if (req.method === 'POST' && req.url === '/') {
+    let body = ''
+    req.on('data', chunk => { body += chunk })
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body)
+        if (data.action === 'go-live') {
+          console.log(`[HTTP-API] Admin went live: ${data.title} (streamId: ${data.streamId})`)
+          // Broadcast to ALL connected socket.io clients
+          io.emit('stream-went-live', {
+            streamId: data.streamId,
+            title: data.title,
+            category: data.category,
+            homeTeam: data.homeTeam,
+            awayTeam: data.awayTeam,
+            status: 'live',
+            viewerCount: 0,
+            peakViewers: 0,
+            homeScore: 0,
+            awayScore: 0,
+            matchTime: '0:00',
+            isFeatured: true,
+            timestamp: new Date().toISOString(),
+          })
+          // Create stream room
+          if (!streamRooms.has(data.streamId)) {
+            streamRooms.set(data.streamId, new Set())
+          }
+          streamHealthData.set(data.streamId, { bitrate: 4500, fps: 60, startTime: Date.now() })
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ ok: true }))
+        } else if (data.action === 'stop-live') {
+          console.log(`[HTTP-API] Stream stopped: ${data.streamId}`)
+          io.emit('stream-went-offline', {
+            streamId: data.streamId,
+            timestamp: new Date().toISOString(),
+          })
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ ok: true }))
+        } else {
+          res.writeHead(400, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'Unknown action' }))
+        }
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'Invalid JSON' }))
+      }
+    })
+  } else {
+    res.writeHead(404)
+    res.end()
+  }
+})
+
 const PORT = 3005
 httpServer.listen(PORT, () => {
   console.log(`Chat service running on port ${PORT}`)
