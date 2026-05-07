@@ -54,6 +54,7 @@ import {
   Camera,
   Mic,
   ChevronDown,
+  ChevronUp,
   Info,
   Timer,
   CloudUpload,
@@ -5063,29 +5064,38 @@ function VideoAdsAdminPage() {
    ═══════════════════════════════════════════════════════════════ */
 
 type AnalyticsTab = 'overview' | 'timeline' | 'revenue' | 'performance' | 'creative' | 'settings'
-type AdFormat = 'video' | 'image'
-interface TimelineAdEntry { position: number; format: AdFormat; label?: string }
+type AdFormat = 'video' | 'image' | 'overlay' | 'banner'
+interface ManualAdEntry { id: string; position: number; format: AdFormat; enabled: boolean; label: string; duration: number; skipAfter: number }
+interface TimelineAdEntry { position: number; format: AdFormat; label?: string; enabled?: boolean }
+type AutoFrequency = 'off' | '5min' | '10min' | '15min' | 'custom'
 
-const MID_ROLL_RULES = [
-  { range: '10–20 min', ads: 1, color: C.success },
-  { range: '30–50 min', ads: 2, color: C.info },
-  { range: '1 hour', ads: 3, color: C.warning },
-  { range: '2 hours', ads: 4, color: C.purple },
-  { range: '3 hours', ads: 6, color: C.accent },
+const UNLIMITED_AD_RULES = [
+  { range: 'Any Duration', ads: '∞', color: C.success, desc: '3 sec to 5+ hours' },
+  { range: 'Manual Placement', ads: '∞', color: C.accent, desc: 'Click timeline or set time' },
+  { range: 'Auto Frequency', ads: '∞', color: C.warning, desc: 'Every 5 / 10 / 15 min' },
+  { range: '4 Ad Types', ads: '∞', color: C.info, desc: 'Video · Image · Overlay · Banner' },
+  { range: 'No Min Gap', ads: '—', color: C.purple, desc: 'Full admin control' },
 ] as const
 
-function getSmartAdSlots(totalMinutes: number): number[] {
-  let count: number
-  if (totalMinutes <= 20) count = totalMinutes >= 10 ? 1 : 0
-  else if (totalMinutes <= 50) count = totalMinutes >= 30 ? 2 : 1
-  else if (totalMinutes <= 75) count = 3
-  else if (totalMinutes <= 150) count = totalMinutes >= 120 ? 5 : 4
-  else count = Math.min(8, Math.floor(totalMinutes / 25))
-
-  if (count === 0) return []
+function getSmartAdSlots(totalMinutes: number, frequencyMin: number = 10): number[] {
   const totalSeconds = totalMinutes * 60
+  if (totalSeconds < 3) return []
+  const frequencySec = frequencyMin * 60
+  let count: number
+  if (totalSeconds < frequencySec) {
+    count = 1
+  } else {
+    count = Math.floor(totalSeconds / frequencySec)
+  }
   const interval = totalSeconds / (count + 1)
   return Array.from({ length: count }, (_, i) => Math.round(interval * (i + 1)))
+}
+
+const AD_FORMAT_CONFIG: Record<AdFormat, { emoji: string; label: string; color: string; icon: string }> = {
+  video: { emoji: '🎬', label: 'Video', color: C.accent, icon: '▶' },
+  image: { emoji: '🖼', label: 'Image', color: C.info, icon: '◼' },
+  overlay: { emoji: '📢', label: 'Overlay', color: C.warning, icon: '◈' },
+  banner: { emoji: '🎯', label: 'Banner', color: C.purple, icon: '◉' },
 }
 
 function formatSeconds(sec: number): string {
@@ -5095,6 +5105,8 @@ function formatSeconds(sec: number): string {
   if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
   return `${m}:${String(s).padStart(2, '0')}`
 }
+
+function genId() { return Math.random().toString(36).slice(2, 9) }
 
 /* ── Lazy-loaded sub-components to prevent full rerender ── */
 
@@ -5126,27 +5138,61 @@ function KPIStatsRow({ stats }: { stats: { label: string; value: string; change:
   )
 }
 
-function TimelineVisualizer({ duration, adPositions, ads: adEntries }: { duration: number; adPositions: number[]; ads?: TimelineAdEntry[] }) {
+function TimelineVisualizer({ duration, adPositions, ads: adEntries, onTimelineClick, addableFormat }: { duration: number; adPositions: number[]; ads?: TimelineAdEntry[]; onTimelineClick?: (sec: number) => void; addableFormat?: AdFormat }) {
   const totalSec = duration * 60
   const getEntry = (pos: number) => adEntries?.find(e => e.position === pos)
+  function handleClick(e: React.MouseEvent<HTMLDivElement>) {
+    if (!onTimelineClick) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    onTimelineClick(Math.round(pct * totalSec))
+  }
   return (
     <div>
-      {/* Visual timeline bar */}
-      <div className="relative h-3 rounded-full overflow-hidden mb-4" style={{ background: 'rgba(255,255,255,0.06)' }}>
-        <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(90deg, rgba(229,9,20,0.15), rgba(229,9,20,0.05))' }} />
+      {/* Add Ad Marker Button */}
+      {onTimelineClick && (
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            {(['video', 'image', 'overlay', 'banner'] as AdFormat[]).map(fmt => (
+              <button key={fmt} onClick={() => onTimelineClick(Math.round(totalSec / 2))}
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] font-medium transition-all hover:scale-[1.03]"
+                style={{ background: `${AD_FORMAT_CONFIG[fmt].color}10`, border: `1px solid ${AD_FORMAT_CONFIG[fmt].color}25`, color: AD_FORMAT_CONFIG[fmt].color }}>
+                <span>{AD_FORMAT_CONFIG[fmt].emoji}</span> {AD_FORMAT_CONFIG[fmt].label}
+              </button>
+            ))}
+          </div>
+          <span className="text-[9px]" style={{ color: C.textDim }}>Click timeline to add · Or use buttons</span>
+        </div>
+      )}
+      {/* Visual timeline bar — clickable */}
+      <div
+        className={`relative h-4 rounded-full overflow-visible mb-4 cursor-pointer group ${onTimelineClick ? 'hover:brightness-125' : ''}`}
+        style={{ background: 'rgba(255,255,255,0.06)' }}
+        onClick={handleClick}
+        role={onTimelineClick ? 'button' : undefined}
+        tabIndex={onTimelineClick ? 0 : undefined}
+        aria-label={onTimelineClick ? 'Click to add ad marker' : undefined}
+      >
+        <div className="absolute inset-0 rounded-full transition-all" style={{ background: 'linear-gradient(90deg, rgba(229,9,20,0.15), rgba(229,9,20,0.05))' }} />
+        {/* Click position indicator on hover */}
+        {onTimelineClick && (
+          <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" style={{ background: 'rgba(255,255,255,0.05)' }} />
+        )}
         {adPositions.map((pos, i) => {
           const pct = Math.min((pos / totalSec) * 100, 98)
           const entry = getEntry(pos)
-          const isVideo = entry?.format === 'video'
-          const dotColor = isVideo ? C.accent : C.info
+          const fmt = entry?.format || (addableFormat || (Math.random() > 0.4 ? 'video' : 'image'))
+          const cfg = AD_FORMAT_CONFIG[fmt as AdFormat] || AD_FORMAT_CONFIG.video
+          const isDisabled = entry?.enabled === false
           return (
-            <div key={i} className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 group" style={{ left: `${pct}%` }}>
-              <div className="h-4 w-4 rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-125" style={{ background: dotColor, boxShadow: `0 0 8px ${dotColor}60` }}>
-                <span className="text-[7px] leading-none">{isVideo ? '▶' : '◼'}</span>
+            <div key={`${pos}-${i}`} className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 group/dot" style={{ left: `${pct}%` }}>
+              <div className={`h-5 w-5 rounded-full flex items-center justify-center transition-transform hover:scale-150 ${isDisabled ? 'opacity-40' : 'cursor-pointer'}`} style={{ background: cfg.color, boxShadow: `0 0 10px ${cfg.color}50` }}>
+                <span className="text-[7px] leading-none">{cfg.icon}</span>
               </div>
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-20">
-                <div className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold text-white whitespace-nowrap" style={{ background: C.sidebar, border: `1px solid ${dotColor}40` }}>
-                  {isVideo ? '🎬' : '🖼'} {entry?.label || `Ad #${i + 1}`} · {formatSeconds(pos)}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/dot:block z-20">
+                <div className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold text-white whitespace-nowrap" style={{ background: C.sidebar, border: `1px solid ${cfg.color}40` }}>
+                  {cfg.emoji} {entry?.label || `Ad #${i + 1}`} · {formatSeconds(pos)}
+                  {isDisabled && <span className="ml-1 text-white/40">(disabled)</span>}
                 </div>
               </div>
             </div>
@@ -5161,80 +5207,234 @@ function TimelineVisualizer({ duration, adPositions, ads: adEntries }: { duratio
         <span className="text-[9px] font-mono" style={{ color: C.textDim }}>{formatSeconds(totalSec * 3 / 4)}</span>
         <span className="text-[9px] font-mono" style={{ color: C.textDim }}>{formatSeconds(totalSec)}</span>
       </div>
-      {/* Ad list */}
-      <div className="flex flex-wrap gap-2 mt-4">
+      {/* Ad list with type badges */}
+      <div className="flex flex-wrap gap-2 mt-4 max-h-48 overflow-y-auto no-scrollbar">
         {adPositions.map((pos, i) => {
           const entry = getEntry(pos)
-          const isVideo = entry?.format === 'video'
-          const dotColor = isVideo ? C.accent : C.info
+          const fmt = entry?.format || 'video'
+          const cfg = AD_FORMAT_CONFIG[fmt as AdFormat] || AD_FORMAT_CONFIG.video
+          const isDisabled = entry?.enabled === false
           return (
-            <div key={i} className="flex items-center gap-2 rounded-xl px-3 py-2 transition-all hover:scale-[1.02]" style={{ background: `${dotColor}08`, border: `1px solid ${dotColor}20` }}>
-              <span className="text-[11px]">{isVideo ? '🎬' : '🖼'}</span>
-              <span className="text-[11px] font-semibold" style={{ color: dotColor }}>{entry?.label || `Ad #${i + 1}`}</span>
+            <div key={`${pos}-${i}`} className={`flex items-center gap-2 rounded-xl px-3 py-2 transition-all hover:scale-[1.02] ${isDisabled ? 'opacity-40' : ''}`} style={{ background: `${cfg.color}08`, border: `1px solid ${cfg.color}20` }}>
+              <span className="text-[11px]">{cfg.emoji}</span>
+              <span className="text-[11px] font-semibold" style={{ color: cfg.color }}>{entry?.label || `Ad #${i + 1}`}</span>
               <span className="text-[10px] text-white/40">@ {formatSeconds(pos)}</span>
-              <StatusBadge text={isVideo ? 'Video' : 'Image'} color={dotColor} />
+              <StatusBadge text={cfg.label} color={cfg.color} />
             </div>
           )
         })}
-        {adPositions.length === 0 && (
-          <span className="text-[11px] py-2" style={{ color: C.textDim }}>Video too short for mid-roll ads (minimum 10 min)</span>
+        {adPositions.length === 0 && onTimelineClick && (
+          <div className="flex items-center gap-2 py-2">
+            <span className="text-[11px]" style={{ color: C.textDim }}>No ads placed yet —</span>
+            <span className="text-[11px] font-medium" style={{ color: C.accent }}>Click timeline or use buttons above to add</span>
+          </div>
+        )}
+        {adPositions.length === 0 && !onTimelineClick && (
+          <span className="text-[11px] py-2" style={{ color: C.textDim }}>No ad slots for this duration</span>
         )}
       </div>
     </div>
   )
 }
 
-function ManualAdsManager({ onAdd, onRemove, manualAds }: { onAdd: (sec: number) => void; onRemove: (idx: number) => void; manualAds: number[] }) {
+function ManualAdsManager({ adPlacements, onUpdate }: { adPlacements: ManualAdEntry[]; onUpdate: (entries: ManualAdEntry[]) => void }) {
   const [inputVal, setInputVal] = useState('')
   const [inputMode, setInputMode] = useState<'seconds' | 'minutes'>('minutes')
+  const [addFormat, setAddFormat] = useState<AdFormat>('video')
+  const [showAddForm, setShowAddForm] = useState(false)
 
   function handleAdd() {
     let sec = Number(inputVal)
     if (!sec || sec <= 0) return
     if (inputMode === 'minutes') sec = sec * 60
-    onAdd(sec)
+    const newEntry: ManualAdEntry = {
+      id: genId(),
+      position: sec,
+      format: addFormat,
+      enabled: true,
+      label: `Ad #${adPlacements.length + 1}`,
+      duration: addFormat === 'video' ? 8 : addFormat === 'image' ? 5 : addFormat === 'overlay' ? 10 : 6,
+      skipAfter: addFormat === 'video' ? 5 : 3,
+    }
+    const sorted = [...adPlacements, newEntry].sort((a, b) => a.position - b.position)
+    onUpdate(sorted)
     setInputVal('')
+    setShowAddForm(false)
   }
+
+  function handleAddAtPosition(sec: number, format: AdFormat) {
+    const newEntry: ManualAdEntry = {
+      id: genId(),
+      position: sec,
+      format,
+      enabled: true,
+      label: `Ad @ ${formatSeconds(sec)}`,
+      duration: format === 'video' ? 8 : format === 'image' ? 5 : format === 'overlay' ? 10 : 6,
+      skipAfter: format === 'video' ? 5 : 3,
+    }
+    const sorted = [...adPlacements, newEntry].sort((a, b) => a.position - b.position)
+    onUpdate(sorted)
+  }
+
+  function handleRemove(id: string) {
+    onUpdate(adPlacements.filter(e => e.id !== id))
+  }
+
+  function handleToggle(id: string) {
+    onUpdate(adPlacements.map(e => e.id === id ? { ...e, enabled: !e.enabled } : e))
+  }
+
+  function handleReorder(id: string, dir: 'up' | 'down') {
+    const idx = adPlacements.findIndex(e => e.id === id)
+    if (idx < 0) return
+    const newIdx = dir === 'up' ? idx - 1 : idx + 1
+    if (newIdx < 0 || newIdx >= adPlacements.length) return
+    const entries = [...adPlacements]
+    // Swap positions
+    const tempPos = entries[idx].position
+    entries[idx] = { ...entries[idx], position: entries[newIdx].position }
+    entries[newIdx] = { ...entries[newIdx], position: tempPos }
+    onUpdate(entries.sort((a, b) => a.position - b.position))
+  }
+
+  function handleFormatChange(id: string, format: AdFormat) {
+    onUpdate(adPlacements.map(e => e.id === id ? { ...e, format, duration: format === 'video' ? 8 : format === 'image' ? 5 : format === 'overlay' ? 10 : 6 } : e))
+  }
+
+  function handleLabelChange(id: string, label: string) {
+    onUpdate(adPlacements.map(e => e.id === id ? { ...e, label } : e))
+  }
+
+  const enabledCount = adPlacements.filter(e => e.enabled).length
+  const videoCount = adPlacements.filter(e => e.format === 'video').length
+  const imageCount = adPlacements.filter(e => e.format === 'image').length
+  const overlayCount = adPlacements.filter(e => e.format === 'overlay').length
+  const bannerCount = adPlacements.filter(e => e.format === 'banner').length
 
   return (
     <div className="space-y-3">
+      {/* Controls Row */}
       <div className="flex items-center gap-2 flex-wrap">
-        <input
-          type="number"
-          value={inputVal}
-          onChange={e => setInputVal(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleAdd()}
-          placeholder={inputMode === 'minutes' ? 'e.g. 15' : 'e.g. 900'}
-          className="w-28 rounded-xl border px-3 py-2 text-xs text-white placeholder:text-white/20 bg-transparent focus:outline-none focus:ring-1"
-          style={{ borderColor: C.border, background: `${C.sidebar}50` }}
-        />
-        <select
-          value={inputMode}
-          onChange={e => setInputMode(e.target.value as 'seconds' | 'minutes')}
-          className="rounded-xl border px-3 py-2 text-xs text-white bg-transparent focus:outline-none"
-          style={{ borderColor: C.border, background: C.sidebar }}
-        >
-          <option value="minutes">Minutes</option>
-          <option value="seconds">Seconds</option>
-        </select>
-        <button
-          onClick={handleAdd}
-          className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-white transition-all hover:opacity-90"
-          style={{ background: C.accent }}
-        >
-          <Plus className="h-3.5 w-3.5" /> Add
-        </button>
-        <span className="text-[10px]" style={{ color: C.textDim }}>{manualAds.length} manual ad{manualAds.length !== 1 ? 's' : ''} placed</span>
+        {!showAddForm ? (
+          <button onClick={() => setShowAddForm(true)}
+            className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-white transition-all hover:opacity-90"
+            style={{ background: C.accent }}>
+            <Plus className="h-3.5 w-3.5" /> Add Ad Marker
+          </button>
+        ) : (
+          <>
+            <input
+              type="number"
+              value={inputVal}
+              onChange={e => setInputVal(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAdd()}
+              placeholder={inputMode === 'minutes' ? 'e.g. 15' : 'e.g. 900'}
+              autoFocus
+              className="w-28 rounded-xl border px-3 py-2 text-xs text-white placeholder:text-white/20 bg-transparent focus:outline-none focus:ring-1"
+              style={{ borderColor: C.border, background: `${C.sidebar}50` }}
+            />
+            <select value={inputMode} onChange={e => setInputMode(e.target.value as 'seconds' | 'minutes')}
+              className="rounded-xl border px-3 py-2 text-xs text-white bg-transparent focus:outline-none"
+              style={{ borderColor: C.border, background: C.sidebar }}>
+              <option value="minutes">Min</option>
+              <option value="seconds">Sec</option>
+            </select>
+            <select value={addFormat} onChange={e => setAddFormat(e.target.value as AdFormat)}
+              className="rounded-xl border px-3 py-2 text-xs text-white bg-transparent focus:outline-none"
+              style={{ borderColor: C.border, background: C.sidebar }}>
+              {(['video', 'image', 'overlay', 'banner'] as AdFormat[]).map(f => (
+                <option key={f} value={f}>{AD_FORMAT_CONFIG[f].emoji} {AD_FORMAT_CONFIG[f].label}</option>
+              ))}
+            </select>
+            <button onClick={handleAdd}
+              className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-white transition-all hover:opacity-90"
+              style={{ background: C.accent }}>
+              <Plus className="h-3.5 w-3.5" /> Add
+            </button>
+            <button onClick={() => { setShowAddForm(false); setInputVal('') }}
+              className="flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-medium transition-all hover:bg-white/[0.04]"
+              style={{ color: C.textTer, border: `1px solid ${C.border}` }}>
+              Cancel
+            </button>
+          </>
+        )}
+        <div className="flex-1" />
+        {/* Count badges */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <StatusBadge text={`${adPlacements.length} total`} color={C.success} />
+          <StatusBadge text={`${enabledCount} active`} color={C.info} />
+          {videoCount > 0 && <StatusBadge text={`${videoCount} 🎬`} color={C.accent} />}
+          {imageCount > 0 && <StatusBadge text={`${imageCount} 🖼`} color={C.info} />}
+          {overlayCount > 0 && <StatusBadge text={`${overlayCount} 📢`} color={C.warning} />}
+          {bannerCount > 0 && <StatusBadge text={`${bannerCount} 🎯`} color={C.purple} />}
+        </div>
       </div>
-      {manualAds.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {manualAds.map((pos, i) => (
-            <div key={i} className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 group" style={{ background: `${C.accent}10`, border: `1px solid ${C.accent}25` }}>
-              <span className="text-[10px] font-semibold" style={{ color: C.accent }}>#{i + 1}</span>
-              <span className="text-[10px] font-mono text-white/60">{formatSeconds(pos)}</span>
-              <button onClick={() => onRemove(i)} className="ml-1 text-white/30 hover:text-red-400 transition-colors"><X className="h-3 w-3" /></button>
-            </div>
-          ))}
+
+      {/* Ad Entries List */}
+      {adPlacements.length > 0 && (
+        <div className="space-y-1.5 max-h-72 overflow-y-auto no-scrollbar">
+          {adPlacements.map((entry, i) => {
+            const cfg = AD_FORMAT_CONFIG[entry.format]
+            return (
+              <div key={entry.id}
+                className={`flex items-center gap-2 rounded-xl px-3 py-2 transition-all group/entry ${entry.enabled ? 'hover:bg-white/[0.02]' : 'opacity-50'}`}
+                style={{ background: `${cfg.color}04`, border: `1px solid ${cfg.color}15` }}>
+                {/* Reorder buttons */}
+                <div className="flex flex-col gap-0.5">
+                  <button onClick={() => handleReorder(entry.id, 'up')} disabled={i === 0}
+                    className="p-0.5 rounded transition-colors hover:bg-white/[0.05] disabled:opacity-20" style={{ color: C.textDim }}>
+                    <ChevronUp className="h-3 w-3" />
+                  </button>
+                  <button onClick={() => handleReorder(entry.id, 'down')} disabled={i === adPlacements.length - 1}
+                    className="p-0.5 rounded transition-colors hover:bg-white/[0.05] disabled:opacity-20" style={{ color: C.textDim }}>
+                    <ChevronDown className="h-3 w-3" />
+                  </button>
+                </div>
+                {/* Index */}
+                <span className="text-[10px] font-bold w-5 text-center" style={{ color: cfg.color }}>#{i + 1}</span>
+                {/* Enable/Disable */}
+                <button onClick={() => handleToggle(entry.id)} title={entry.enabled ? 'Disable' : 'Enable'}
+                  className="flex-shrink-0">
+                  {entry.enabled
+                    ? <CheckCircle className="h-4 w-4" style={{ color: C.success }} />
+                    : <XCircle className="h-4 w-4" style={{ color: C.textDim }} />
+                  }
+                </button>
+                {/* Format selector */}
+                <select value={entry.format} onChange={e => handleFormatChange(entry.id, e.target.value as AdFormat)}
+                  className="rounded-lg border px-1.5 py-1 text-[10px] text-white bg-transparent focus:outline-none"
+                  style={{ borderColor: `${cfg.color}30`, background: `${cfg.color}08` }}>
+                  {(['video', 'image', 'overlay', 'banner'] as AdFormat[]).map(f => (
+                    <option key={f} value={f}>{AD_FORMAT_CONFIG[f].emoji} {AD_FORMAT_CONFIG[f].label}</option>
+                  ))}
+                </select>
+                {/* Label (editable) */}
+                <input value={entry.label} onChange={e => handleLabelChange(entry.id, e.target.value)}
+                  className="flex-1 min-w-[80px] bg-transparent text-[11px] font-medium text-white border-none focus:outline-none placeholder:text-white/20"
+                  style={{ borderBottom: `1px solid ${C.border}` }}
+                  placeholder="Ad label..." />
+                {/* Timestamp */}
+                <span className="text-[10px] font-mono text-white/50 whitespace-nowrap">{formatSeconds(entry.position)}</span>
+                {/* Duration badge */}
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded whitespace-nowrap" style={{ background: `${cfg.color}10`, color: cfg.color }}>
+                  {entry.duration}s{entry.skipAfter < entry.duration ? ` / ${entry.skipAfter}s skip` : ''}
+                </span>
+                {/* Remove */}
+                <button onClick={() => handleRemove(entry.id)}
+                  className="p-1 rounded-lg transition-colors hover:bg-white/[0.05] text-white/30 hover:text-red-400">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {adPlacements.length === 0 && (
+        <div className="flex items-center justify-center gap-2 py-6 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)', border: `1px dashed ${C.border}` }}>
+          <Plus className="h-4 w-4" style={{ color: C.textDim }} />
+          <span className="text-[11px]" style={{ color: C.textDim }}>No ads placed — Click "Add Ad Marker" to start placing unlimited ads</span>
         </div>
       )}
     </div>
@@ -5246,8 +5446,11 @@ function VideoAdsAnalyticsPage() {
   const [ads, setAds] = useState<VideoAdItem[]>([])
   const [loading, setLoading] = useState(true)
   const [simDuration, setSimDuration] = useState(90)
-  const [manualAds, setManualAds] = useState<number[]>([])
-  const [adsMode, setAdsMode] = useState<'auto' | 'manual'>('auto')
+  const [adPlacements, setAdPlacements] = useState<ManualAdEntry[]>([])
+  const [adsMode, setAdsMode] = useState<'auto' | 'manual'>('manual')
+  const [autoFrequency, setAutoFrequency] = useState<AutoFrequency>('10min')
+  const [customInterval, setCustomInterval] = useState(10)
+  const [addableFormat, setAddableFormat] = useState<AdFormat>('video')
   const [adFormatFilter, setAdFormatFilter] = useState<'all' | AdFormat>('all')
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
   const [previewFormat, setPreviewFormat] = useState<AdFormat>('video')
@@ -5258,7 +5461,6 @@ function VideoAdsAnalyticsPage() {
   const [imageOptEnabled, setImageOptEnabled] = useState(true)
   const [hlsEnabled, setHlsEnabled] = useState(true)
   const [adaptiveQuality, setAdaptiveQuality] = useState(true)
-  const [timelineAdFormats, setTimelineAdFormats] = useState<Record<number, AdFormat>>({})
 
   const fetchAds = useCallback(async () => {
     try {
@@ -5274,25 +5476,32 @@ function VideoAdsAnalyticsPage() {
 
   useEffect(() => { fetchAds() }, [fetchAds])
 
-  const autoSlots = getSmartAdSlots(simDuration)
-  const currentSlots = adsMode === 'auto' ? autoSlots : manualAds
+  const freqMin = autoFrequency === 'custom' ? customInterval : autoFrequency === 'off' ? 10 : Number(autoFrequency.replace('min', ''))
+  const autoSlots = getSmartAdSlots(simDuration, freqMin)
+  const currentSlots = adsMode === 'auto' ? autoSlots : adPlacements.filter(e => e.enabled).map(e => e.position)
   const preRollAds = ads.filter(a => a.type === 'pre-roll')
   const midRollAds = ads.filter(a => a.type === 'mid-roll')
   const postRollAds = ads.filter(a => a.type === 'post-roll')
   const videoAds = ads.filter(a => a.mediaUrl?.match(/\.(mp4|webm|m3u8|ogg)/i))
   const imageAds = ads.filter(a => a.mediaUrl?.match(/\.(jpg|jpeg|png|webp|gif)/i))
-  const filteredAds = adFormatFilter === 'all' ? ads : (adFormatFilter === 'video' ? videoAds : imageAds)
+  const overlayAds = ads.filter(a => a.type === 'overlay')
+  const bannerAds = ads.filter(a => a.type === 'banner')
+  const filteredAds = adFormatFilter === 'all' ? ads : ads.filter(a => {
+    if (adFormatFilter === 'video') return a.mediaUrl?.match(/\.(mp4|webm|m3u8|ogg)/i)
+    if (adFormatFilter === 'image') return a.mediaUrl?.match(/\.(jpg|jpeg|png|webp|gif)/i)
+    if (adFormatFilter === 'overlay') return a.type === 'overlay'
+    if (adFormatFilter === 'banner') return a.type === 'banner'
+    return true
+  })
 
   const totalImpressions = ads.reduce((s, a) => s + a.impressions, 0)
   const totalClicks = ads.reduce((s, a) => s + a.clicks, 0)
   const totalCtr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : '0.00'
   const estRevenue = ads.reduce((s, a) => s + (a.cpm || 0) * (a.impressions / 1000) + (a.cpc || 0) * a.clicks, 0)
 
-  const timelineEntries: TimelineAdEntry[] = currentSlots.map(pos => ({
-    position: pos,
-    format: timelineAdFormats[pos] || (Math.random() > 0.4 ? 'video' : 'image'),
-    label: `Ad Break`,
-  }))
+  const timelineEntries: TimelineAdEntry[] = adsMode === 'auto'
+    ? autoSlots.map(pos => ({ position: pos, format: (Math.random() > 0.4 ? 'video' : 'image') as AdFormat, label: 'Auto Ad Break', enabled: true }))
+    : adPlacements.filter(e => e.enabled).map(e => ({ position: e.position, format: e.format, label: e.label, enabled: e.enabled }))
 
   const kpiStats = [
     { label: 'Total Revenue', value: `$${estRevenue.toFixed(2)}`, change: '+18.3%', positive: true, icon: DollarSign, color: C.success, sparkline: [42, 55, 48, 62, 58, 71, 80] },
@@ -5321,13 +5530,26 @@ function VideoAdsAnalyticsPage() {
     { id: 'settings', label: 'Optimization', icon: Zap },
   ]
 
+  function handleTimelineClick(sec: number) {
+    const newEntry: ManualAdEntry = {
+      id: genId(),
+      position: sec,
+      format: addableFormat,
+      enabled: true,
+      label: `Ad @ ${formatSeconds(sec)}`,
+      duration: addableFormat === 'video' ? 8 : addableFormat === 'image' ? 5 : addableFormat === 'overlay' ? 10 : 6,
+      skipAfter: addableFormat === 'video' ? 5 : 3,
+    }
+    const sorted = [...adPlacements, newEntry].sort((a, b) => a.position - b.position)
+    setAdPlacements(sorted)
+  }
+
   function handleAddManual(sec: number) {
-    const sorted = [...manualAds, sec].sort((a, b) => a - b)
-    setManualAds(sorted)
+    handleTimelineClick(sec)
   }
 
   function handleRemoveManual(idx: number) {
-    setManualAds(prev => prev.filter((_, i) => i !== idx))
+    setAdPlacements(prev => prev.filter((_, i) => i !== idx))
   }
 
   const inputCls = 'w-full rounded-xl border px-3 py-2 text-sm text-white placeholder:text-white/20 focus:outline-none focus:ring-1'
@@ -5433,32 +5655,41 @@ function VideoAdsAnalyticsPage() {
               </div>
             </Card>
 
-            {/* Smart Mid-Roll Rules */}
+            {/* Unlimited Ad System Rules */}
             <Card>
-              <CardHeader title="Smart Mid-Roll Rules" />
+              <CardHeader title="Unlimited Ad Placement" extra={<StatusBadge text="∞ No Limits" color={C.success} />} />
               <div className="space-y-2.5">
-                {MID_ROLL_RULES.map(rule => (
+                {UNLIMITED_AD_RULES.map(rule => (
                   <div key={rule.range} className="flex items-center justify-between rounded-xl px-4 py-3 transition-all hover:bg-white/[0.02]" style={{ background: `${rule.color}06`, border: `1px solid ${rule.color}15` }}>
                     <div className="flex items-center gap-3">
                       <div className="h-3 w-3 rounded-full" style={{ background: rule.color }} />
-                      <span className="text-xs font-medium text-white">{rule.range}</span>
+                      <div>
+                        <span className="text-xs font-medium text-white">{rule.range}</span>
+                        <p className="text-[9px]" style={{ color: C.textDim }}>{rule.desc}</p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {Array.from({ length: rule.ads }).map((_, i) => (
-                        <div key={i} className="h-1.5 w-1.5 rounded-full" style={{ background: rule.color }} />
-                      ))}
-                      <span className="text-[10px] font-semibold ml-1" style={{ color: rule.color }}>{rule.ads} ad{rule.ads > 1 ? 's' : ''}</span>
+                      <span className="text-[10px] font-bold ml-1" style={{ color: rule.color }}>{rule.ads}</span>
                     </div>
                   </div>
                 ))}
-                <p className="text-[10px] mt-2 px-1" style={{ color: C.textDim }}>Automatic scheduling with minimum 10-15 minute gap between ads. Admin can add unlimited ads manually.</p>
+                <div className="flex items-center gap-2 mt-2 px-1">
+                  <div className="flex gap-1">
+                    {(['video', 'image', 'overlay', 'banner'] as AdFormat[]).map(fmt => (
+                      <div key={fmt} className="flex items-center gap-1 rounded-lg px-2 py-1" style={{ background: `${AD_FORMAT_CONFIG[fmt].color}10` }}>
+                        <span className="text-[10px]">{AD_FORMAT_CONFIG[fmt].emoji}</span>
+                        <span className="text-[9px] font-medium" style={{ color: AD_FORMAT_CONFIG[fmt].color }}>{AD_FORMAT_CONFIG[fmt].label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </Card>
           </div>
 
-          {/* Auto vs Manual System */}
+          {/* Auto vs Manual System — UNLIMITED */}
           <Card>
-            <CardHeader title="Ads Timing System">
+            <CardHeader title="Ads Timing System — Unlimited">
               <div className="flex items-center gap-2 rounded-xl p-1" style={{ background: 'rgba(255,255,255,0.04)' }}>
                 <button onClick={() => setAdsMode('auto')}
                   className="rounded-lg px-3 py-1.5 text-[11px] font-medium transition-all"
@@ -5473,10 +5704,10 @@ function VideoAdsAnalyticsPage() {
               </div>
             </CardHeader>
 
-            {/* Duration Simulator */}
-            <div className="flex items-center gap-3 mb-5">
+            {/* Duration Simulator — support any duration */}
+            <div className="flex items-center gap-3 mb-4">
               <span className="text-[11px] font-medium" style={{ color: C.textTer }}>Video Duration:</span>
-              <input type="range" min={10} max={240} value={simDuration}
+              <input type="range" min={1} max={360} value={simDuration}
                 onChange={e => setSimDuration(Number(e.target.value))}
                 className="flex-1 max-w-xs h-1.5 rounded-full appearance-none cursor-pointer"
                 style={{ background: 'rgba(255,255,255,0.08)', accentColor: C.accent }} />
@@ -5484,7 +5715,54 @@ function VideoAdsAnalyticsPage() {
                 <span className="text-sm font-bold text-white">{simDuration}</span>
                 <span className="text-[10px]" style={{ color: C.textDim }}>min</span>
               </div>
+              <span className="text-[9px] px-2 py-0.5 rounded-lg" style={{ background: `${C.success}10`, color: C.success }}>Any duration</span>
             </div>
+
+            {/* Auto Frequency Selector */}
+            {adsMode === 'auto' && (
+              <div className="flex items-center gap-2 mb-4 flex-wrap">
+                <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.textDim }}>Auto Frequency:</span>
+                {(['5min', '10min', '15min', 'custom'] as AutoFrequency[]).map(f => (
+                  <button key={f} onClick={() => setAutoFrequency(f)}
+                    className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-[11px] font-medium transition-all border"
+                    style={{
+                      background: autoFrequency === f ? `${C.warning}15` : 'transparent',
+                      borderColor: autoFrequency === f ? `${C.warning}40` : C.border,
+                      color: autoFrequency === f ? C.warning : C.textTer,
+                    }}>
+                    {f === 'custom' ? '⚙️ Custom' : `⏱ Every ${f.replace('min', ' min')}`}
+                  </button>
+                ))}
+                {autoFrequency === 'custom' && (
+                  <div className="flex items-center gap-1.5 ml-1">
+                    <input type="number" min={1} max={120} value={customInterval}
+                      onChange={e => setCustomInterval(Math.max(1, Number(e.target.value) || 1))}
+                      className="w-16 rounded-lg border px-2 py-1 text-[11px] text-white bg-transparent focus:outline-none"
+                      style={{ borderColor: C.border }} />
+                    <span className="text-[10px]" style={{ color: C.textDim }}>min</span>
+                  </div>
+                )}
+                <StatusBadge text={`${autoSlots.length} ads`} color={C.warning} />
+              </div>
+            )}
+
+            {/* Manual Mode — Format selector */}
+            {adsMode === 'manual' && (
+              <div className="flex items-center gap-2 mb-4 flex-wrap">
+                <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.textDim }}>Add Type:</span>
+                {(['video', 'image', 'overlay', 'banner'] as AdFormat[]).map(fmt => (
+                  <button key={fmt} onClick={() => setAddableFormat(fmt)}
+                    className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-medium transition-all border"
+                    style={{
+                      background: addableFormat === fmt ? `${AD_FORMAT_CONFIG[fmt].color}15` : 'transparent',
+                      borderColor: addableFormat === fmt ? `${AD_FORMAT_CONFIG[fmt].color}40` : C.border,
+                      color: addableFormat === fmt ? AD_FORMAT_CONFIG[fmt].color : C.textTer,
+                    }}>
+                    <span>{AD_FORMAT_CONFIG[fmt].emoji}</span> {AD_FORMAT_CONFIG[fmt].label}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {adsMode === 'auto' ? (
               <div>
@@ -5492,20 +5770,21 @@ function VideoAdsAnalyticsPage() {
                   <Zap className="h-4 w-4" style={{ color: C.warning }} />
                   <span className="text-xs font-medium text-white">Auto-Calculated Ad Positions</span>
                   <StatusBadge text={`${autoSlots.length} ads`} color={C.warning} />
+                  <StatusBadge text={`every ${freqMin} min`} color={C.info} />
                 </div>
-                <TimelineVisualizer duration={simDuration} adPositions={autoSlots} />
+                <TimelineVisualizer duration={simDuration} adPositions={autoSlots} ads={timelineEntries} />
               </div>
             ) : (
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Pencil className="h-4 w-4" style={{ color: C.accent }} />
-                  <span className="text-xs font-medium text-white">Manual Ad Placement</span>
-                  <StatusBadge text={`${manualAds.length} placed`} color={C.accent} />
+                  <span className="text-xs font-medium text-white">Unlimited Manual Placement</span>
+                  <StatusBadge text={`${adPlacements.length} placed`} color={C.accent} />
                 </div>
-                <ManualAdsManager onAdd={handleAddManual} onRemove={handleRemoveManual} manualAds={manualAds} />
-                {manualAds.length > 0 && (
+                <ManualAdsManager adPlacements={adPlacements} onUpdate={setAdPlacements} />
+                {adPlacements.length > 0 && (
                   <div className="mt-4">
-                    <TimelineVisualizer duration={simDuration} adPositions={manualAds} />
+                    <TimelineVisualizer duration={simDuration} adPositions={currentSlots} ads={timelineEntries} onTimelineClick={handleTimelineClick} addableFormat={addableFormat} />
                   </div>
                 )}
               </div>
@@ -5617,127 +5896,226 @@ function VideoAdsAnalyticsPage() {
               </div>
             </Card>
           </div>
+
+          {/* Video Player Rules + Smart Loading */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Video Player Ad Flow */}
+            <Card>
+              <CardHeader title="Video Player Ad Flow" extra={<StatusBadge text="Instant" color={C.success} />} />
+              <div className="space-y-2">
+                {[
+                  { step: '1', action: 'Main video plays normally', icon: Play, color: C.info },
+                  { step: '2', action: 'Ad timestamp reached → pause video', icon: Pause, color: C.warning },
+                  { step: '3', action: 'Play ad instantly — no buffering', icon: Zap, color: C.accent },
+                  { step: '4', action: 'Skip button appears after 5 seconds', icon: Timer, color: C.purple },
+                  { step: '5', action: 'Resume main video instantly', icon: Play, color: C.success },
+                ].map(s => {
+                  const Icon = s.icon
+                  return (
+                    <div key={s.step} className="flex items-center gap-3 rounded-xl px-3 py-2.5" style={{ background: `${s.color}06`, border: `1px solid ${s.color}15` }}>
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full flex-shrink-0" style={{ background: `${s.color}15` }}>
+                        <span className="text-[10px] font-bold" style={{ color: s.color }}>{s.step}</span>
+                      </div>
+                      <Icon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: s.color }} />
+                      <span className="text-[11px] font-medium text-white">{s.action}</span>
+                    </div>
+                  )
+                })}
+                <div className="flex items-center gap-2 mt-2 px-1">
+                  <ShieldCheck className="h-3.5 w-3.5" style={{ color: C.success }} />
+                  <span className="text-[9px]" style={{ color: C.textDim }}>No fullscreen exit · No player refresh · No black screen · Smooth playback</span>
+                </div>
+              </div>
+            </Card>
+
+            {/* Smart Loading System */}
+            <Card>
+              <CardHeader title="Smart Loading System" extra={<StatusBadge text="Active" color={C.success} />} />
+              <div className="space-y-2">
+                {[
+                  { label: 'Preload Next Ad Only', desc: 'Only next ad loads while current plays', icon: Zap, color: C.success },
+                  { label: 'Async Load Ads', desc: 'Ads never block video or page render', icon: RefreshCw, color: C.info },
+                  { label: 'Cache Locally', desc: 'Service worker caches for instant replay', icon: HardDrive, color: C.purple },
+                  { label: 'Auto Unload Old Ads', desc: 'Previous ads freed from memory', icon: Trash2, color: C.warning },
+                  { label: 'Never Block Homepage', desc: 'Ads load after critical content', icon: Shield, color: C.accent },
+                  { label: 'Device-Aware Loading', desc: 'Mobile: 480p · Tablet: 720p · Desktop: Auto', icon: Monitor, color: C.success },
+                ].map(s => {
+                  const Icon = s.icon
+                  return (
+                    <div key={s.label} className="flex items-center gap-3 rounded-xl px-3 py-2" style={{ background: `${s.color}04`, border: `1px solid ${s.color}10` }}>
+                      <div className="flex h-6 w-6 items-center justify-center rounded-lg flex-shrink-0" style={{ background: `${s.color}12` }}>
+                        <Icon className="h-3 w-3" style={{ color: s.color }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-medium text-white">{s.label}</p>
+                        <p className="text-[9px]" style={{ color: C.textDim }}>{s.desc}</p>
+                      </div>
+                      <CheckCircle className="h-3.5 w-3.5 flex-shrink-0" style={{ color: C.success }} />
+                    </div>
+                  )
+                })}
+              </div>
+            </Card>
+          </div>
         </div>
       )}
 
       {/* ════════════════════════════════════════
-          TIMELINE TAB
+          TIMELINE TAB — UNLIMITED
           ════════════════════════════════════════ */}
       {activeTab === 'timeline' && (
         <div className="space-y-5">
-          {/* Timeline Simulator */}
+          {/* Timeline Simulator — Unlimited */}
           <Card>
-            <CardHeader title="Interactive Ads Timeline">
+            <CardHeader title="Interactive Ads Timeline — Unlimited Placement">
               <div className="flex items-center gap-3">
-                <input type="range" min={10} max={240} value={simDuration}
+                <input type="range" min={1} max={360} value={simDuration}
                   onChange={e => setSimDuration(Number(e.target.value))}
                   className="w-32 h-1.5 rounded-full appearance-none cursor-pointer"
                   style={{ background: 'rgba(255,255,255,0.08)', accentColor: C.warning }} />
                 <span className="text-xs font-bold text-white">{simDuration} min</span>
+                <StatusBadge text="∞" color={C.success} />
               </div>
             </CardHeader>
-            {/* Format legend */}
-            <div className="flex items-center gap-4 mb-4">
-              <div className="flex items-center gap-1.5">
-                <div className="h-3 w-3 rounded-full flex items-center justify-center" style={{ background: C.accent }}><span className="text-[6px]">▶</span></div>
-                <span className="text-[10px]" style={{ color: C.textTer }}>Video Ad</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="h-3 w-3 rounded-full flex items-center justify-center" style={{ background: C.info }}><span className="text-[6px]">◼</span></div>
-                <span className="text-[10px]" style={{ color: C.textTer }}>Image Ad</span>
-              </div>
+            {/* Format legend — 4 types */}
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
+              {(['video', 'image', 'overlay', 'banner'] as AdFormat[]).map(fmt => (
+                <div key={fmt} className="flex items-center gap-1.5">
+                  <div className="h-3 w-3 rounded-full flex items-center justify-center" style={{ background: AD_FORMAT_CONFIG[fmt].color }}><span className="text-[6px]">{AD_FORMAT_CONFIG[fmt].icon}</span></div>
+                  <span className="text-[10px]" style={{ color: C.textTer }}>{AD_FORMAT_CONFIG[fmt].label} Ad</span>
+                </div>
+              ))}
               <div className="flex-1" />
               <div className="flex items-center gap-1.5">
-                <span className="text-[9px]" style={{ color: C.textDim }}>Format:</span>
+                <span className="text-[9px]" style={{ color: C.textDim }}>Filter:</span>
                 <select value={adFormatFilter} onChange={e => setAdFormatFilter(e.target.value as 'all' | AdFormat)}
                   className="rounded-lg border px-2 py-1 text-[10px] text-white bg-transparent"
                   style={{ borderColor: C.border, background: C.sidebar }}>
                   <option value="all">All Formats</option>
-                  <option value="video">Video Only</option>
-                  <option value="image">Image Only</option>
+                  {(['video', 'image', 'overlay', 'banner'] as AdFormat[]).map(fmt => (
+                    <option key={fmt} value={fmt}>{AD_FORMAT_CONFIG[fmt].emoji} {AD_FORMAT_CONFIG[fmt].label}</option>
+                  ))}
                 </select>
               </div>
             </div>
-            <TimelineVisualizer duration={simDuration} adPositions={currentSlots} ads={timelineEntries} />
+            {/* Clickable timeline with Add Ad Marker buttons */}
+            <TimelineVisualizer duration={simDuration} adPositions={currentSlots} ads={timelineEntries} onTimelineClick={handleTimelineClick} addableFormat={addableFormat} />
 
-            {/* Quick add manual ads on timeline tab too */}
+            {/* Unlimited manual ad manager */}
             <div className="mt-5 pt-4 border-t" style={{ borderColor: C.border }}>
-              <ManualAdsManager onAdd={handleAddManual} onRemove={handleRemoveManual} manualAds={manualAds} />
+              <ManualAdsManager adPlacements={adPlacements} onUpdate={setAdPlacements} />
             </div>
           </Card>
 
-          {/* Duration Presets */}
+          {/* Auto Frequency Mode */}
+          <Card>
+            <CardHeader title="Auto Ads Frequency Mode" extra={<StatusBadge text={autoFrequency === 'off' ? 'Off' : 'Active'} color={autoFrequency === 'off' ? C.textTer : C.success} />} />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+              {(['5min', '10min', '15min', 'custom'] as AutoFrequency[]).map(f => (
+                <button key={f} onClick={() => { setAutoFrequency(f); setAdsMode('auto') }}
+                  className="rounded-xl border p-3 text-left transition-all hover:bg-white/[0.03]"
+                  style={{ borderColor: autoFrequency === f ? `${C.warning}50` : C.border, background: autoFrequency === f ? `${C.warning}08` : 'transparent' }}>
+                  <p className="text-sm font-bold text-white">{f === 'custom' ? '⚙️ Custom' : `Every ${f.replace('min', ' min')}`}</p>
+                  <p className="text-[10px] mt-0.5" style={{ color: C.textTer }}>
+                    {f === 'custom' ? `${customInterval} min interval` : `${Math.floor(simDuration / Number(f.replace('min', '')))} ads in {simDuration}m`}
+                  </p>
+                  {autoFrequency === f && <div className="h-0.5 w-6 rounded-full mt-2" style={{ background: C.warning }} />}
+                </button>
+              ))}
+            </div>
+            {autoFrequency === 'custom' && (
+              <div className="flex items-center gap-2 rounded-xl px-4 py-2.5" style={{ background: `${C.warning}06`, border: `1px solid ${C.warning}15` }}>
+                <span className="text-[11px] font-medium text-white">Custom Interval:</span>
+                <input type="number" min={1} max={120} value={customInterval}
+                  onChange={e => setCustomInterval(Math.max(1, Number(e.target.value) || 1))}
+                  className="w-16 rounded-lg border px-2 py-1 text-[11px] text-white bg-transparent focus:outline-none"
+                  style={{ borderColor: C.border }} />
+                <span className="text-[10px]" style={{ color: C.textDim }}>minutes</span>
+                <span className="text-[10px] ml-auto" style={{ color: C.warning }}>→ {autoSlots.length} ads generated</span>
+              </div>
+            )}
+          </Card>
+
+          {/* Quick Duration Presets — Unlimited */}
           <Card>
             <CardHeader title="Quick Duration Presets" />
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               {[
-                { label: '15 min', dur: 15, desc: '1 ad' },
-                { label: '30 min', dur: 30, desc: '1 ad' },
-                { label: '1 hour', dur: 60, desc: '3 ads' },
-                { label: '2 hours', dur: 120, desc: '4 ads' },
-                { label: '3 hours', dur: 180, desc: '6 ads' },
+                { label: '3 sec', dur: 0.05, desc: '1 ad' },
+                { label: '15 min', dur: 15, desc: `${getSmartAdSlots(15, freqMin).length} ads` },
+                { label: '30 min', dur: 30, desc: `${getSmartAdSlots(30, freqMin).length} ads` },
+                { label: '1 hour', dur: 60, desc: `${getSmartAdSlots(60, freqMin).length} ads` },
+                { label: '3 hours', dur: 180, desc: `${getSmartAdSlots(180, freqMin).length} ads` },
               ].map(p => {
-                const slots = getSmartAdSlots(p.dur)
+                const slots = getSmartAdSlots(p.dur, freqMin)
                 return (
-                  <button key={p.dur} onClick={() => { setSimDuration(p.dur); setManualAds([]) }}
+                  <button key={p.label} onClick={() => { setSimDuration(Math.max(1, p.dur)); setAdPlacements([]) }}
                     className="rounded-xl border p-3 text-left transition-all hover:bg-white/[0.03] hover:border-white/15"
-                    style={{ borderColor: simDuration === p.dur ? `${C.warning}50` : C.border, background: simDuration === p.dur ? `${C.warning}08` : 'transparent' }}>
+                    style={{ borderColor: Math.abs(simDuration - p.dur) < 1 ? `${C.warning}50` : C.border, background: Math.abs(simDuration - p.dur) < 1 ? `${C.warning}08` : 'transparent' }}>
                     <p className="text-sm font-bold text-white">{p.label}</p>
-                    <p className="text-[10px] mt-0.5" style={{ color: C.textTer }}>{p.desc} · {slots.length} slots</p>
-                    {simDuration === p.dur && <div className="h-0.5 w-6 rounded-full mt-2" style={{ background: C.warning }} />}
+                    <p className="text-[10px] mt-0.5" style={{ color: C.textTer }}>Unlimited · {slots.length} slots</p>
+                    {Math.abs(simDuration - p.dur) < 1 && <div className="h-0.5 w-6 rounded-full mt-2" style={{ background: C.warning }} />}
                   </button>
                 )
               })}
             </div>
           </Card>
 
-          {/* Mid-Roll Schedule Table */}
+          {/* Scheduled Ad Breaks Table — Unlimited */}
           <Card className="!p-0 overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: C.border }}>
               <h3 className="text-sm font-semibold text-white">Scheduled Ad Breaks</h3>
-              <StatusBadge text={`${currentSlots.length} breaks`} color={C.warning} />
+              <div className="flex items-center gap-2">
+                <StatusBadge text={`${currentSlots.length} breaks`} color={C.warning} />
+                <StatusBadge text="∞ Unlimited" color={C.success} />
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.02)' }}>
-                    {['#', 'Format', 'Position', 'Timestamp', 'Gap from Previous', 'Status'].map(h => (
-                      <th key={h} className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.textDim }}>{h}</th>
+                    {['#', 'Type', 'Format', 'Position', 'Timestamp', 'Gap from Prev', 'Status'].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.textDim }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {currentSlots.length === 0 && (
-                    <tr><td colSpan={6} className="px-5 py-12 text-center">
+                    <tr><td colSpan={7} className="px-5 py-12 text-center">
                       <Clock className="h-8 w-8 mx-auto mb-2" style={{ color: C.textDim }} />
                       <p className="text-sm" style={{ color: C.textTer }}>No ad breaks scheduled</p>
-                      <p className="text-[10px] mt-1" style={{ color: C.textDim }}>Increase video duration or add manual ad positions</p>
+                      <p className="text-[10px] mt-1" style={{ color: C.textDim }}>Click timeline, use Add Ad Marker, or switch to Auto mode</p>
                     </td></tr>
                   )}
                   {currentSlots.map((pos, i) => {
                     const prevPos = i > 0 ? currentSlots[i - 1] : 0
                     const gapMin = ((pos - prevPos) / 60).toFixed(1)
                     const entry = timelineEntries[i]
-                    const isVid = entry?.format === 'video'
+                    const fmt = (entry?.format || 'video') as AdFormat
+                    const cfg = AD_FORMAT_CONFIG[fmt]
                     return (
-                      <tr key={i} className="border-b transition-colors hover:bg-white/[0.02]" style={{ borderColor: C.border }}>
-                        <td className="px-5 py-3">
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full" style={{ background: `${isVid ? C.accent : C.info}15` }}>
-                            <span className="text-[10px]">{isVid ? '▶' : '◼'}</span>
+                      <tr key={`${pos}-${i}`} className="border-b transition-colors hover:bg-white/[0.02]" style={{ borderColor: C.border }}>
+                        <td className="px-4 py-3">
+                          <span className="text-[11px] font-bold" style={{ color: cfg.color }}>#{i + 1}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full" style={{ background: `${cfg.color}15` }}>
+                            <span className="text-[10px]">{cfg.icon}</span>
                           </div>
                         </td>
-                        <td className="px-5 py-3">
-                          <StatusBadge text={isVid ? 'Video' : 'Image'} color={isVid ? C.accent : C.info} />
+                        <td className="px-4 py-3">
+                          <StatusBadge text={cfg.label} color={cfg.color} />
                         </td>
-                        <td className="px-5 py-3 text-[12px] font-medium text-white">
-                          {((pos / (simDuration * 60)) * 100).toFixed(1)}%
+                        <td className="px-4 py-3 text-[12px] font-medium text-white">
+                          {((pos / Math.max(simDuration * 60, 1)) * 100).toFixed(1)}%
                         </td>
-                        <td className="px-5 py-3 text-[12px] font-mono" style={{ color: C.textSec }}>{formatSeconds(pos)}</td>
-                        <td className="px-5 py-3 text-[12px]" style={{ color: gapMin >= 10 ? C.success : C.accent }}>
+                        <td className="px-4 py-3 text-[12px] font-mono" style={{ color: C.textSec }}>{formatSeconds(pos)}</td>
+                        <td className="px-4 py-3 text-[12px]" style={{ color: C.success }}>
                           {i === 0 ? '—' : `${gapMin} min`}
-                          {i > 0 && Number(gapMin) < 10 && <span className="ml-1 text-[9px]" style={{ color: C.accent }}>(too close)</span>}
                         </td>
-                        <td className="px-5 py-3"><StatusBadge text="Scheduled" color={C.success} /></td>
+                        <td className="px-4 py-3">
+                          <StatusBadge text={entry?.enabled !== false ? 'Active' : 'Disabled'} color={entry?.enabled !== false ? C.success : C.textDim} />
+                        </td>
                       </tr>
                     )
                   })}
