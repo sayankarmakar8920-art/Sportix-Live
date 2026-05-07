@@ -2,13 +2,15 @@
 
 import { useAppStore } from '@/lib/store'
 import { Search, X, Calendar } from 'lucide-react'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 export default function Header() {
-  const { currentView } = useAppStore()
+  const { currentView, setCurrentView } = useAppStore()
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isMobile, setIsMobile] = useState(false)
+  const clickCountRef = useRef(0)
+  const clickTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -18,8 +20,22 @@ export default function Header() {
   }, [])
 
   const handleLogoClick = useCallback(() => {
+    clickCountRef.current += 1
+
+    if (clickTimerRef.current) clearTimeout(clickTimerRef.current)
+    clickTimerRef.current = setTimeout(() => {
+      clickCountRef.current = 0
+    }, 1200)
+
+    if (clickCountRef.current === 7) {
+      clickCountRef.current = 0
+      if (clickTimerRef.current) clearTimeout(clickTimerRef.current)
+      setCurrentView('admin')
+      return
+    }
+
     window.location.reload()
-  }, [])
+  }, [setCurrentView])
 
   if (currentView === 'admin' || currentView === 'live-control-room') return null
 
