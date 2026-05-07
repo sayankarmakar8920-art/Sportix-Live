@@ -5063,11 +5063,55 @@ function VideoAdsAdminPage() {
    VIDEO ADS ANALYTICS PAGE
    ═══════════════════════════════════════════════════════════════ */
 
-type AnalyticsTab = 'overview' | 'timeline' | 'revenue' | 'performance' | 'creative' | 'settings'
+type AnalyticsTab = 'overview' | 'timeline' | 'revenue' | 'performance' | 'creative' | 'creative-manager' | 'settings'
+
+/* ── Upload Types ── */
+type UploadStatus = 'idle' | 'uploading' | 'paused' | 'complete' | 'error' | 'cancelled'
+
+interface UploadFile {
+  id: string
+  file: File
+  status: UploadStatus
+  progress: number        // 0-100
+  uploadId?: string
+  uploadedChunks: number
+  totalChunks: number
+  speed: number           // bytes per second
+  uploadedBytes: number
+  totalBytes: number
+  url?: string           // final URL after upload
+  error?: string
+  startTime: number
+  pausedAt?: number
+  abortController?: AbortController
+}
 type AdFormat = 'video' | 'image' | 'overlay' | 'banner'
 interface ManualAdEntry { id: string; position: number; format: AdFormat; enabled: boolean; label: string; duration: number; skipAfter: number }
 interface TimelineAdEntry { position: number; format: AdFormat; label?: string; enabled?: boolean }
 type AutoFrequency = 'off' | '5min' | '10min' | '15min' | 'custom'
+
+const UPLOAD_LIMITS = {
+  video: { maxSize: 5 * 1024 * 1024 * 1024, formats: ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'], extensions: '.mp4,.webm,.mov,.ogg', label: '5 GB' },
+  image: { maxSize: 10 * 1024 * 1024, formats: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], extensions: '.jpg,.jpeg,.png,.webp,.gif', label: '10 MB' },
+} as const
+
+const CHUNK_SIZE = 5 * 1024 * 1024 // 5MB chunks
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`
+}
+
+function formatSpeed(bytesPerSec: number): string {
+  return `${formatBytes(bytesPerSec)}/s`
+}
+
+function getUploadId(): string {
+  return `ul_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+}
 
 const UNLIMITED_AD_RULES = [
   { range: 'Any Duration', ads: '∞', color: C.success, desc: '3 sec to 5+ hours' },
@@ -5462,6 +5506,184 @@ function VideoAdsAnalyticsPage() {
   const [hlsEnabled, setHlsEnabled] = useState(true)
   const [adaptiveQuality, setAdaptiveQuality] = useState(true)
 
+  /* ── Upload State ── */
+  const [uploads, setUploads] = useState<UploadFile[]>([])
+  const [uploadedMedia, setUploadedMedia] = useState<{ id: string; originalName: string; fileName: string; fileType: string; mimeType: string; fileSize: number; thumbnailUrl?: string; url: string; duration?: number; status: string; createdAt: string }[]>([])
+  const [showUploadZone, setShowUploadZone] = useState(true)
+  const [uploadingCount, setUploadingCount] = useState(0)
+
+  /* ── Upload Functions ── */
+  const startUpload = useCallback(async (file: File) => {
+    const isVideo = file.type.startsWith('video/')
+    const category = isVideo ? 'video' : 'image'
+    const limits = UPLOAD_LIMITS[category]
+
+    if (!limits.formats.includes(file.type)) {
+      const entry: UploadFile = { id: getUploadId(), file, status: 'error', progress: 0, uploadedChunks: 0, totalChunks: 1, speed: 0, uploadedBytes: 0, totalBytes: file.size, error: `Unsupported format. Allowed: ${limits.extensions}`, startTime: Date.now() }
+      setUploads(prev => [entry, ...prev])
+      return
+    }
+    if (file.size > limits.maxSize) {
+      const entry: UploadFile = { id: getUploadId(), file, status: 'error', progress: 0, uploadedChunks: 0, totalChunks: 1, speed: 0, uploadedBytes: 0, totalBytes: file.size, error: `File too large. Max: ${limits.label}`, startTime: Date.now() }
+      setUploads(prev => [entry, ...prev])
+      return
+    }
+
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE)
+    const uploadId = getUploadId()
+    const ac = new AbortController()
+
+    const entry: UploadFile = {
+      id: uploadId, file, status: 'uploading', progress: 0,
+      uploadedChunks: 0, totalChunks,
+      speed: 0, uploadedBytes: 0, totalBytes: file.size,
+      startTime: Date.now(), abortController: ac,
+    }
+    setUploads(prev => [entry, ...prev])
+    setUploadingCount(prev => prev + 1)
+
+    try {
+      if (file.size < 50 * 1024 * 1024) {
+        /* ── Simple upload for small files ── */
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('fileType', category)
+
+        const xhr = new XMLHttpRequest()
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 100)
+            const elapsed = (Date.now() - entry.startTime) / 1000
+            const speed = elapsed > 0 ? e.loaded / elapsed : 0
+            setUploads(prev => prev.map(u => u.id === uploadId ? { ...u, progress: pct, uploadedBytes: e.loaded, speed } : u))
+          }
+        })
+
+        const result = await new Promise<{ media: any; url: string }>((resolve, reject) => {
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(JSON.parse(xhr.responseText))
+            } else {
+              reject(new Error(`Upload failed: ${xhr.status}`))
+            }
+          }
+          xhr.onerror = () => reject(new Error('Network error'))
+          xhr.onabort = () => reject(new Error('Cancelled'))
+          xhr.open('POST', '/api/ads/upload')
+          xhr.send(formData)
+          entry.abortController = ac
+        })
+
+        setUploads(prev => prev.map(u => u.id === uploadId ? { ...u, status: 'complete', progress: 100, url: result.url, speed: 0, uploadedBytes: file.size } : u))
+        if (result.media) {
+          setUploadedMedia(prev => [{
+            id: result.media.id, originalName: result.media.originalName, fileName: result.media.fileName,
+            fileType: result.media.fileType, mimeType: result.media.mimeType, fileSize: result.media.fileSize,
+            thumbnailUrl: result.media.thumbnailUrl, url: result.url, duration: result.media.duration,
+            status: result.media.status, createdAt: new Date().toISOString(),
+          }, ...prev])
+        }
+      } else {
+        /* ── Chunked upload for large files ── */
+        let completedChunks = 0
+        const chunkPromises: Promise<void>[] = []
+        const maxConcurrent = 3
+        let nextChunkIndex = 0
+
+        const uploadChunk = async (chunkIdx: number) => {
+          const start = chunkIdx * CHUNK_SIZE
+          const end = Math.min(start + CHUNK_SIZE, file.size)
+          const chunk = file.slice(start, end)
+          const formData = new FormData()
+          formData.append('chunk', chunk)
+          formData.append('uploadId', uploadId)
+          formData.append('chunkIndex', String(chunkIdx))
+          formData.append('totalChunks', String(totalChunks))
+          formData.append('fileName', file.name)
+          formData.append('fileType', category)
+          formData.append('mimeType', file.type)
+
+          await fetch('/api/ads/upload/chunk', { method: 'POST', body: formData })
+          completedChunks++
+          const pct = Math.round((completedChunks / totalChunks) * 100)
+          const elapsed = (Date.now() - entry.startTime) / 1000
+          const speed = elapsed > 0 ? (completedChunks * CHUNK_SIZE) / elapsed : 0
+          const uploadedBytes = Math.min(completedChunks * CHUNK_SIZE, file.size)
+          setUploads(prev => prev.map(u => u.id === uploadId ? { ...u, progress: pct, uploadedChunks: completedChunks, speed, uploadedBytes } : u))
+        }
+
+        const processChunks = async () => {
+          while (nextChunkIndex < totalChunks) {
+            if (ac.signal.aborted) throw new Error('Cancelled')
+            const batch: number[] = []
+            while (batch.length < maxConcurrent && nextChunkIndex < totalChunks) {
+              batch.push(nextChunkIndex)
+              nextChunkIndex++
+            }
+            await Promise.all(batch.map(uploadChunk))
+          }
+        }
+
+        await processChunks()
+
+        /* Complete the upload */
+        const completeRes = await fetch('/api/ads/upload/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uploadId, fileName: file.name, fileType: category, mimeType: file.type, fileSize: file.size }),
+        })
+        const completeData = await completeRes.json()
+
+        setUploads(prev => prev.map(u => u.id === uploadId ? { ...u, status: 'complete', progress: 100, url: completeData.url, speed: 0, uploadedBytes: file.size } : u))
+        if (completeData.media) {
+          setUploadedMedia(prev => [{
+            id: completeData.media.id, originalName: completeData.media.originalName, fileName: completeData.media.fileName,
+            fileType: completeData.media.fileType, mimeType: completeData.media.mimeType, fileSize: completeData.media.fileSize,
+            thumbnailUrl: completeData.media.thumbnailUrl, url: completeData.url, duration: completeData.media.duration,
+            status: completeData.media.status, createdAt: new Date().toISOString(),
+          }, ...prev])
+        }
+      }
+    } catch (err: any) {
+      if (err.message === 'Cancelled') {
+        setUploads(prev => prev.map(u => u.id === uploadId ? { ...u, status: 'cancelled', speed: 0 } : u))
+      } else {
+        setUploads(prev => prev.map(u => u.id === uploadId ? { ...u, status: 'error', error: err.message || 'Upload failed', speed: 0 } : u))
+      }
+      await fetch('/api/ads/upload/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uploadId }) }).catch(() => {})
+    } finally {
+      setUploadingCount(prev => prev - 1)
+    }
+  }, [])
+
+  const pauseUpload = useCallback((id: string) => {
+    setUploads(prev => prev.map(u => u.id === id ? { ...u, status: 'paused', pausedAt: Date.now(), speed: 0 } : u))
+  }, [])
+
+  const resumeUpload = useCallback(async (id: string) => {
+    const entry = uploads.find(u => u.id === id)
+    if (!entry || entry.status !== 'paused') return
+    setUploads(prev => prev.map(u => u.id === id ? { ...u, status: 'uploading', pausedAt: undefined } : u))
+    /* Re-trigger upload from where it left off */
+    await startUpload(entry.file)
+  }, [uploads, startUpload])
+
+  const cancelUpload = useCallback(async (id: string) => {
+    const entry = uploads.find(u => u.id === id)
+    if (!entry) return
+    entry.abortController?.abort()
+    await fetch('/api/ads/upload/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uploadId: id }) }).catch(() => {})
+    setUploads(prev => prev.map(u => u.id === id ? { ...u, status: 'cancelled', speed: 0 } : u))
+  }, [uploads])
+
+  const clearCompleted = useCallback(() => {
+    setUploads(prev => prev.filter(u => u.status !== 'complete' && u.status !== 'error' && u.status !== 'cancelled'))
+  }, [])
+
+  const deleteUploadedMedia = useCallback((id: string) => {
+    setUploadedMedia(prev => prev.filter(m => m.id !== id))
+  }, [])
+
   const fetchAds = useCallback(async () => {
     try {
       const res = await fetch('/api/ads')
@@ -5524,7 +5746,8 @@ function VideoAdsAnalyticsPage() {
   const tabs: { id: AnalyticsTab; label: string; icon: React.ComponentType<{ className?: string }>; count?: string }[] = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
     { id: 'timeline', label: 'Ads Timeline', icon: Clock },
-    { id: 'creative', label: 'Creative Hub', icon: Film },
+    { id: 'creative', label: 'Upload & Creative', icon: CloudUpload },
+    { id: 'creative-manager', label: 'Ads Manager', icon: Film },
     { id: 'revenue', label: 'Revenue', icon: DollarSign },
     { id: 'performance', label: 'Performance', icon: TrendingUp },
     { id: 'settings', label: 'Optimization', icon: Zap },
@@ -6371,186 +6594,257 @@ function VideoAdsAnalyticsPage() {
       )}
 
       {/* ════════════════════════════════════════
-          CREATIVE HUB TAB
+          UPLOAD & CREATIVE TAB
           ════════════════════════════════════════ */}
       {activeTab === 'creative' && (
         <div className="space-y-5">
-          {/* Upload + Format Selection */}
+          {/* ── Drag & Drop Upload Zone ── */}
           <Card>
-            <CardHeader title="Upload Creative" extra={
-              <div className="flex items-center gap-2 rounded-xl p-1" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                <button onClick={() => setPreviewFormat('video')}
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-medium transition-all"
-                  style={{ background: previewFormat === 'video' ? C.accent : 'transparent', color: previewFormat === 'video' ? '#fff' : C.textTer }}>
-                  🎬 Video
-                </button>
-                <button onClick={() => setPreviewFormat('image')}
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-medium transition-all"
-                  style={{ background: previewFormat === 'image' ? C.info : 'transparent', color: previewFormat === 'image' ? '#fff' : C.textTer }}>
-                  🖼 Image
-                </button>
+            <CardHeader title="Upload Ad Creatives" extra={
+              <div className="flex items-center gap-2">
+                <StatusBadge text={`${uploadedMedia.length} uploaded`} color={C.success} />
+                {uploadingCount > 0 && <StatusBadge text={`${uploadingCount} uploading`} color={C.warning} />}
               </div>
             } />
 
-            {/* Video format info */}
-            {previewFormat === 'video' && (
-              <div className="rounded-xl p-4 space-y-3" style={{ background: `${C.accent}06`, border: `1px solid ${C.accent}20` }}>
-                <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: C.accent }}>Supported Video Formats</p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {[
-                    { format: 'MP4', desc: 'Universal', quality: 'Up to 4K' },
-                    { format: 'WebM', desc: 'VP9/AV1', quality: 'Up to 4K' },
-                    { format: 'HLS', desc: 'Adaptive .m3u8', quality: 'Auto' },
-                    { format: 'OGG', desc: 'Theora', quality: 'Up to 1080p' },
-                  ].map(f => (
-                    <div key={f.format} className="rounded-lg px-3 py-2" style={{ background: `${C.accent}08` }}>
-                      <p className="text-[11px] font-bold text-white">{f.format}</p>
-                      <p className="text-[9px]" style={{ color: C.textDim }}>{f.desc} · {f.quality}</p>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-[10px]" style={{ color: C.textDim }}>HLS recommended for 4K · Adaptive bitrate auto-selects quality per device</p>
-              </div>
-            )}
-
-            {/* Image format info */}
-            {previewFormat === 'image' && (
-              <div className="rounded-xl p-4 space-y-3" style={{ background: `${C.info}06`, border: `1px solid ${C.info}20` }}>
-                <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: C.info }}>Supported Image Formats</p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {[
-                    { format: 'JPG', desc: 'Photos', size: 'Max 200KB' },
-                    { format: 'PNG', desc: 'Transparent', size: 'Max 200KB' },
-                    { format: 'WebP', desc: 'Recommended', size: 'Max 120KB' },
-                    { format: 'GIF', desc: 'Animated', size: 'Max 500KB' },
-                  ].map(f => (
-                    <div key={f.format} className="rounded-lg px-3 py-2" style={{ background: `${C.info}08` }}>
-                      <p className="text-[11px] font-bold text-white">{f.format}</p>
-                      <p className="text-[9px]" style={{ color: C.textDim }}>{f.desc} · {f.size}</p>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-[10px]" style={{ color: C.textDim }}>WebP auto-converted for best performance · Hero ads compressed to 120–200KB</p>
-              </div>
-            )}
-
-            {/* URL Input */}
-            <div className="mt-4 flex items-center gap-3">
-              <input
-                type="text"
-                value={previewUrl}
-                onChange={e => setPreviewUrl(e.target.value)}
-                placeholder={previewFormat === 'video' ? 'Paste video URL (.mp4, .webm, .m3u8)...' : 'Paste image URL (.jpg, .png, .webp, .gif)...'}
-                className="flex-1 rounded-xl border px-4 py-2.5 text-sm text-white placeholder:text-white/20 bg-transparent focus:outline-none focus:ring-1"
-                style={{ borderColor: C.border, background: `${C.sidebar}50` }}
-              />
-              <button
-                onClick={() => previewUrl && setPreviewDevice(previewDevice)}
-                className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-semibold text-white transition-all hover:opacity-90"
-                style={{ background: previewFormat === 'video' ? C.accent : C.info }}>
-                Preview
-              </button>
-            </div>
-          </Card>
-
-          {/* Device Preview Mockups */}
-          <Card>
-            <CardHeader title="Device Preview">
-              <div className="flex items-center gap-2">
-                {(['desktop', 'tablet', 'mobile'] as const).map(device => (
-                  <button key={device} onClick={() => setPreviewDevice(device)}
-                    className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[10px] font-medium transition-all"
-                    style={{
-                      background: previewDevice === device ? (previewFormat === 'video' ? C.accent : C.info) : 'transparent',
-                      color: previewDevice === device ? '#fff' : C.textTer,
-                    }}>
-                    {device === 'desktop' && <Monitor className="h-3 w-3" />}
-                    {device === 'tablet' && <Tablet className="h-3 w-3" />}
-                    {device === 'mobile' && <Smartphone className="h-3 w-3" />}
-                    <span className="capitalize hidden sm:inline">{device}</span>
-                  </button>
-                ))}
-              </div>
-            </CardHeader>
-
-            <div className="flex justify-center py-4">
-              {/* Device Frame */}
-              <div className="relative rounded-xl overflow-hidden transition-all duration-500" style={{
-                width: previewDevice === 'desktop' ? '100%' : previewDevice === 'tablet' ? '580px' : '320px',
-                maxWidth: previewDevice === 'desktop' ? '100%' : previewDevice === 'tablet' ? '580px' : '320px',
-                height: previewDevice === 'desktop' ? 'auto' : previewDevice === 'tablet' ? '380px' : '560px',
-                background: C.sidebar,
-                border: `2px solid ${C.border}`,
-              }}>
-                {/* Status bar */}
-                <div className="flex items-center justify-between px-3 py-1.5" style={{ background: 'rgba(255,255,255,0.03)', borderBottom: `1px solid ${C.border}` }}>
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex gap-1">
-                      <div className="h-2 w-2 rounded-full" style={{ background: C.accent }} />
-                      <div className="h-2 w-2 rounded-full" style={{ background: C.warning }} />
-                      <div className="h-2 w-2 rounded-full" style={{ background: C.success }} />
-                    </div>
-                    <span className="text-[8px] font-mono" style={{ color: C.textDim }}>
-                      {previewDevice === 'mobile' ? '5:24' : previewDevice === 'tablet' ? '12:35' : '16:42'}
-                    </span>
-                  </div>
-                  <span className="text-[8px]" style={{ color: C.textDim }}>
-                    {previewDevice === 'mobile' ? 'WiFi' : '100%'}
+            {/* Format selector */}
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.textDim }}>Type:</span>
+              {(['video', 'image'] as const).map(type => (
+                <div key={type} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5" style={{ background: `${type === 'video' ? C.accent : C.info}08`, border: `1px solid ${type === 'video' ? C.accent : C.info}20` }}>
+                  <span className="text-[11px]">{type === 'video' ? '🎬' : '🖼'}</span>
+                  <span className="text-[10px] font-medium" style={{ color: type === 'video' ? C.accent : C.info }}>
+                    {type === 'video' ? 'Video' : 'Image'} — {type === 'video' ? 'MP4, WebM, MOV, OGG' : 'JPG, PNG, WebP, GIF'}
                   </span>
                 </div>
+              ))}
+              <div className="flex-1" />
+              <span className="text-[9px] px-2 py-1 rounded-lg" style={{ background: `${C.success}10`, color: C.success }}>
+                🎬 Max 5GB video · 🖼 Max 10MB image
+              </span>
+            </div>
 
-                {/* Content area */}
-                <div className="relative flex items-center justify-center" style={{ minHeight: previewDevice === 'desktop' ? 280 : previewDevice === 'tablet' ? 320 : 480 }}>
-                  {previewUrl ? (
-                    previewFormat === 'video' ? (
-                      <video
-                        src={previewUrl}
-                        controls
-                        playsInline
-                        preload="metadata"
-                        className="w-full h-full object-contain"
-                        style={{ maxHeight: previewDevice === 'desktop' ? 400 : '100%', background: '#000' }}
-                      />
-                    ) : (
-                      <img
-                        src={previewUrl}
-                        alt="Ad preview"
-                        loading="lazy"
-                        className="w-full h-full object-contain"
-                        style={{ maxHeight: previewDevice === 'desktop' ? 400 : '100%' }}
-                      />
+            {/* Drop zone */}
+            <div
+              onDragOver={e => { e.preventDefault(); e.stopPropagation(); setShowUploadZone(true) }}
+              onDragLeave={e => { e.preventDefault(); e.stopPropagation() }}
+              onDrop={e => { e.preventDefault(); e.stopPropagation(); const files = Array.from(e.dataTransfer.files); files.forEach(f => startUpload(f)) }}
+              className="relative rounded-2xl border-2 border-dashed p-8 text-center transition-all cursor-pointer hover:border-white/20"
+              style={{ borderColor: `${C.accent}30`, background: `${C.accent}04` }}
+              onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.multiple = true; input.accept = '.mp4,.webm,.mov,.ogg,.jpg,.jpeg,.png,.webp,.gif,video/*,image/*'; input.onchange = (e) => { const files = Array.from((e.target as HTMLInputElement).files || []); files.forEach(f => startUpload(f)) }; input.click() }}
+            >
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl" style={{ background: `${C.accent}12` }}>
+                  <CloudUpload className="h-8 w-8" style={{ color: C.accent }} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">Drag & Drop files here</p>
+                  <p className="text-[11px] mt-1" style={{ color: C.textTer }}>or click to browse · Upload multiple files at once</p>
+                </div>
+                <div className="flex items-center gap-3 mt-1">
+                  {['MP4', 'WebM', 'MOV', 'JPG', 'PNG', 'WebP', 'GIF'].map(fmt => (
+                    <span key={fmt} className="text-[9px] font-mono px-2 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.04)', color: C.textTer }}>{fmt}</span>
+                  ))}
+                </div>
+                <p className="text-[9px]" style={{ color: C.textDim }}>Chunked upload for files &gt; 50MB · Resumable · No page refresh</p>
+              </div>
+            </div>
+
+            {/* Upload progress list */}
+            {uploads.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-semibold text-white">Upload Queue</span>
+                  <button onClick={clearCompleted} className="text-[10px] font-medium" style={{ color: C.textTer }}>Clear finished</button>
+                </div>
+                <div className="space-y-1.5 max-h-72 overflow-y-auto no-scrollbar">
+                  {uploads.map(u => {
+                    const isVideo = u.file.type.startsWith('video/')
+                    const statusColor = u.status === 'uploading' ? C.info : u.status === 'complete' ? C.success : u.status === 'paused' ? C.warning : u.status === 'error' ? C.accent : C.textDim
+                    return (
+                      <div key={u.id} className="rounded-xl px-4 py-3 transition-all" style={{ background: `${statusColor}06`, border: `1px solid ${statusColor}15` }}>
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: `${isVideo ? C.accent : C.info}12` }}>
+                            <span className="text-sm">{isVideo ? '🎬' : '🖼'}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-medium text-white truncate">{u.file.name}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[9px]" style={{ color: C.textTer }}>{formatBytes(u.file.size)}</span>
+                              {u.status === 'uploading' && <span className="text-[9px]" style={{ color: C.info }}>{formatSpeed(u.speed)}</span>}
+                              {u.totalChunks > 1 && u.status === 'uploading' && <span className="text-[9px] font-mono" style={{ color: C.textDim }}>Chunk {u.uploadedChunks}/{u.totalChunks}</span>}
+                              {u.url && u.status === 'complete' && <span className="text-[9px]" style={{ color: C.success }}>✓ Ready</span>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <StatusBadge text={u.status} color={statusColor} />
+                            {u.status === 'uploading' && (
+                              <>
+                                <button onClick={() => pauseUpload(u.id)} className="rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]" title="Pause"><Pause className="h-3.5 w-3.5" style={{ color: C.warning }} /></button>
+                                <button onClick={() => cancelUpload(u.id)} className="rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]" title="Cancel"><X className="h-3.5 w-3.5" style={{ color: C.accent }} /></button>
+                              </>
+                            )}
+                            {u.status === 'paused' && (
+                              <>
+                                <button onClick={() => resumeUpload(u.id)} className="rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]" title="Resume"><Play className="h-3.5 w-3.5" style={{ color: C.success }} /></button>
+                                <button onClick={() => cancelUpload(u.id)} className="rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]" title="Cancel"><X className="h-3.5 w-3.5" style={{ color: C.accent }} /></button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        {/* Progress bar */}
+                        {(u.status === 'uploading' || u.status === 'paused' || u.status === 'complete') && (
+                          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                            <div className="h-full rounded-full transition-all duration-300" style={{ width: `${u.progress}%`, background: `linear-gradient(90deg, ${statusColor}90, ${statusColor})` }} />
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between mt-1.5">
+                          <span className="text-[9px] font-mono" style={{ color: C.textDim }}>{u.progress}% — {formatBytes(u.uploadedBytes)} / {formatBytes(u.totalBytes)}</span>
+                          {u.error && <span className="text-[9px]" style={{ color: C.accent }}>{u.error}</span>}
+                          {u.url && u.status === 'complete' && <span className="text-[9px] truncate max-w-[200px]" style={{ color: C.success }}>{u.url}</span>}
+                        </div>
+                      </div>
                     )
-                  ) : (
-                    <div className="text-center py-10">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl mx-auto mb-3" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                        {previewFormat === 'video' ? (
-                          <Film className="h-8 w-8" style={{ color: C.accent }} />
+                  })}
+                </div>
+              </div>
+            )}
+          </Card>
+
+          {/* ── Uploaded Media Gallery ── */}
+          {uploadedMedia.length > 0 && (
+            <Card>
+              <CardHeader title="Uploaded Creatives" extra={<StatusBadge text={`${uploadedMedia.length} files`} color={C.success} />} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {uploadedMedia.map(m => {
+                  const isVideo = m.fileType === 'video'
+                  return (
+                    <div key={m.id} className="rounded-xl overflow-hidden transition-all hover:border-white/20" style={{ border: `1px solid ${isVideo ? `${C.accent}20` : `${C.info}20`}`, background: `${isVideo ? C.accent : C.info}04` }}>
+                      {/* Thumbnail / Preview */}
+                      <div className="relative h-32 flex items-center justify-center" style={{ background: C.sidebar }}>
+                        {m.thumbnailUrl ? (
+                          <img src={m.thumbnailUrl} alt={m.originalName} className="w-full h-full object-cover" loading="lazy" />
+                        ) : isVideo ? (
+                          <div className="text-center">
+                            <Film className="h-8 w-8 mx-auto mb-1" style={{ color: C.accent }} />
+                            <p className="text-[9px]" style={{ color: C.textDim }}>Video</p>
+                          </div>
                         ) : (
-                          <ImageIconLucide className="h-8 w-8" style={{ color: C.info }} />
+                          <img src={m.url} alt={m.originalName} className="w-full h-full object-cover" loading="lazy" />
+                        )}
+                        {isVideo && (
+                          <div className="absolute top-2 left-2 flex h-5 w-5 items-center justify-center rounded-full" style={{ background: 'rgba(0,0,0,0.7)' }}>
+                            <Play className="h-3 w-3 text-white" />
+                          </div>
+                        )}
+                        <div className="absolute top-2 right-2">
+                          <span className="text-[8px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(0,0,0,0.7)', color: isVideo ? C.accent : C.info }}>
+                            {isVideo ? '🎬' : '🖼'} {formatBytes(m.fileSize)}
+                          </span>
+                        </div>
+                        {m.duration && (
+                          <div className="absolute bottom-2 right-2">
+                            <span className="text-[8px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(0,0,0,0.8)', color: '#fff' }}>
+                              {formatSeconds(Math.round(m.duration))}
+                            </span>
+                          </div>
                         )}
                       </div>
-                      <p className="text-sm font-medium text-white">{previewFormat === 'video' ? 'Video Preview' : 'Image Preview'}</p>
-                      <p className="text-[10px] mt-1" style={{ color: C.textDim }}>
-                        Paste a {previewFormat === 'video' ? 'video' : 'image'} URL above to preview
-                      </p>
-                      <p className="text-[9px] mt-2" style={{ color: C.textDim }}>
-                        {previewDevice === 'mobile' ? '📱 Mobile preview · 480p default' : previewDevice === 'tablet' ? '📲 Tablet preview · 720p default' : '💻 Desktop preview · Auto quality'}
-                      </p>
+                      {/* Info */}
+                      <div className="px-3 py-2.5">
+                        <p className="text-[11px] font-medium text-white truncate">{m.originalName}</p>
+                        <p className="text-[9px] mt-0.5" style={{ color: C.textDim }}>{m.mimeType} · {formatBytes(m.fileSize)}</p>
+                        <div className="flex items-center gap-1.5 mt-2">
+                          <StatusBadge text={m.status === 'ready' ? 'Ready' : m.status} color={m.status === 'ready' ? C.success : C.warning} />
+                          <div className="flex-1" />
+                          <button onClick={() => { setPreviewUrl(m.url); setPreviewFormat(isVideo ? 'video' : 'image') }} className="rounded-lg p-1 transition-colors hover:bg-white/[0.05]" title="Preview"><Eye className="h-3 w-3" style={{ color: C.textTer }} /></button>
+                          <button onClick={() => deleteUploadedMedia(m.id)} className="rounded-lg p-1 transition-colors hover:bg-white/[0.05]" title="Delete"><Trash2 className="h-3 w-3" style={{ color: C.accent }} /></button>
+                        </div>
+                      </div>
                     </div>
+                  )
+                })}
+              </div>
+            </Card>
+          )}
+
+          {/* ── URL Import (existing) + Device Preview ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* URL Import */}
+            <Card>
+              <CardHeader title="Import from URL" extra={
+                <div className="flex items-center gap-2 rounded-xl p-1" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                  <button onClick={() => setPreviewFormat('video')}
+                    className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-medium transition-all"
+                    style={{ background: previewFormat === 'video' ? C.accent : 'transparent', color: previewFormat === 'video' ? '#fff' : C.textTer }}>
+                    🎬 Video
+                  </button>
+                  <button onClick={() => setPreviewFormat('image')}
+                    className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-medium transition-all"
+                    style={{ background: previewFormat === 'image' ? C.info : 'transparent', color: previewFormat === 'image' ? '#fff' : C.textTer }}>
+                    🖼 Image
+                  </button>
+                </div>
+              } />
+              <div className="flex items-center gap-2">
+                <input type="text" value={previewUrl} onChange={e => setPreviewUrl(e.target.value)}
+                  placeholder={previewFormat === 'video' ? 'Paste video URL (.mp4, .webm)...' : 'Paste image URL (.jpg, .png, .webp)...'}
+                  className="flex-1 rounded-xl border px-3 py-2 text-xs text-white placeholder:text-white/20 bg-transparent focus:outline-none focus:ring-1"
+                  style={{ borderColor: C.border, background: `${C.sidebar}50` }} />
+                <button onClick={() => previewUrl && setPreviewDevice(previewDevice)}
+                  className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-semibold text-white transition-all hover:opacity-90"
+                  style={{ background: previewFormat === 'video' ? C.accent : C.info }}>
+                  <Eye className="h-3 w-3" /> Preview
+                </button>
+              </div>
+              {previewUrl && (
+                <div className="mt-3 rounded-xl overflow-hidden" style={{ background: '#000', maxHeight: 180 }}>
+                  {previewFormat === 'video' ? (
+                    <video src={previewUrl} controls playsInline preload="metadata" className="w-full max-h-[180px] object-contain" />
+                  ) : (
+                    <img src={previewUrl} alt="Preview" loading="lazy" className="w-full max-h-[180px] object-contain" />
                   )}
                 </div>
+              )}
+            </Card>
 
-                {/* Quality badge */}
-                <div className="absolute top-10 right-2">
-                  <span className="text-[8px] font-mono px-2 py-1 rounded-md" style={{ background: 'rgba(0,0,0,0.7)', color: C.textSec }}>
-                    {previewDevice === 'mobile' ? '480p' : previewDevice === 'tablet' ? '720p' : 'Auto'}
-                  </span>
+            {/* Format Support */}
+            <Card>
+              <CardHeader title="Format Support" />
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: C.accent }}>Video Ads</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    { format: 'MP4', desc: 'Universal · Up to 4K' },
+                    { format: 'WebM', desc: 'VP9/AV1 · Up to 4K' },
+                    { format: 'MOV', desc: 'QuickTime · Up to 4K' },
+                    { format: 'OGG', desc: 'Theora · Up to 1080p' },
+                  ].map(f => (
+                    <div key={f.format} className="rounded-lg px-2.5 py-1.5" style={{ background: `${C.accent}06` }}>
+                      <p className="text-[10px] font-bold text-white">{f.format}</p>
+                      <p className="text-[8px]" style={{ color: C.textDim }}>{f.desc}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] font-bold uppercase tracking-wider mt-3" style={{ color: C.info }}>Image Ads</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    { format: 'JPG', desc: 'Photos' },
+                    { format: 'PNG', desc: 'Transparent' },
+                    { format: 'WebP', desc: 'Recommended' },
+                    { format: 'GIF', desc: 'Animated' },
+                  ].map(f => (
+                    <div key={f.format} className="rounded-lg px-2.5 py-1.5" style={{ background: `${C.info}06` }}>
+                      <p className="text-[10px] font-bold text-white">{f.format}</p>
+                      <p className="text-[8px]" style={{ color: C.textDim }}>{f.desc}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
-          </Card>
+            </Card>
+          </div>
 
-          {/* Supported Placements */}
+          {/* ── Supported Placements ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
               <CardHeader title="Video Ad Placements" />
@@ -6572,7 +6866,6 @@ function VideoAdsAnalyticsPage() {
                 ))}
               </div>
             </Card>
-
             <Card>
               <CardHeader title="Image Ad Placements" />
               <div className="space-y-2">
@@ -6594,6 +6887,166 @@ function VideoAdsAnalyticsPage() {
               </div>
             </Card>
           </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════
+          ADS MANAGER TAB — Full CRUD
+          ════════════════════════════════════════ */}
+      {activeTab === 'creative-manager' && (
+        <div className="space-y-5">
+          {/* Header Stats */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { label: 'Total Ads', value: String(ads.length), icon: Megaphone, color: C.accent },
+              { label: 'Active Ads', value: String(ads.filter(a => a.isActive).length), icon: CheckCircle, color: C.success },
+              { label: 'Video Ads', value: String(ads.filter(a => a.mediaUrl?.match(/\.(mp4|webm|m3u8|ogg)/i)).length), icon: Film, color: C.purple },
+              { label: 'Image Ads', value: String(ads.filter(a => a.mediaUrl?.match(/\.(jpg|jpeg|png|webp|gif)/i)).length), icon: ImageIconLucide, color: C.info },
+            ].map(s => {
+              const Icon = s.icon
+              return (
+                <Card key={s.label}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: C.textDim }}>{s.label}</span>
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: `${s.color}12` }}><Icon className="h-3.5 w-3.5" style={{ color: s.color }} /></div>
+                  </div>
+                  <p className="text-xl font-bold text-white">{s.value}</p>
+                </Card>
+              )
+            })}
+          </div>
+
+          {/* All Ads Table */}
+          <Card className="!p-0 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: C.border }}>
+              <h3 className="text-sm font-semibold text-white">All Ads — Full Management</h3>
+              <div className="flex items-center gap-2">
+                <StatusBadge text={`${ads.length} total`} color={C.info} />
+                <StatusBadge text={`${ads.filter(a => a.isActive).length} active`} color={C.success} />
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.02)' }}>
+                    {['Ad', 'Type', 'Format', 'Size', 'Impressions', 'Clicks', 'CTR', 'Revenue', 'Device', 'Status', 'Actions'].map(h => (
+                      <th key={h} className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap" style={{ color: C.textDim }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {ads.length === 0 && (
+                    <tr><td colSpan={11} className="px-4 py-12 text-center">
+                      <Megaphone className="h-8 w-8 mx-auto mb-2" style={{ color: C.textDim }} />
+                      <p className="text-sm" style={{ color: C.textTer }}>No ads created yet</p>
+                      <p className="text-[10px] mt-1" style={{ color: C.textDim }}>Use "Upload & Creative" tab to upload ads, or create from Video Ads page</p>
+                    </td></tr>
+                  )}
+                  {ads.map(ad => {
+                    const isVideo = ad.mediaUrl?.match(/\.(mp4|webm|m3u8|ogg)/i)
+                    const ctr = ad.impressions > 0 ? ((ad.clicks / ad.impressions) * 100).toFixed(2) : '0.00'
+                    const rev = ((ad.cpm || 0) * (ad.impressions / 1000) + (ad.cpc || 0) * ad.clicks).toFixed(2)
+                    return (
+                      <tr key={ad.id} className="border-b transition-colors hover:bg-white/[0.02]" style={{ borderColor: C.border }}>
+                        <td className="px-3 py-3">
+                          <div className="flex items-center gap-2">
+                            {ad.mediaUrl && (
+                              <div className="h-8 w-12 rounded-md overflow-hidden flex-shrink-0" style={{ background: C.sidebar }}>
+                                <img src={ad.mediaUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="text-[11px] font-medium text-white truncate max-w-[120px]">{ad.title}</p>
+                              {ad.targetUrl && <p className="text-[8px] truncate" style={{ color: C.textDim }}>{ad.targetUrl}</p>}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-3 py-3"><StatusBadge text={ad.type} color={ad.type === 'pre-roll' ? C.accent : ad.type === 'mid-roll' ? C.warning : ad.type === 'post-roll' ? C.purple : C.textSec} /></td>
+                        <td className="px-3 py-3">
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px]">{isVideo ? '🎬' : '🖼'}</span>
+                            <span className="text-[10px]" style={{ color: isVideo ? C.accent : C.info }}>{isVideo ? 'Video' : 'Image'}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-3">
+                          <span className="text-[10px] font-mono" style={{ color: C.textSec }}>
+                            {ad.duration ? `${ad.duration}s` : (isVideo ? 'Auto' : '—')}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-[11px]" style={{ color: C.textSec }}>{fmt(ad.impressions)}</td>
+                        <td className="px-3 py-3 text-[11px]" style={{ color: C.textSec }}>{fmt(ad.clicks)}</td>
+                        <td className="px-3 py-3">
+                          <span className="text-[10px] font-semibold" style={{ color: Number(ctr) > 2 ? C.success : C.textSec }}>{ctr}%</span>
+                        </td>
+                        <td className="px-3 py-3 text-[11px] font-semibold" style={{ color: C.success }}>${rev}</td>
+                        <td className="px-3 py-3 text-[10px] capitalize" style={{ color: C.textTer }}>
+                          {ad.deviceTarget === 'mobile' && '📱 '}{ad.deviceTarget === 'tablet' && '📲 '}{ad.deviceTarget === 'desktop' && '💻 '}{ad.deviceTarget || 'all'}
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="flex items-center gap-1.5">
+                            <div className={`h-2 w-2 rounded-full ${ad.isActive ? 'bg-green-500' : 'bg-white/20'}`} />
+                            <span className="text-[10px]" style={{ color: ad.isActive ? C.success : C.textDim }}>{ad.isActive ? 'Active' : 'Off'}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="flex items-center gap-1">
+                            <button className="rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]" style={{ color: C.textTer }} title="Preview"><Eye className="h-3.5 w-3.5" /></button>
+                            <button className="rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]" style={{ color: C.textTer }} title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
+                            <button className="rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]" style={{ color: C.textTer }} title="Copy"><Copy className="h-3.5 w-3.5" /></button>
+                            <button className="rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]" style={{ color: C.accent }} title="Delete"><Trash2 className="h-3.5 w-3.5" /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {ads.length > 10 && (
+              <div className="flex items-center justify-between px-5 py-3 border-t" style={{ borderColor: C.border }}>
+                <span className="text-[11px]" style={{ color: C.textTer }}>Showing all {ads.length} ads</span>
+              </div>
+            )}
+          </Card>
+
+          {/* Uploaded Media + Timeline Quick Assign */}
+          {uploadedMedia.length > 0 && (
+            <Card>
+              <CardHeader title="Quick Assign to Timeline" extra={<StatusBadge text={`${uploadedMedia.length} ready`} color={C.success} />} />
+              <div className="space-y-2 max-h-64 overflow-y-auto no-scrollbar">
+                {uploadedMedia.map(m => {
+                  const isVideo = m.fileType === 'video'
+                  return (
+                    <div key={m.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5" style={{ background: `${isVideo ? C.accent : C.info}04`, border: `1px solid ${isVideo ? C.accent : C.info}15` }}>
+                      <div className="flex h-10 w-14 items-center justify-center rounded-lg overflow-hidden" style={{ background: C.sidebar }}>
+                        {m.thumbnailUrl ? (
+                          <img src={m.thumbnailUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+                        ) : (
+                          <span className="text-sm">{isVideo ? '🎬' : '🖼'}</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-medium text-white truncate">{m.originalName}</p>
+                        <p className="text-[9px]" style={{ color: C.textDim }}>{formatBytes(m.fileSize)} · {isVideo ? 'Video' : 'Image'}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button onClick={() => { setPreviewUrl(m.url); setPreviewFormat(isVideo ? 'video' : 'image') }}
+                          className="flex items-center gap-1 rounded-lg px-2 py-1 text-[9px] font-medium transition-all hover:bg-white/[0.05]"
+                          style={{ color: C.textTer, border: `1px solid ${C.border}` }}>
+                          <Eye className="h-3 w-3" /> Preview
+                        </button>
+                        <button
+                          className="flex items-center gap-1 rounded-lg px-2 py-1 text-[9px] font-semibold text-white transition-all hover:opacity-90"
+                          style={{ background: C.accent }}>
+                          <Plus className="h-3 w-3" /> Assign
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </Card>
+          )}
         </div>
       )}
 

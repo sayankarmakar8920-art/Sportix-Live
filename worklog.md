@@ -694,3 +694,99 @@ Stage Summary:
 - Auto frequency mode: every 5/10/15 min or custom interval
 - Video Player Ad Flow and Smart Loading System sections added
 - All changes inside existing UI design — no redesign, same dark premium Netflix theme
+
+---
+Task ID: 11
+Agent: Main Agent
+Task: Create chunked upload API routes for video/image ads
+
+Work Log:
+- Read worklog.md to understand existing project structure and patterns
+- Added AdMedia model to Prisma schema with fields: id, originalName, fileName, fileType, mimeType, fileSize, width, height, duration, thumbnailUrl, hlsReady, status, uploadChunks, totalChunks, createdAt, updatedAt
+- Pushed schema to SQLite database with `bun run db:push` — Prisma Client regenerated (v6.19.2)
+---
+Task ID: 12
+Agent: Main Agent
+Task: Upgrade Video Ads Analytics with full file upload system, ads manager, and creative hub
+
+Work Log:
+- Analyzed existing VideoAdsAnalyticsPage structure (7 tabs, ~3000 lines)
+- Added UploadFile interface and UploadStatus type for tracking uploads
+- Added UPLOAD_LIMITS config (video: 5GB max, image: 10MB max) with format validation
+- Added CHUNK_SIZE (5MB), formatBytes(), formatSpeed(), getUploadId() utilities
+- Created 4 upload API routes via subagent:
+  - /api/ads/upload: Simple multipart upload for files < 50MB
+  - /api/ads/upload/chunk: Chunked upload for files >= 50MB (concurrent 3 chunks)
+  - /api/ads/upload/complete: Merge chunks and finalize upload
+  - /api/ads/upload/cancel: Cancel in-progress upload
+- Added AdMedia model to Prisma schema for tracking uploaded files
+- Created public/uploads/ads/ and public/uploads/ads/thumbnails/ directories
+- Added upload state to VideoAdsAnalyticsPage: uploads, uploadedMedia, showUploadZone, uploadingCount
+- Implemented startUpload() with: format validation, size validation, XHR progress tracking (small files), chunked upload with 3 concurrent (large files)
+- Implemented pauseUpload(), resumeUpload(), cancelUpload(), clearCompleted(), deleteUploadedMedia()
+- Replaced Creative Hub tab with full upload system:
+  - Drag & Drop upload zone with click-to-browse
+  - Format info badges (MP4, WebM, MOV, OGG, JPG, PNG, WebP, GIF)
+  - Upload progress list with per-file: status badge, progress bar, speed, chunk counter, pause/resume/cancel buttons, percentage, bytes uploaded/total
+  - Uploaded Media Gallery grid (3 columns) with thumbnails, duration badges, preview/delete actions
+  - URL Import section with inline preview
+  - Format Support reference card
+  - Supported Placements section (video + image)
+- Added new "Ads Manager" tab (creative-manager) with:
+  - 4 stat cards (Total Ads, Active, Video, Image)
+  - Full ads management table (11 columns): Ad thumbnail, Type, Format, Size, Impressions, Clicks, CTR, Revenue, Device, Status, Actions (Preview/Edit/Copy/Delete)
+  - Quick Assign to Timeline section showing uploaded media ready for assignment
+- Updated AnalyticsTab type to include 'creative-manager'
+- Updated tab labels: 'Creative Hub' → 'Upload & Creative' (CloudUpload icon), added 'Ads Manager' (Film icon)
+- Fixed JSX parsing error (escaped `>` as `&gt;` in text)
+- Verified zero lint errors
+
+Stage Summary:
+- Full drag & drop file upload system with 5GB video support
+- Chunked upload with 3 concurrent chunks for files > 50MB
+- Upload progress bar with pause/resume/cancel, speed, percentage
+- Uploaded media gallery with thumbnails and preview
+- New Ads Manager tab with full CRUD management table
+- Quick Assign to Timeline for instant ad placement
+- All existing UI preserved — same dark premium Netflix theme
+- 7 tabs total: Overview, Timeline, Upload & Creative, Ads Manager, Revenue, Performance, Optimization
+- Zero lint errors, public/uploads/ads/thumbnails/, /tmp/uploads/chunks/
+- Created /api/ads/upload/route.ts — simple upload endpoint:
+  - POST: Accepts multipart form data with file field
+  - Validates file type (video: mp4/webm/mov/ogg; image: jpg/jpeg/png/webp/gif)
+  - Validates file size (max 5GB video, 10MB image)
+  - Saves to public/uploads/ads/ with unique timestamp-based filename
+  - Generates thumbnail for images (copies to thumbnails folder)
+  - Creates AdMedia DB record (status: "ready" for images, "processing" for videos)
+  - Returns { media, url }
+- Created /api/ads/upload/chunk/route.ts — chunked upload endpoint:
+  - POST: Accepts uploadId, chunkIndex, totalChunks, fileName, fileType, mimeType + chunk file
+  - Validates chunkIndex/totalChunks bounds
+  - Saves chunk to /tmp/uploads/chunks/{uploadId}/chunk_{index}
+  - Counts received chunks and returns progress (received/total/complete)
+- Created /api/ads/upload/complete/route.ts — merge and finalize endpoint:
+  - POST: Accepts uploadId, fileName, fileType, mimeType, fileSize
+  - Reads all chunks sorted by index, concatenates into single buffer
+  - Writes merged file to public/uploads/ads/ with unique filename
+  - Verifies file size matches expected (logs warning on mismatch)
+  - Generates thumbnail for images
+  - Creates AdMedia DB record
+  - Cleans up temp directory
+  - Returns { media, url }
+- Created /api/ads/upload/cancel/route.ts — cancel upload endpoint:
+  - POST: Accepts uploadId
+  - Deletes temp directory /tmp/uploads/chunks/{uploadId}/ recursively
+  - Returns ok even if directory already cleaned up
+- All routes use NextRequest/NextResponse, db from @/lib/db, try/catch error handling
+- Lint passes clean with zero errors
+
+Stage Summary:
+- AdMedia model added to Prisma schema for tracking uploaded files
+- 4 API routes for ad media upload: simple upload, chunk upload, complete merge, cancel
+- Simple upload for files < 50MB (multipart form data)
+- Chunked upload for large files (stores chunks in /tmp, merges on complete)
+- Image thumbnails auto-generated (copied to thumbnails folder)
+- Proper file type and size validation
+- Unique filenames prevent collisions (timestamp + random suffix)
+- Temp file cleanup on both complete and cancel
+- Zero lint errors
