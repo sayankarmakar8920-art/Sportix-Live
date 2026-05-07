@@ -32,13 +32,13 @@ export default function Header() {
       return
     }
 
-    // Wait 800ms to see if user keeps clicking — only reload if they stop before 7
+    // Wait 400ms — if user stopped clicking before 7, reload page
     clickTimerRef.current = setTimeout(() => {
       if (clickCountRef.current > 0 && clickCountRef.current < 7) {
         clickCountRef.current = 0
         window.location.reload()
       }
-    }, 800)
+    }, 400)
   }, [setCurrentView])
 
   if (currentView === 'admin' || currentView === 'live-control-room') return null
