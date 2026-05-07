@@ -18,3 +18,26 @@ Stage Summary:
 - Uses: Framer Motion animations, Recharts (AreaChart, PieChart, BarChart), glassmorphism cards, Netflix dark theme
 - File: src/components/sportix/VideoAdsManager.tsx
 - Integration: AdminPanel.tsx line 82 (import), line 7239 (renderPage)
+---
+Task ID: 2
+Agent: Main Agent
+Task: Rebuild Video Ads Analytics UI to match screenshot exactly — single-page dashboard layout
+
+Work Log:
+- Analyzed reference screenshot using VLM skill — extracted exact pixel-level layout details
+- Read existing VideoAdsAnalyticsPage (1900+ lines inline in AdminPanel.tsx) — tabbed layout
+- Identified mismatch: screenshot shows single-page dashboard (no tabs), current code uses 7 tabs
+- Created new file: src/components/sportix/VideoAdsAnalyticsPage.tsx (1220 lines)
+- Removed old inline VideoAdsAnalyticsPage function from AdminPanel.tsx (removed 1721 lines)
+- Added import: `import VideoAdsAnalyticsPage from './VideoAdsAnalyticsPage'`
+- Ran lint: 0 errors, 9 warnings (all pre-existing in other files)
+- Dev server compiled successfully with no runtime errors
+
+Stage Summary:
+- New VideoAdsAnalyticsPage is a self-contained component matching the screenshot layout exactly
+- Single-page dashboard (no tabs): 6 KPI cards, 3 charts (line/pie/bar), Upload zone, Ads table, Timeline, Top Performing, Device Performance, Top Countries, Settings
+- All data is hardcoded mock data matching the screenshot values
+- All charts built with pure SVG (no external libraries)
+- Interactive elements functional: filter tabs, search, toggles, file upload dialog, quality radio buttons
+- Netflix dark theme: #141414 bg, #1a1a1a/#222222 cards, #E50914 red accent
+- Files modified: AdminPanel.tsx (import + removed old function), VideoAdsAnalyticsPage.tsx (new)
