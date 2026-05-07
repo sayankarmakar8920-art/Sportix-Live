@@ -38,7 +38,7 @@ export default class ErrorBoundary extends Component<Props, State> {
       return (
         <div
           className="fixed inset-0 z-[999] flex flex-col items-center justify-center p-6"
-          style={{ background: '#0B0F14' }}
+          style={{ background: '#141414' }}
         >
           <div className="flex flex-col items-center gap-4 text-center max-w-md">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#ff3b3b]/10 ring-1 ring-[#ff3b3b]/20">
@@ -61,7 +61,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             </div>
             <button
               onClick={this.handleReset}
-              className="mt-2 flex items-center gap-2 rounded-xl bg-[#00ff88] px-6 py-3 text-sm font-bold text-[#02040a] transition-all hover:bg-[#00dd75] active:scale-[0.97]"
+              className="mt-2 flex items-center gap-2 rounded-xl bg-[#E50914] px-6 py-3 text-sm font-bold text-white transition-all hover:bg-[#c40812] active:scale-[0.97]"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 2v6h-6" />

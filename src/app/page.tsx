@@ -117,7 +117,7 @@ function PageHeader({ title, subtitle, icon, onBack }: {
           <ArrowLeft className="h-5 w-5" />
         </button>
       )}
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#00ff88]/10 text-[#00ff88]">
+      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E50914]/10 text-[#E50914]">
         {icon}
       </div>
       <div>
@@ -149,8 +149,8 @@ function LiveMatchPage({ streams, videos }: { streams: StreamData[]; videos: Vid
           <p className="text-[10px] text-white/30">Live Now</p>
         </div>
         <div className="glass-card p-3 text-center">
-          <Eye className="h-4 w-4 text-[#00ff88] mx-auto mb-1" />
-          <p className="text-2xl font-bold text-[#00ff88]">{formatNumber(liveStreams.reduce((s, v) => s + v.viewerCount, 0))}</p>
+          <Eye className="h-4 w-4 text-[#E50914] mx-auto mb-1" />
+          <p className="text-2xl font-bold text-[#E50914]">{formatNumber(liveStreams.reduce((s, v) => s + v.viewerCount, 0))}</p>
           <p className="text-[10px] text-white/30">Viewers</p>
         </div>
         <div className="glass-card p-3 text-center">
@@ -185,7 +185,7 @@ function LiveMatchPage({ streams, videos }: { streams: StreamData[]; videos: Vid
                   <p className="text-xs font-bold text-white">{stream.homeTeam}</p>
                 </div>
                 <div className="text-center px-3">
-                  <p className="text-lg font-black text-[#00ff88]">{stream.homeScore} <span className="text-white/20">-</span> {stream.awayScore}</p>
+                  <p className="text-lg font-black text-[#E50914]">{stream.homeScore} <span className="text-white/20">-</span> {stream.awayScore}</p>
                   <p className="text-[10px] text-white/30">{stream.matchTime || 'LIVE'}</p>
                 </div>
                 <div className="text-center">
@@ -246,7 +246,7 @@ function PopularPage({ videos }: { videos: VideoData[] }) {
         {popular.map((video, i) => (
           <div key={video.id} className="relative">
             {i < 3 && (
-              <div className="absolute top-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#f59e0b] to-[#d97706] text-[10px] font-black text-[#02040a] shadow-lg">
+              <div className="absolute top-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#f59e0b] to-[#d97706] text-[10px] font-black text-white shadow-lg">
                 {i + 1}
               </div>
             )}
@@ -282,7 +282,7 @@ function SportsPage({ streams, videos }: { streams: StreamData[]; videos: VideoD
         <button
           onClick={() => setActiveSport(null)}
           className={`flex-shrink-0 rounded-xl px-4 py-2.5 text-sm font-medium transition-all touch-active ${
-            !activeSport ? 'bg-[#00ff88]/10 text-[#00ff88] ring-1 ring-[#00ff88]/20' : 'bg-white/5 text-white/50 hover:bg-white/[0.08]'
+            !activeSport ? 'bg-[#E50914]/10 text-[#E50914] ring-1 ring-[#E50914]/20' : 'bg-white/5 text-white/50 hover:bg-white/[0.08]'
           }`}
         >
           All Sports
@@ -292,7 +292,7 @@ function SportsPage({ streams, videos }: { streams: StreamData[]; videos: VideoD
             key={sport.id}
             onClick={() => setActiveSport(sport.id)}
             className={`flex-shrink-0 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all touch-active ${
-              activeSport === sport.id ? 'bg-[#00ff88]/10 text-[#00ff88] ring-1 ring-[#00ff88]/20' : 'bg-white/5 text-white/50 hover:bg-white/[0.08]'
+              activeSport === sport.id ? 'bg-[#E50914]/10 text-[#E50914] ring-1 ring-[#E50914]/20' : 'bg-white/5 text-white/50 hover:bg-white/[0.08]'
             }`}
           >
             <span>{sport.icon}</span>
@@ -323,7 +323,7 @@ function SportsPage({ streams, videos }: { streams: StreamData[]; videos: VideoD
 
       {/* Videos for sport */}
       {filteredVideos.length > 0 && (
-        <ContentSection title={activeSport ? `${activeSport.charAt(0).toUpperCase() + activeSport.slice(1)} Videos` : 'All Videos'} icon={<Trophy className="h-4 w-4 text-[#00ff88]" />} viewAll>
+        <ContentSection title={activeSport ? `${activeSport.charAt(0).toUpperCase() + activeSport.slice(1)} Videos` : 'All Videos'} icon={<Trophy className="h-4 w-4 text-[#E50914]" />} viewAll>
           {filteredVideos.slice(0, 10).map((video) => (
             <VideoCard key={video.id} video={video} onSelect={(v) => openVideo(v, store)} />
           ))}
@@ -356,7 +356,7 @@ function SchedulePage({ streams }: { streams: StreamData[] }) {
             key={f}
             onClick={() => setFilter(f)}
             className={`rounded-xl px-4 py-2 text-sm font-medium transition-all touch-active ${
-              filter === f ? 'bg-[#00ff88]/10 text-[#00ff88] ring-1 ring-[#00ff88]/20' : 'bg-white/5 text-white/50 hover:bg-white/[0.08]'
+              filter === f ? 'bg-[#E50914]/10 text-[#E50914] ring-1 ring-[#E50914]/20' : 'bg-white/5 text-white/50 hover:bg-white/[0.08]'
             }`}
           >
             {f === 'all' ? 'All' : f === 'live' ? '🔴 Live' : '📋 Upcoming'}
@@ -385,7 +385,7 @@ function SchedulePage({ streams }: { streams: StreamData[] }) {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-semibold text-white truncate">{item.home}</p>
-                  <span className="text-xs text-[#00ff88] font-bold">vs</span>
+                  <span className="text-xs text-[#E50914] font-bold">vs</span>
                   <p className="text-sm font-semibold text-white truncate">{item.away}</p>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
@@ -429,7 +429,7 @@ function LeaguesPage() {
             key={league.name}
             onClick={() => setActiveLeague(league.name)}
             className={`glass-card p-4 text-left transition-all active:scale-[0.97] touch-active ${
-              activeLeague === league.name ? 'ring-1 ring-[#00ff88]/30 bg-[#00ff88]/5' : ''
+              activeLeague === league.name ? 'ring-1 ring-[#E50914]/30 bg-[#E50914]/5' : ''
             }`}
           >
             <div className="text-3xl mb-2">{league.icon}</div>
@@ -449,7 +449,7 @@ function LeaguesPage() {
               <span className="text-2xl">{LEAGUES_DATA.find(l => l.name === activeLeague)?.icon}</span>
               <h3 className="text-lg font-bold text-white">{activeLeague}</h3>
             </div>
-            <button onClick={() => setActiveLeague(null)} className="text-xs text-[#00ff88]">Close</button>
+            <button onClick={() => setActiveLeague(null)} className="text-xs text-[#E50914]">Close</button>
           </div>
           <div className="space-y-2">
             {[
@@ -461,7 +461,7 @@ function LeaguesPage() {
               <div key={i} className="flex items-center justify-between rounded-xl bg-white/[0.03] p-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <p className="text-sm text-white">{match.home}</p>
-                  <span className="text-xs text-[#00ff88]">vs</span>
+                  <span className="text-xs text-[#E50914]">vs</span>
                   <p className="text-sm text-white">{match.away}</p>
                 </div>
                 <span className={`text-[10px] font-medium ${match.status === 'live' ? 'text-[#ff3b3b]' : 'text-white/30'}`}>
@@ -534,7 +534,7 @@ function FavoritesPage({ videos }: { videos: VideoData[] }) {
           <p className="mt-1 text-xs text-white/20">Tap the heart icon on any video to save it here</p>
           <button
             onClick={() => store.setState(s => ({ currentView: 'highlights' }))}
-            className="mt-4 rounded-xl bg-[#00ff88]/10 px-4 py-2 text-xs font-medium text-[#00ff88] ring-1 ring-[#00ff88]/20"
+            className="mt-4 rounded-xl bg-[#E50914]/10 px-4 py-2 text-xs font-medium text-[#E50914] ring-1 ring-[#E50914]/20"
           >
             Browse Highlights
           </button>
@@ -561,7 +561,7 @@ function MyListPage({ videos }: { videos: VideoData[] }) {
             <div key={video.id} className="relative">
               <button
                 onClick={() => toggleMyList(video.id)}
-                className="absolute top-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-[#00ff88] transition-all hover:bg-[#00ff88]/20"
+                className="absolute top-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-[#E50914] transition-all hover:bg-[#E50914]/20"
               >
                 <ListVideo className="h-3.5 w-3.5" />
               </button>
@@ -576,7 +576,7 @@ function MyListPage({ videos }: { videos: VideoData[] }) {
           <p className="mt-1 text-xs text-white/20">Add videos to your watchlist to watch them later</p>
           <button
             onClick={() => store.setState(s => ({ currentView: 'highlights' }))}
-            className="mt-4 rounded-xl bg-[#00ff88]/10 px-4 py-2 text-xs font-medium text-[#00ff88] ring-1 ring-[#00ff88]/20"
+            className="mt-4 rounded-xl bg-[#E50914]/10 px-4 py-2 text-xs font-medium text-[#E50914] ring-1 ring-[#E50914]/20"
           >
             Browse Highlights
           </button>
@@ -623,7 +623,7 @@ function SettingsPage() {
       {/* Profile Card */}
       <div className="glass-card p-4">
         <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#00ff88] to-[#00cc6a] text-lg font-bold text-[#02040a]">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#E50914] to-[#b20710] text-lg font-bold text-white">
             {session?.user?.name?.charAt(0)?.toUpperCase() || 'S'}
           </div>
           <div className="flex-1 min-w-0">
@@ -637,18 +637,18 @@ function SettingsPage() {
       </div>
 
       {/* Premium Banner */}
-      <div className="glass-card p-4 border-[#00ff88]/10">
+      <div className="glass-card p-4 border-[#E50914]/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#00ff88]/10">
-              <Shield className="h-5 w-5 text-[#00ff88]" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#E50914]/10">
+              <Shield className="h-5 w-5 text-[#E50914]" />
             </div>
             <div>
               <p className="text-sm font-semibold text-white">Go Premium</p>
               <p className="text-xs text-white/40">Ad-free • 4K • Exclusive content</p>
             </div>
           </div>
-          <button className="flex items-center gap-1 rounded-xl bg-[#00ff88] px-4 py-2 text-xs font-bold text-[#02040a] transition-all hover:bg-[#00dd75] active:scale-[0.97]">
+          <button className="flex items-center gap-1 rounded-xl bg-[#E50914] px-4 py-2 text-xs font-bold text-white transition-all hover:bg-[#c40812] active:scale-[0.97]">
             Upgrade <ChevronRight className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -669,7 +669,7 @@ function SettingsPage() {
                   <button
                     onClick={() => updateSettings(item.key, !settings[item.key as keyof typeof settings])}
                     className={`relative h-6 w-11 rounded-full transition-all duration-200 ${
-                      settings[item.key as keyof typeof settings] ? 'bg-[#00ff88]' : 'bg-white/10'
+                      settings[item.key as keyof typeof settings] ? 'bg-[#E50914]' : 'bg-white/10'
                     }`}
                   >
                     <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-all duration-200 ${
@@ -680,7 +680,7 @@ function SettingsPage() {
                   <select
                     value={settings[item.key as keyof typeof settings] as string}
                     onChange={(e) => updateSettings(item.key, e.target.value)}
-                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white focus:border-[#00ff88]/30 focus:outline-none"
+                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white focus:border-[#E50914]/30 focus:outline-none"
                   >
                     {(item as any).options.map((opt: string, i: number) => (
                       <option key={opt} value={opt}>{(item as any).labels[i]}</option>
@@ -697,7 +697,7 @@ function SettingsPage() {
       <div className="glass-card p-4">
         <div className="flex items-center justify-between text-xs text-white/30">
           <span>Sportix Live v2.0</span>
-          <span className="flex items-center gap-1"><Wifi className="h-3 w-3 text-[#00ff88]" /> Connected</span>
+          <span className="flex items-center gap-1"><Wifi className="h-3 w-3 text-[#E50914]" /> Connected</span>
         </div>
       </div>
 
@@ -708,9 +708,9 @@ function SettingsPage() {
 /* ──────────────────────── Suspense Loading Fallback ──────────────────────── */
 function AdminLoadingFallback() {
   return (
-    <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#0B0F14' }}>
+    <div className="fixed inset-0 flex items-center justify-center" style={{ background: '#141414' }}>
       <div className="flex flex-col items-center gap-3">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#00ff88]/20 border-t-[#00ff88]" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E50914]/20 border-t-[#E50914]" />
         <p className="text-xs text-white/25">Loading Admin Panel...</p>
       </div>
     </div>
@@ -880,7 +880,7 @@ export default function Home() {
     if (currentView === 'mylist') return <MyListPage videos={videos} />
     if (currentView === 'settings') return <SettingsPage />
     if (currentView === 'replay') return (
-      <Suspense fallback={<div className="flex items-center justify-center py-32"><div className="h-8 w-8 animate-spin rounded-full border-2 border-[#00ff88]/20 border-t-[#00ff88]" /></div>}>
+      <Suspense fallback={<div className="flex items-center justify-center py-32"><div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E50914]/20 border-t-[#E50914]" /></div>}>
         <ReplaySection />
       </Suspense>
     )
@@ -890,7 +890,7 @@ export default function Home() {
       return (
         <div className="flex items-center justify-center py-32">
           <div className="flex flex-col items-center gap-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#00ff88]/20 border-t-[#00ff88]" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E50914]/20 border-t-[#E50914]" />
             <p className="text-xs text-white/25">Loading...</p>
           </div>
         </div>
@@ -918,7 +918,7 @@ export default function Home() {
                 {liveStreams.length}
               </span>
             </div>
-            <button onClick={() => useAppStore.getState().setCurrentView('live')} className="flex items-center gap-1 text-[12px] font-medium text-[#00ff88]">
+            <button onClick={() => useAppStore.getState().setCurrentView('live')} className="flex items-center gap-1 text-[12px] font-medium text-[#E50914]">
               View All <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -962,7 +962,7 @@ export default function Home() {
                     )}
                     <div className="absolute inset-0 bg-black/30" />
                     <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
-                      <div className="h-full bg-[#00ff88]" style={{ width: `${item.progress * 100}%` }} />
+                      <div className="h-full bg-[#E50914]" style={{ width: `${item.progress * 100}%` }} />
                     </div>
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm">
@@ -984,10 +984,10 @@ export default function Home() {
           <section>
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <Star className="h-4 w-4 text-[#00ff88]" />
+                <Star className="h-4 w-4 text-[#E50914]" />
                 <h2 className="text-[15px] font-bold text-white">Top Picks For You</h2>
               </div>
-              <button onClick={() => useAppStore.getState().setCurrentView('popular')} className="flex items-center gap-1 text-[12px] font-medium text-[#00ff88]">
+              <button onClick={() => useAppStore.getState().setCurrentView('popular')} className="flex items-center gap-1 text-[12px] font-medium text-[#E50914]">
                 View All <ChevronRight className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -1006,7 +1006,7 @@ export default function Home() {
                     className="absolute top-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm transition-all hover:bg-black/60"
                     title="Add to my list"
                   >
-                    <ListVideo className={`h-3.5 w-3.5 transition-colors ${myList.includes(video.id) ? 'text-[#00ff88]' : 'text-white/60'}`} />
+                    <ListVideo className={`h-3.5 w-3.5 transition-colors ${myList.includes(video.id) ? 'text-[#E50914]' : 'text-white/60'}`} />
                   </button>
                   <VideoCard video={video} onSelect={(v) => openVideo(v, useAppStore)} />
                 </div>
@@ -1023,7 +1023,7 @@ export default function Home() {
                 <Flame className="h-4 w-4 text-[#ff3b3b]" />
                 <h2 className="text-[15px] font-bold text-white">Highlights</h2>
               </div>
-              <button onClick={() => useAppStore.getState().setCurrentView('highlights')} className="flex items-center gap-1 text-[12px] font-medium text-[#00ff88]">
+              <button onClick={() => useAppStore.getState().setCurrentView('highlights')} className="flex items-center gap-1 text-[12px] font-medium text-[#E50914]">
                 View All <ChevronRight className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -1078,11 +1078,11 @@ export default function Home() {
         <footer className="hidden border-t border-white/[0.06] bg-[#080c16]/50 py-4 lg:block">
           <div className="flex items-center justify-between px-6">
             <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-[#00ff88] to-[#00cc6a]">
-                <span className="text-[#02040a] text-[10px] font-black">S</span>
+              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-[#E50914] to-[#b20710]">
+                <span className="text-white text-[10px] font-black">S</span>
               </div>
               <span className="text-xs font-semibold text-white/30">
-                Sport<span className="text-[#00ff88]/30">ix</span> Live
+                Sport<span className="text-[#E50914]/30">ix</span> Live
               </span>
             </div>
             <p className="text-[10px] text-white/15">© 2025 Sportix Live. All rights reserved.</p>

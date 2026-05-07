@@ -366,3 +366,152 @@ Stage Summary:
 - Video Upload page now exactly matches the reference screenshot
 - All colors, layout, spacing, field order, checkbox style matches
 - Admin panel responsive on tablet (md:768px), PC, and laptop
+
+---
+Task ID: 5
+Agent: Color Theme Agent
+Task: Change Sportix component colors from green to Netflix red theme
+
+Work Log:
+- Read all 16 target component files and worklog.md
+- Replaced primary accent `#00ff88` → `#E50914` across all 14 sportix files + ErrorBoundary
+- Replaced gradient end `#00cc6a` → `#b20710` in LiveChat, HLSPlayer
+- Replaced hover state `#00dd75` → `#c40812` in VideoCard, Sidebar, HeroBanner, ErrorBoundary
+- Replaced dark background `#0a0e1a` → `#141414` in LiveSlider, BottomNav
+- Replaced dark background `#0B0F14`/`#0b0f14` → `#141414` in HLSPlayer, VideoPlayer, ErrorBoundary, LiveControlRoom
+- Replaced deep background `#02040a` → `#141414` (background contexts) in PreRollAd, VideoPlayer
+- Replaced text `text-[#02040a]` → `text-white` in CategoryTabs, HeroBanner, Sidebar, LiveChat, HLSPlayer, ReplaySection, ErrorBoundary
+- Replaced `fill-[#02040a]` → `fill-white` in HeroBanner (Play icon)
+- Replaced rgba equivalents: `rgba(0, 255, 136, ...)` → `rgba(229, 9, 20, ...)` in PreRollAd, HLSPlayer
+- Replaced drop-shadow glow: `rgba(0,255,136,0.3/0.4)` → `rgba(229,9,20,0.3/0.4)` in Sidebar, BottomNav
+- LiveControlRoom special cases:
+  - `COLORS.success: '#00C853'` → `COLORS.success: '#46d369'` (Netflix success green)
+  - `COLORS.bg: '#0B0F14'` → `COLORS.bg: '#141414'`
+  - Sidebar gradient `#0B0F14` → `#141414`
+  - Success rgba `rgba(0,200,83,...)` → `rgba(70,211,105,...)`
+- Verified zero lint errors after all changes
+
+Stage Summary:
+- All 16 files updated with Netflix red theme (#E50914 primary, #b20710 gradient, #c40812 hover)
+- Dark backgrounds unified to Netflix #141414
+- Text on colored buttons correctly uses white instead of dark green
+- LiveControlRoom success indicators preserved as Netflix green (#46d369)
+- Zero lint errors
+
+---
+Task ID: 5
+Agent: Color Theme Agent
+Task: Change auth pages and globals.css from green to Netflix red theme
+
+Work Log:
+- Read worklog.md and all 4 target files (LoginPage.tsx, SignupPage.tsx, globals.css, admin/settings/route.ts)
+- Updated globals.css:
+  - --color-neon: #00ff88 → #E50914
+  - --color-neon-dim: #00cc6a → #b20710
+  - --color-neon-glow: rgba(0,255,136,0.15) → rgba(229,9,20,0.15)
+  - --color-dark-900: #02040a → #141414
+  - --color-dark-800: #0b0f1a → #141414
+  - --background: #02040a → #141414
+  - --primary: #00ff88 → #E50914
+  - --primary-foreground: #02040a → #ffffff
+  - --ring: #00ff88 → #E50914
+  - --chart-1: #00ff88 → #E50914
+  - --sidebar: #0b0f1a → #141414
+  - --sidebar-primary: #00ff88 → #E50914
+  - --sidebar-primary-foreground: #02040a → #ffffff
+  - --sidebar-ring: #00ff88 → #E50914
+  - --popover: #0b0f1a → #141414
+  - .sportix-bg gradient: #0b0f1a/#02040a → #141414/#141414
+  - .glass-card-hover border/shadow: green rgba → red rgba
+  - .neon-glow / .neon-text-glow: green rgba → red rgba
+- Updated LoginPage.tsx:
+  - Background #0B0F14 → #141414
+  - Gradient to-[#0B0F14] → to-[#141414]
+  - Glow effects #00C853 → #E50914
+  - Logo gradient from-[#00C853] to-[#00a844] → from-[#E50914] to-[#b20710]
+  - Logo box-shadow green rgba → red rgba
+  - "LIVE" text color #00C853 → #E50914
+  - Focus border/shadow green rgba → red rgba
+  - Forgot Password hover green → red
+  - Login button gradient #00C853/#00a844 → #E50914/#b20710
+  - Login button box-shadow green → red rgba
+  - Sign Up link color #00C853 → #E50914, hover #00dd6a → #c40812
+  - Card box-shadow green tint → red tint
+- Updated SignupPage.tsx:
+  - Same changes as LoginPage.tsx
+  - Password check icons text-[#00C853] → text-[#E50914]
+  - Terms checkbox background/border #00C853 → #E50914
+  - Terms links hover text-[#00C853] → text-[#E50914]
+  - Confirm password match border green rgba → red rgba
+  - Login link color/hover updated to red
+- Updated admin/settings/route.ts:
+  - primaryColor: '#00ff88' → '#E50914'
+  - accentColor: '#00cc6a' → '#b20710'
+- Verified zero remaining green color references in all 4 files
+
+Stage Summary:
+- All auth pages and globals converted from green (#00ff88) to Netflix red (#E50914) theme
+- Backgrounds changed from dark blue-black (#02040a, #0B0F14) to Netflix dark (#141414)
+- Primary foreground colors changed to white (#ffffff) for text on red backgrounds
+- Gradient ends changed from #00cc6a/#00a844 to #b20710
+- Hover states changed from #00dd6a to #c40812
+- All rgba green references updated to rgba(229, 9, 20, ...)
+- CSS custom properties, glow effects, glassmorphism utilities all updated
+- Admin settings default colors synchronized with new theme
+- Zero remaining green color references verified
+
+---
+Task ID: 6
+Agent: Color Theme Agent
+Task: Change ALL green colors to Netflix red theme in page.tsx
+
+Work Log:
+- Read page.tsx (1097 lines) and worklog.md
+- Identified all green/dark color occurrences using grep
+- Applied color mapping with replace_all for efficiency:
+  - `#00ff88` → `#E50914` (primary accent): 35+ instances across PageHeader, LiveMatchPage, SportsPage, SchedulePage, LeaguesPage, FavoritesPage, MyListPage, SettingsPage, AdminLoadingFallback, and main Home page
+  - `#00cc6a` → `#b20710` (gradient end): 2 instances in profile avatar gradient and footer logo
+  - `#00dd75` → `#c40812` (hover state): 1 instance in Upgrade button hover
+  - `#0B0F14` → `#141414` (background): 1 instance in AdminLoadingFallback inline style
+  - `text-[#02040a]` → `text-white` (text color context): 4 instances — Popular page rank badge, profile avatar, Upgrade button text, footer logo letter "S"
+  - `#0a0e1a` not found in file (0 instances)
+- Verified zero remaining old color references with grep
+- Verified all new Netflix red colors are correctly applied
+
+Stage Summary:
+- All green accent colors (#00ff88) converted to Netflix red (#E50914) in page.tsx
+- Gradient ends (#00cc6a) converted to darker red (#b20710)
+- Hover states (#00dd75) converted to hover red (#c40812)
+- Dark backgrounds (#0B0F14) converted to Netflix dark (#141414)
+- Text-on-dark colors (#02040a) converted to white (text-white) for proper readability
+- Zero remaining old color references verified
+- Total: ~43 color replacements across 1097 lines
+
+---
+Task ID: 7
+Agent: Main Agent
+Task: Netflix theme + mobile name + admin panel responsiveness fix
+
+Work Log:
+- Fixed Header.tsx mobile name: changed `hidden sm:block` to always show "Sportix Live" text
+- Changed Header.tsx colors: logo gradient from-[#00ff88] to-[#00cc6a] → from-[#E50914] to-[#b20710], text white, "ix" text-[#E50914], header bg-[#0a0e1a] → bg-[#141414]
+- Changed AdminPanel.tsx sidebar/content responsive breakpoints from lg: (1024px) to md: (768px):
+  - Sidebar: lg:translate-x-0 → md:translate-x-0
+  - Content: lg:ml-[280px] → md:ml-[280px]
+  - Close button: lg:hidden → md:hidden
+  - Overlay: lg:hidden → md:hidden
+  - Hamburger: hidden md:flex lg:hidden → flex md:hidden (now mobile only)
+- Delegated color changes across ALL files to 3 parallel subagents:
+  - Agent 1: page.tsx (~43 replacements)
+  - Agent 2: 16 sportix components (VideoCard, CategoryTabs, AdBanner, PreRollAd, Sidebar, AdOverlay, LiveChat, HeroBanner, HLSPlayer, LiveSlider, BottomNav, LiveReactions, VideoPlayer, ReplaySection, LiveControlRoom, ErrorBoundary)
+  - Agent 3: globals.css, LoginPage, SignupPage, admin/settings/route.ts
+- Color mapping applied: #00ff88→#E50914, #00cc6a→#b20710, #00dd75→#c40812, #00C853→#E50914, #00a844→#b20710, #0a0e1a→#141414, #0B0F14→#141414, #02040a→#141414 (bg) or white (text)
+- Verified zero remaining green color references across entire src directory
+- Lint passes clean with zero errors
+
+Stage Summary:
+- Full website now uses Netflix theme: #E50914 red accent, #141414 dark background
+- Mobile header shows full "Sportix Live" name at all screen sizes
+- Admin panel sidebar visible on tablet (768px+), hamburger menu on mobile only
+- All 20+ files updated with consistent Netflix color palette
+- Zero lint errors, dev server running cleanly

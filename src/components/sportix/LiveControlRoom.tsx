@@ -78,7 +78,7 @@ interface MenuItem {
    ═══════════════════════════════════════════════════════════════ */
 
 const COLORS = {
-  bg: '#0B0F14',
+  bg: '#141414',
   bgSecondary: '#0E141B',
   bgCard: 'rgba(14, 20, 27, 0.80)',
   border: 'rgba(255, 255, 255, 0.06)',
@@ -87,7 +87,7 @@ const COLORS = {
   textSecondary: 'rgba(255, 255, 255, 0.50)',
   textTertiary: 'rgba(255, 255, 255, 0.30)',
   accent: '#FF2E2E',
-  success: '#00C853',
+  success: '#46d369',
   warning: '#FFB800',
   info: '#3B82F6',
   cardGlow: 'rgba(255, 46, 46, 0.03)',
@@ -235,7 +235,7 @@ function Sidebar({ activePage, onNavigate, collapsed, onToggle, onBack }: {
       className="fixed left-0 top-0 z-40 flex h-screen flex-col border-r transition-all duration-300"
       style={{
         width: collapsed ? 72 : 260,
-        background: 'linear-gradient(180deg, #0B0F14 0%, #0E141B 100%)',
+        background: 'linear-gradient(180deg, #141414 0%, #0E141B 100%)',
         borderColor: COLORS.border,
       }}
     >
@@ -304,7 +304,7 @@ function Sidebar({ activePage, onNavigate, collapsed, onToggle, onBack }: {
                       <span
                         className="ml-auto rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase"
                         style={{
-                          background: item.badgeColor === COLORS.accent ? 'rgba(255,46,46,0.15)' : 'rgba(0,200,83,0.15)',
+                          background: item.badgeColor === COLORS.accent ? 'rgba(255,46,46,0.15)' : 'rgba(70,211,105,0.15)',
                           color: item.badgeColor,
                         }}
                       >
@@ -468,7 +468,7 @@ function StreamPreviewCard({ isLive, onGoLive }: { isLive: boolean; onGoLive: ()
           className="absolute inset-0 h-full w-full object-cover opacity-50"
           draggable={false}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0B0F14] via-transparent to-[rgba(11,15,20,0.4)]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#141414] via-transparent to-[rgba(11,15,20,0.4)]" />
 
         {/* LIVE Badge */}
         {isLive && (
@@ -568,7 +568,7 @@ function StreamConnectionCard() {
         </h3>
         <span
           className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold"
-          style={{ background: 'rgba(0,200,83,0.10)', color: COLORS.success, boxShadow: '0 0 16px rgba(0,200,83,0.08)' }}
+          style={{ background: 'rgba(70,211,105,0.10)', color: COLORS.success, boxShadow: '0 0 16px rgba(70,211,105,0.08)' }}
         >
           <StatusDot status="online" size={6} />
           Ready
@@ -667,7 +667,7 @@ function StartLiveStreamCard({ isLive, onGoLive, onStopLive }: { isLive: boolean
       <div className="flex items-center gap-2.5 mb-5">
         <div
           className="flex h-8 w-8 items-center justify-center rounded-lg"
-          style={{ background: isLive ? 'rgba(255,46,46,0.15)' : 'rgba(0,200,83,0.10)' }}
+          style={{ background: isLive ? 'rgba(255,46,46,0.15)' : 'rgba(70,211,105,0.10)' }}
         >
           {isLive ? <Radio className="h-4 w-4" style={{ color: COLORS.accent }} /> : <Play className="h-4 w-4" style={{ color: COLORS.success }} />}
         </div>
@@ -687,14 +687,14 @@ function StartLiveStreamCard({ isLive, onGoLive, onStopLive }: { isLive: boolean
                 background: category === cat
                   ? isLive
                     ? `linear-gradient(135deg, rgba(255,46,46,0.15), rgba(255,46,46,0.05))`
-                    : `linear-gradient(135deg, rgba(0,200,83,0.12), rgba(0,200,83,0.04))`
+                    : `linear-gradient(135deg, rgba(70,211,105,0.12), rgba(70,211,105,0.04))`
                   : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${category === cat ? (isLive ? 'rgba(255,46,46,0.25)' : 'rgba(0,200,83,0.20)') : COLORS.border}`,
+                border: `1px solid ${category === cat ? (isLive ? 'rgba(255,46,46,0.25)' : 'rgba(70,211,105,0.20)') : COLORS.border}`,
                 color: category === cat ? '#FFFFFF' : 'rgba(255,255,255,0.35)',
                 boxShadow: category === cat
                   ? isLive
                     ? '0 0 20px rgba(255,46,46,0.08)'
-                    : '0 0 20px rgba(0,200,83,0.06)'
+                    : '0 0 20px rgba(70,211,105,0.06)'
                   : 'none',
               }}
             >
@@ -874,7 +874,7 @@ function StreamHealthCard({ isLive }: { isLive: boolean }) {
         {isLive && (
           <span
             className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold"
-            style={{ background: 'rgba(0,200,83,0.10)', color: COLORS.success }}
+            style={{ background: 'rgba(70,211,105,0.10)', color: COLORS.success }}
           >
             <StatusDot status="online" size={5} /> Excellent
           </span>
@@ -968,7 +968,7 @@ function RecentStreamsCard() {
             </div>
             <div className="flex flex-col items-end gap-1 flex-shrink-0">
               {stream.isReplay && (
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(0,200,83,0.10)', color: COLORS.success }}>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(70,211,105,0.10)', color: COLORS.success }}>
                   Replay
                 </span>
               )}
@@ -1020,7 +1020,7 @@ function StreamingChecklist({ isLive }: { isLive: boolean }) {
             background: progressPct === 100
               ? `linear-gradient(90deg, ${COLORS.success}, #00e676)`
               : `linear-gradient(90deg, ${COLORS.warning}, ${COLORS.accent})`,
-            boxShadow: progressPct === 100 ? '0 0 12px rgba(0,200,83,0.30)' : 'none',
+            boxShadow: progressPct === 100 ? '0 0 12px rgba(70,211,105,0.30)' : 'none',
           }}
         />
       </div>
@@ -1032,8 +1032,8 @@ function StreamingChecklist({ isLive }: { isLive: boolean }) {
             key={item.label}
             className="flex items-center gap-2.5 rounded-xl border px-3 py-2.5 transition-all"
             style={{
-              borderColor: item.status === 'online' ? 'rgba(0,200,83,0.12)' : 'rgba(255,184,0,0.12)',
-              background: item.status === 'online' ? 'rgba(0,200,83,0.03)' : 'rgba(255,184,0,0.03)',
+              borderColor: item.status === 'online' ? 'rgba(70,211,105,0.12)' : 'rgba(255,184,0,0.12)',
+              background: item.status === 'online' ? 'rgba(70,211,105,0.03)' : 'rgba(255,184,0,0.03)',
             }}
           >
             <span style={{ color: item.status === 'online' ? COLORS.success : COLORS.warning }}>
@@ -1116,7 +1116,7 @@ function DashboardPageContent() {
               <p className="text-2xl font-bold text-white">{stat.value}</p>
               <span
                 className="text-[11px] font-semibold px-1.5 py-0.5 rounded"
-                style={{ background: 'rgba(0,200,83,0.10)', color: COLORS.success }}
+                style={{ background: 'rgba(70,211,105,0.10)', color: COLORS.success }}
               >
                 {stat.change}
               </span>
@@ -1393,7 +1393,7 @@ function StreamHistoryContent() {
                   <td className="py-3 text-[12px] font-semibold text-white/60">{h.peak}</td>
                   <td className="py-3 text-[12px] text-white/40">{h.avg}</td>
                   <td className="py-3">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(0,200,83,0.10)', color: COLORS.success }}>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(70,211,105,0.10)', color: COLORS.success }}>
                       Completed
                     </span>
                   </td>

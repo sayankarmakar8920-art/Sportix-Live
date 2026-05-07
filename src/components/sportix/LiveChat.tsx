@@ -103,10 +103,10 @@ export default function LiveChat({ streamId, isAdmin = false }: { streamId: stri
       <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-semibold text-white">Live Chat</h3>
-          <span className={`h-2 w-2 rounded-full ${isConnected ? 'bg-[#00ff88]' : 'bg-[#ff3b3b]'}`} />
+          <span className={`h-2 w-2 rounded-full ${isConnected ? 'bg-[#E50914]' : 'bg-[#ff3b3b]'}`} />
         </div>
         {isAdmin && (
-          <span className="rounded-md bg-[#00ff88]/10 px-2 py-0.5 text-xs font-medium text-[#00ff88] ring-1 ring-[#00ff88]/20">
+          <span className="rounded-md bg-[#E50914]/10 px-2 py-0.5 text-xs font-medium text-[#E50914] ring-1 ring-[#E50914]/20">
             Admin
           </span>
         )}
@@ -121,12 +121,12 @@ export default function LiveChat({ streamId, isAdmin = false }: { streamId: stri
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter your name..."
-              className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-[#00ff88]/30 focus:outline-none"
+              className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-[#E50914]/30 focus:outline-none"
               autoFocus
             />
             <button
               onClick={() => setShowUsernameInput(false)}
-              className="rounded-lg bg-[#00ff88] px-3 py-2 text-sm font-medium text-[#02040a] transition-colors hover:bg-[#00cc6a]"
+              className="rounded-lg bg-[#E50914] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#b20710]"
             >
               Join
             </button>
@@ -141,7 +141,7 @@ export default function LiveChat({ streamId, isAdmin = false }: { streamId: stri
             key={msg.id}
             className={`group relative rounded-lg px-3 py-2 transition-colors ${
               msg.isHighlighted
-                ? 'bg-[#00ff88]/5 ring-1 ring-[#00ff88]/10'
+                ? 'bg-[#E50914]/5 ring-1 ring-[#E50914]/10'
                 : 'hover:bg-white/[0.03]'
             }`}
           >
@@ -150,7 +150,7 @@ export default function LiveChat({ streamId, isAdmin = false }: { streamId: stri
                 <div className="flex items-center gap-2">
                   <span
                     className={`text-xs font-semibold ${
-                      msg.isAdmin ? 'text-[#00ff88]' : 'text-white/70'
+                      msg.isAdmin ? 'text-[#E50914]' : 'text-white/70'
                     }`}
                   >
                     {msg.isAdmin && <Shield className="inline h-3 w-3 mr-1" />}
@@ -164,7 +164,7 @@ export default function LiveChat({ streamId, isAdmin = false }: { streamId: stri
                 <div className="hidden items-center gap-1 group-hover:flex">
                   <button
                     onClick={() => highlightMessage(msg.id)}
-                    className="rounded p-1 text-white/30 hover:text-[#00ff88] transition-colors"
+                    className="rounded p-1 text-white/30 hover:text-[#E50914] transition-colors"
                     title="Highlight"
                   >
                     <Star className="h-3 w-3" />
@@ -199,12 +199,12 @@ export default function LiveChat({ streamId, isAdmin = false }: { streamId: stri
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
               placeholder="Send a message..."
-              className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-[#00ff88]/30 focus:outline-none"
+              className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-[#E50914]/30 focus:outline-none"
             />
             <button
               onClick={sendMessage}
               disabled={!input.trim() || !isConnected}
-              className="flex items-center justify-center rounded-lg bg-[#00ff88] p-2 text-[#02040a] transition-all hover:bg-[#00cc6a] disabled:opacity-30 disabled:cursor-not-allowed"
+              className="flex items-center justify-center rounded-lg bg-[#E50914] p-2 text-white transition-all hover:bg-[#b20710] disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <Send className="h-4 w-4" />
             </button>

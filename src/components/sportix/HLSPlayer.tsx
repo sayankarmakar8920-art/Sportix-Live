@@ -553,7 +553,7 @@ export default function HLSPlayer(props: HLSPlayerProps) {
       {isLoading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity">
           <div className="flex flex-col items-center gap-3">
-            <Loader2 className="h-10 w-10 animate-spin text-[#00ff88]" />
+            <Loader2 className="h-10 w-10 animate-spin text-[#E50914]" />
             {isLive && (
               <span className="text-xs font-medium text-white/50">
                 Connecting to live stream...
@@ -585,7 +585,7 @@ export default function HLSPlayer(props: HLSPlayerProps) {
                 e.stopPropagation()
                 handleRetry()
               }}
-              className="mt-2 flex items-center gap-2 rounded-xl bg-[#00ff88] px-5 py-2.5 text-sm font-bold text-[#02040a] transition-all hover:bg-[#00cc6a] active:scale-95"
+              className="mt-2 flex items-center gap-2 rounded-xl bg-[#E50914] px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-[#b20710] active:scale-95"
             >
               <RefreshCw className="h-4 w-4" />
               Retry
@@ -765,16 +765,16 @@ export default function HLSPlayer(props: HLSPlayerProps) {
                   style={{
                     width: `${progress}%`,
                     background:
-                      'linear-gradient(90deg, #00ff88, #00cc6a)',
+                      'linear-gradient(90deg, #E50914, #b20710)',
                   }}
                 />
                 {/* Thumb */}
                 <div
-                  className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full bg-[#00ff88] shadow-lg opacity-0 transition-opacity group-hover:opacity-100"
+                  className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full bg-[#E50914] shadow-lg opacity-0 transition-opacity group-hover:opacity-100"
                   style={{
                     left: `${progress}%`,
                     transform: `translate(-50%, -50%)`,
-                    boxShadow: '0 0 10px rgba(0, 255, 136, 0.5)',
+                    boxShadow: '0 0 10px rgba(229, 9, 20, 0.5)',
                   }}
                 />
               </div>
@@ -785,7 +785,7 @@ export default function HLSPlayer(props: HLSPlayerProps) {
           {isLive && (
             <div className="h-[2px] w-full bg-white/5">
               <div
-                className="h-full bg-[#00ff88]"
+                className="h-full bg-[#E50914]"
                 style={{
                   width: '100%',
                   animation: 'livePulse 2s ease-in-out infinite',
@@ -850,9 +850,9 @@ export default function HLSPlayer(props: HLSPlayerProps) {
                       value={isMuted ? 0 : volume}
                       onChange={handleVolumeChange}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:hover:bg-[#00ff88] [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-md"
+                      className="w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:hover:bg-[#E50914] [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:shadow-md"
                       style={{
-                        background: `linear-gradient(to right, #00ff88 ${
+                        background: `linear-gradient(to right, #E50914 ${
                           (isMuted ? 0 : volume) * 100
                         }%, rgba(255,255,255,0.2) ${(isMuted ? 0 : volume) * 100}%)`,
                         height: '4px',
@@ -892,7 +892,7 @@ export default function HLSPlayer(props: HLSPlayerProps) {
                 }}
                 className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all active:scale-95 ${
                   showChat
-                    ? 'bg-[#00ff88]/15 text-[#00ff88]'
+                    ? 'bg-[#E50914]/15 text-[#E50914]'
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`}
                 title="Live Chat"
@@ -922,7 +922,7 @@ export default function HLSPlayer(props: HLSPlayerProps) {
                   {/* Quality dropdown */}
                   {showQualityMenu && (
                     <div
-                      className="absolute bottom-full right-0 mb-2 w-40 overflow-hidden rounded-xl border border-white/10 bg-[#0b0f14]/95 p-1 shadow-2xl backdrop-blur-xl"
+                      className="absolute bottom-full right-0 mb-2 w-40 overflow-hidden rounded-xl border border-white/10 bg-[#141414]/95 p-1 shadow-2xl backdrop-blur-xl"
                       data-controls
                     >
                       <p className="px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-white/30">
@@ -936,13 +936,13 @@ export default function HLSPlayer(props: HLSPlayerProps) {
                         }}
                         className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs transition-colors ${
                           currentQuality === -1
-                            ? 'bg-[#00ff88]/10 text-[#00ff88]'
+                            ? 'bg-[#E50914]/10 text-[#E50914]'
                             : 'text-white/60 hover:bg-white/5 hover:text-white'
                         }`}
                       >
                         <span>Auto</span>
                         {currentQuality === -1 && (
-                          <span className="h-1.5 w-1.5 rounded-full bg-[#00ff88]" />
+                          <span className="h-1.5 w-1.5 rounded-full bg-[#E50914]" />
                         )}
                       </button>
                       {qualityLevels.map((level) => (
@@ -954,13 +954,13 @@ export default function HLSPlayer(props: HLSPlayerProps) {
                           }}
                           className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs transition-colors ${
                             currentQuality === level.index
-                              ? 'bg-[#00ff88]/10 text-[#00ff88]'
+                              ? 'bg-[#E50914]/10 text-[#E50914]'
                               : 'text-white/60 hover:bg-white/5 hover:text-white'
                           }`}
                         >
                           <span>{level.label}</span>
                           {currentQuality === level.index && (
-                            <span className="h-1.5 w-1.5 rounded-full bg-[#00ff88]" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-[#E50914]" />
                           )}
                         </button>
                       ))}
@@ -977,7 +977,7 @@ export default function HLSPlayer(props: HLSPlayerProps) {
                 }}
                 className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all active:scale-95 ${
                   isPip
-                    ? 'bg-[#00ff88]/15 text-[#00ff88]'
+                    ? 'bg-[#E50914]/15 text-[#E50914]'
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`}
                 title="Picture in Picture"
@@ -1010,14 +1010,14 @@ export default function HLSPlayer(props: HLSPlayerProps) {
          ═══════════════════════════════════════════════════════════════ */}
       {showChat && (
         <div
-          className="absolute top-0 right-0 bottom-0 z-20 w-72 sm:w-80 border-l border-white/10 bg-[#0b0f14]/95 backdrop-blur-xl flex flex-col"
+          className="absolute top-0 right-0 bottom-0 z-20 w-72 sm:w-80 border-l border-white/10 bg-[#141414]/95 backdrop-blur-xl flex flex-col"
           data-controls
           onClick={(e) => e.stopPropagation()}
         >
           {/* Chat header */}
           <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
             <div className="flex items-center gap-2">
-              <MessageCircle className="h-4 w-4 text-[#00ff88]" />
+              <MessageCircle className="h-4 w-4 text-[#E50914]" />
               <span className="text-sm font-semibold text-white">
                 Live Chat
               </span>
@@ -1055,7 +1055,7 @@ export default function HLSPlayer(props: HLSPlayerProps) {
                 className="rounded-lg px-3 py-2 transition-colors hover:bg-white/[0.03]"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-semibold text-[#00ff88]">
+                  <span className="text-[11px] font-semibold text-[#E50914]">
                     {chat.user}
                   </span>
                   <span className="text-[9px] text-white/20">{chat.time}</span>
@@ -1070,7 +1070,7 @@ export default function HLSPlayer(props: HLSPlayerProps) {
             <input
               type="text"
               placeholder="Send a message..."
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white placeholder:text-white/30 focus:border-[#00ff88]/30 focus:outline-none"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white placeholder:text-white/30 focus:border-[#E50914]/30 focus:outline-none"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => e.stopPropagation()}
             />

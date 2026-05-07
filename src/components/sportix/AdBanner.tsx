@@ -181,7 +181,7 @@ export default function AdBanner({ position, category, streamId, onAdClick }: Ad
 
                   {/* Sponsored Badge */}
                   <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-                    <Megaphone className="h-3 w-3 text-[#00ff88]" />
+                    <Megaphone className="h-3 w-3 text-[#E50914]" />
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-white/60">
                       Sponsored
                     </span>
@@ -212,7 +212,7 @@ export default function AdBanner({ position, category, streamId, onAdClick }: Ad
                   style={{ background: 'transparent' }}
                 >
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <Megaphone className="h-3.5 w-3.5 text-[#00ff88]" />
+                    <Megaphone className="h-3.5 w-3.5 text-[#E50914]" />
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
                       Ad
                     </span>
@@ -245,7 +245,7 @@ export default function AdBanner({ position, category, streamId, onAdClick }: Ad
                     <div
                       key={i}
                       className={`h-1 rounded-full transition-all duration-300 ${
-                        i === currentIndex ? 'w-4 bg-[#00ff88]/60' : 'w-1 bg-white/20'
+                        i === currentIndex ? 'w-4 bg-[#E50914]/60' : 'w-1 bg-white/20'
                       }`}
                     />
                   ))}

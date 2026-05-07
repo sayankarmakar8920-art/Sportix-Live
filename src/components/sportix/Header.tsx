@@ -46,7 +46,7 @@ export default function Header() {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-white/[0.06] bg-[#0a0e1a]/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 w-full border-b border-white/[0.06] bg-[#141414]/90 backdrop-blur-xl">
       <div className="mx-auto flex h-14 items-center justify-between gap-4 px-4 lg:px-6">
         {/* Left: Date + Logo */}
         <div className="flex items-center gap-4">
@@ -58,11 +58,11 @@ export default function Header() {
             onClick={handleLogoClick}
             className="flex items-center gap-2.5 transition-all duration-200 hover:opacity-80 active:scale-[0.97] touch-active"
           >
-            <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#00ff88] to-[#00cc6a] shadow-lg shadow-[#00ff88]/20">
-              <span className="text-[#02040a] text-sm font-black">S</span>
+            <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#E50914] to-[#b20710] shadow-lg shadow-[#E50914]/20">
+              <span className="text-white text-sm font-black">S</span>
             </div>
-            <span className="hidden text-base font-bold tracking-tight text-white sm:block">
-              Sport<span className="text-[#00ff88]">ix</span>{' '}
+            <span className="text-base font-bold tracking-tight text-white">
+              Sport<span className="text-[#E50914]">ix</span>{' '}
               <span className="text-white/40 font-normal text-xs">Live</span>
             </span>
           </button>
@@ -79,7 +79,7 @@ export default function Header() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search for matches, teams, leagues..."
-                  className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] py-2 pl-9 pr-4 text-sm text-white placeholder:text-white/25 focus:border-[#00ff88]/30 focus:outline-none focus:ring-1 focus:ring-[#00ff88]/20"
+                  className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] py-2 pl-9 pr-4 text-sm text-white placeholder:text-white/25 focus:border-[#E50914]/30 focus:outline-none focus:ring-1 focus:ring-[#E50914]/20"
                   autoFocus
                   onBlur={() => { if (!searchQuery) setSearchOpen(false) }}
                 />

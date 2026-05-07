@@ -35,7 +35,7 @@ export default function VideoPlayer() {
   return (
     <div className="sportix-bg min-h-screen">
       {/* Minimal Header */}
-      <header className="sticky top-0 z-50 flex h-14 items-center gap-3 border-b border-white/5 bg-[#02040a]/80 px-4 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 flex h-14 items-center gap-3 border-b border-white/5 bg-[#141414]/80 px-4 backdrop-blur-xl">
         <button
           onClick={() => {
             setCurrentView('home')
@@ -66,17 +66,17 @@ export default function VideoPlayer() {
           <div className="flex-1 p-4 md:p-6">
             <div className="relative aspect-video overflow-hidden rounded-2xl border border-white/5 bg-black">
               {/* Video Player Placeholder */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[#0b0f1a] via-[#111827] to-[#1a2235]">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#141414] via-[#111827] to-[#1a2235]">
                 {/* Simulated video content */}
                 <div className="flex h-full items-center justify-center">
                   <div className="text-center">
                     <div className="mb-4 flex items-center justify-center gap-3">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#00ff88]/10 ring-2 ring-[#00ff88]/20 animate-pulse">
-                        <Radio className="h-8 w-8 text-[#00ff88]" />
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#E50914]/10 ring-2 ring-[#E50914]/20 animate-pulse">
+                        <Radio className="h-8 w-8 text-[#E50914]" />
                       </div>
                     </div>
                     <p className="text-lg font-bold text-white">{selectedStream.homeTeam} vs {selectedStream.awayTeam}</p>
-                    <p className="mt-2 text-sm text-[#00ff88] font-medium">
+                    <p className="mt-2 text-sm text-[#E50914] font-medium">
                       {selectedStream.homeScore} — {selectedStream.awayScore}
                     </p>
                     <p className="mt-1 text-xs text-white/40">
@@ -112,13 +112,13 @@ export default function VideoPlayer() {
                         {quality}
                       </button>
                       {showQuality && (
-                        <div className="absolute bottom-full right-0 mb-2 rounded-xl border border-white/10 bg-[#0b0f1a] p-1 shadow-2xl backdrop-blur-xl">
+                        <div className="absolute bottom-full right-0 mb-2 rounded-xl border border-white/10 bg-[#141414] p-1 shadow-2xl backdrop-blur-xl">
                           {QUALITY_OPTIONS.map((q) => (
                             <button
                               key={q}
                               onClick={() => { setQuality(q); setShowQuality(false) }}
                               className={`flex w-full items-center rounded-lg px-3 py-1.5 text-xs transition-colors ${
-                                quality === q ? 'bg-[#00ff88]/10 text-[#00ff88]' : 'text-white/60 hover:bg-white/5 hover:text-white'
+                                quality === q ? 'bg-[#E50914]/10 text-[#E50914]' : 'text-white/60 hover:bg-white/5 hover:text-white'
                               }`}
                             >
                               {q}

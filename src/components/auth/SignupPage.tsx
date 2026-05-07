@@ -108,8 +108,8 @@ export default function SignupPage({ onSwitchToLogin }: SignupPageProps) {
   }
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.target.style.borderColor = 'rgba(0, 200, 83, 0.5)'
-    e.target.style.boxShadow = '0 0 0 3px rgba(0, 200, 83, 0.1)'
+    e.target.style.borderColor = 'rgba(229, 9, 20, 0.5)'
+    e.target.style.boxShadow = '0 0 0 3px rgba(229, 9, 20, 0.1)'
   }
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -118,31 +118,31 @@ export default function SignupPage({ onSwitchToLogin }: SignupPageProps) {
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center overflow-y-auto" style={{ background: '#0B0F14' }}>
+    <div className="fixed inset-0 flex items-center justify-center overflow-y-auto" style={{ background: '#141414' }}>
       {/* Stadium Background */}
       <div className="fixed inset-0">
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: 'url(/stadium-bg.png)' }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-[#0B0F14]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-[#141414]" />
       </div>
 
       {/* Green glow effects */}
-      <div className="fixed top-1/4 left-1/4 w-96 h-96 rounded-full opacity-20 blur-[120px]" style={{ background: '#00C853' }} />
-      <div className="fixed bottom-1/4 right-1/4 w-64 h-64 rounded-full opacity-15 blur-[100px]" style={{ background: '#00C853' }} />
+      <div className="fixed top-1/4 left-1/4 w-96 h-96 rounded-full opacity-20 blur-[120px]" style={{ background: '#E50914' }} />
+      <div className="fixed bottom-1/4 right-1/4 w-64 h-64 rounded-full opacity-15 blur-[100px]" style={{ background: '#E50914' }} />
 
       {/* Auth Card */}
       <div className="relative z-10 w-full max-w-md mx-4 my-8 fade-in-up">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-1 mb-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#00C853] to-[#00a844] shadow-lg" style={{ boxShadow: '0 0 30px rgba(0, 200, 83, 0.3)' }}>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#E50914] to-[#b20710] shadow-lg" style={{ boxShadow: '0 0 30px rgba(229, 9, 20, 0.3)' }}>
               <span className="text-white text-lg font-black">S</span>
             </div>
           </div>
           <h1 className="text-2xl font-bold text-white">
-            Sportix <span style={{ color: '#00C853' }}>LIVE</span>
+            Sportix <span style={{ color: '#E50914' }}>LIVE</span>
           </h1>
         </div>
 
@@ -154,7 +154,7 @@ export default function SignupPage({ onSwitchToLogin }: SignupPageProps) {
             backdropFilter: 'blur(24px)',
             WebkitBackdropFilter: 'blur(24px)',
             border: '1px solid rgba(255, 255, 255, 0.08)',
-            boxShadow: '0 0 40px rgba(0, 0, 0, 0.4), 0 0 80px rgba(0, 200, 83, 0.05)',
+            boxShadow: '0 0 40px rgba(0, 0, 0, 0.4), 0 0 80px rgba(229, 9, 20, 0.05)',
           }}
         >
           {/* Header */}
@@ -252,9 +252,9 @@ export default function SignupPage({ onSwitchToLogin }: SignupPageProps) {
                   {passwordChecks.map((check) => (
                     <div key={check.label} className="flex items-center gap-1">
                       <Check
-                        className={`h-3 w-3 transition-colors ${check.met ? 'text-[#00C853]' : 'text-white/15'}`}
+                        className={`h-3 w-3 transition-colors ${check.met ? 'text-[#E50914]' : 'text-white/15'}`}
                       />
-                      <span className={`text-[10px] transition-colors ${check.met ? 'text-[#00C853]/70' : 'text-white/25'}`}>
+                      <span className={`text-[10px] transition-colors ${check.met ? 'text-[#E50914]/70' : 'text-white/25'}`}>
                         {check.label}
                       </span>
                     </div>
@@ -281,7 +281,7 @@ export default function SignupPage({ onSwitchToLogin }: SignupPageProps) {
                     ...(confirmPassword && confirmPassword !== password
                       ? { borderColor: 'rgba(255, 59, 59, 0.4)' }
                       : confirmPassword && confirmPassword === password
-                        ? { borderColor: 'rgba(0, 200, 83, 0.4)' }
+                        ? { borderColor: 'rgba(229, 9, 20, 0.4)' }
                         : {}),
                   }}
                   onFocus={handleFocus}
@@ -304,17 +304,17 @@ export default function SignupPage({ onSwitchToLogin }: SignupPageProps) {
                 onClick={() => setAgreed(!agreed)}
                 className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-all"
                 style={{
-                  background: agreed ? '#00C853' : 'transparent',
-                  borderColor: agreed ? '#00C853' : 'rgba(255, 255, 255, 0.15)',
+                  background: agreed ? '#E50914' : 'transparent',
+                  borderColor: agreed ? '#E50914' : 'rgba(255, 255, 255, 0.15)',
                 }}
               >
                 {agreed && <Check className="h-3 w-3 text-white" />}
               </button>
               <p className="text-xs leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.4)' }}>
                 I agree to the{' '}
-                <span className="font-medium cursor-pointer transition-colors hover:text-[#00C853]" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>Terms of Use</span>
+                <span className="font-medium cursor-pointer transition-colors hover:text-[#E50914]" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>Terms of Use</span>
                 {' '}and{' '}
-                <span className="font-medium cursor-pointer transition-colors hover:text-[#00C853]" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>Privacy Policy</span>
+                <span className="font-medium cursor-pointer transition-colors hover:text-[#E50914]" style={{ color: 'rgba(255, 255, 255, 0.6)' }}>Privacy Policy</span>
               </p>
             </div>
 
@@ -324,8 +324,8 @@ export default function SignupPage({ onSwitchToLogin }: SignupPageProps) {
               disabled={loading}
               className="group relative w-full rounded-xl py-3.5 text-sm font-bold text-white transition-all duration-200 overflow-hidden disabled:opacity-50"
               style={{
-                background: 'linear-gradient(135deg, #00C853, #00a844)',
-                boxShadow: '0 4px 20px rgba(0, 200, 83, 0.3)',
+                background: 'linear-gradient(135deg, #E50914, #b20710)',
+                boxShadow: '0 4px 20px rgba(229, 9, 20, 0.3)',
               }}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
@@ -375,8 +375,8 @@ export default function SignupPage({ onSwitchToLogin }: SignupPageProps) {
             Already have an account?{' '}
             <button
               onClick={onSwitchToLogin}
-              className="font-semibold transition-colors hover:text-[#00dd6a]"
-              style={{ color: '#00C853' }}
+              className="font-semibold transition-colors hover:text-[#c40812]"
+              style={{ color: '#E50914' }}
             >
               Login
             </button>

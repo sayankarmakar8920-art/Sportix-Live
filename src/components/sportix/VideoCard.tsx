@@ -37,7 +37,7 @@ const SPORT_LABELS: Record<string, { label: string; color: string }> = {
   basketball: { label: 'Basketball', color: 'bg-orange-500/10 text-orange-400' },
   racing: { label: 'Racing', color: 'bg-red-500/10 text-red-400' },
   tennis: { label: 'Tennis', color: 'bg-yellow-500/10 text-yellow-400' },
-  highlights: { label: 'Highlights', color: 'bg-[#00ff88]/10 text-[#00ff88]' },
+  highlights: { label: 'Highlights', color: 'bg-[#E50914]/10 text-[#E50914]' },
 }
 
 function formatDuration(seconds: number): string {
@@ -82,8 +82,8 @@ export function VideoCard({ video, onSelect }: { video: VideoItem; onSelect: (v:
 
         {/* Play overlay */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover/card:opacity-100">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#00ff88]/20 backdrop-blur-sm ring-1 ring-[#00ff88]/30 transition-transform group-hover/card:scale-110">
-            <Play className="h-4 w-4 text-[#00ff88] fill-[#00ff88] ml-0.5" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E50914]/20 backdrop-blur-sm ring-1 ring-[#E50914]/30 transition-transform group-hover/card:scale-110">
+            <Play className="h-4 w-4 text-[#E50914] fill-[#E50914] ml-0.5" />
           </div>
         </div>
 
@@ -133,11 +133,11 @@ export function ContinueCard({ item, onSelect }: { item: ContinueItem; onSelect:
         <div className="absolute inset-0 bg-black/40" />
         {/* Progress bar */}
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
-          <div className="h-full bg-[#00ff88] transition-all" style={{ width: `${item.progress * 100}%` }} />
+          <div className="h-full bg-[#E50914] transition-all" style={{ width: `${item.progress * 100}%` }} />
         </div>
         {/* Play overlay */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm ring-1 ring-white/10 transition-all group-hover/card:bg-[#00ff88]/20 group-hover/card:ring-[#00ff88]/30">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm ring-1 ring-white/10 transition-all group-hover/card:bg-[#E50914]/20 group-hover/card:ring-[#E50914]/30">
             <Play className="h-3.5 w-3.5 text-white fill-white ml-0.5" />
           </div>
         </div>
@@ -176,7 +176,7 @@ export function ContentSection({
           <h2 className="text-[15px] font-bold text-white">{title}</h2>
         </div>
         {viewAll && (
-          <button className="flex items-center gap-1 text-[12px] font-medium text-[#00ff88] transition-colors hover:text-[#00dd75]">
+          <button className="flex items-center gap-1 text-[12px] font-medium text-[#E50914] transition-colors hover:text-[#c40812]">
             View All <ArrowRight className="h-3.5 w-3.5" />
           </button>
         )}

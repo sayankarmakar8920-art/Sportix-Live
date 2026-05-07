@@ -28,7 +28,7 @@ export default function CategoryTabs({ onFilter }: { onFilter: (cat: string) => 
           onClick={() => handleSelect(cat.id)}
           className={`flex-shrink-0 rounded-full px-4 py-1.5 text-xs font-medium transition-all duration-150 touch-active ${
             active === cat.id
-              ? 'bg-[#00ff88] text-[#02040a] shadow-md shadow-[#00ff88]/20'
+              ? 'bg-[#E50914] text-white shadow-md shadow-[#E50914]/20'
               : 'bg-white/[0.04] text-white/45 border border-white/[0.06] hover:bg-white/[0.06] hover:text-white/60'
           }`}
         >

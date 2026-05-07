@@ -48,7 +48,7 @@ const SPORT_CATEGORIES = [
 ]
 
 const STATUS_CONFIG = {
-  ready: { color: '#00ff88', label: 'Ready', bgClass: 'bg-[#00ff88]/10' },
+  ready: { color: '#E50914', label: 'Ready', bgClass: 'bg-[#E50914]/10' },
   processing: { color: '#facc15', label: 'Processing', bgClass: 'bg-[#facc15]/10' },
   failed: { color: '#ff3b3b', label: 'Failed', bgClass: 'bg-[#ff3b3b]/10' },
 } as const
@@ -223,7 +223,7 @@ function ReplayCard({
     <button
       onClick={() => isPlayable && onPlay(recording)}
       disabled={!isPlayable}
-      className={`glass-card group/rec rounded-xl overflow-hidden text-left transition-all duration-200 hover:border-[#00ff88]/20 w-full ${
+      className={`glass-card group/rec rounded-xl overflow-hidden text-left transition-all duration-200 hover:border-[#E50914]/20 w-full ${
         isPlayable
           ? 'hover:bg-white/[0.04] active:scale-[0.98] touch-active cursor-pointer'
           : 'opacity-70 cursor-not-allowed'
@@ -257,9 +257,9 @@ function ReplayCard({
         {/* ── Play button overlay on hover ── */}
         {isPlayable && (
           <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover/rec:opacity-100">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#00ff88]/20 backdrop-blur-sm ring-1 ring-[#00ff88]/30 transition-transform group-hover/rec:scale-110">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#E50914]/20 backdrop-blur-sm ring-1 ring-[#E50914]/30 transition-transform group-hover/rec:scale-110">
               <Play
-                className="h-5 w-5 text-[#00ff88] fill-[#00ff88] ml-0.5"
+                className="h-5 w-5 text-[#E50914] fill-[#E50914] ml-0.5"
               />
             </div>
           </div>
@@ -483,7 +483,7 @@ export default function ReplaySection(props: ReplaySectionProps) {
       {/* ── Section Header ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#00ff88]/10 text-[#00ff88]">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E50914]/10 text-[#E50914]">
             <Film className="h-4.5 w-4.5" />
           </div>
           <div>
@@ -500,8 +500,8 @@ export default function ReplaySection(props: ReplaySectionProps) {
         {/* Auto-refresh indicator */}
         <span className="flex items-center gap-1.5 text-[10px] text-white/20">
           <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00ff88] opacity-40" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#00ff88]/60" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E50914] opacity-40" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#E50914]/60" />
           </span>
           Auto-refresh
         </span>
@@ -517,7 +517,7 @@ export default function ReplaySection(props: ReplaySectionProps) {
             placeholder="Search replays..."
             value={searchQuery}
             onChange={handleSearchChange}
-            className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] py-2.5 pl-9 pr-4 text-sm text-white placeholder-white/25 transition-all focus:border-[#00ff88]/20 focus:bg-white/[0.05] focus:outline-none focus:ring-1 focus:ring-[#00ff88]/10"
+            className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] py-2.5 pl-9 pr-4 text-sm text-white placeholder-white/25 transition-all focus:border-[#E50914]/20 focus:bg-white/[0.05] focus:outline-none focus:ring-1 focus:ring-[#E50914]/10"
           />
         </div>
 
@@ -538,7 +538,7 @@ export default function ReplaySection(props: ReplaySectionProps) {
             onClick={() => setActiveCategory(cat.id)}
             className={`flex-shrink-0 rounded-full px-4 py-1.5 text-xs font-medium transition-all duration-150 touch-active ${
               activeCategory === cat.id
-                ? 'bg-[#00ff88] text-[#02040a] shadow-md shadow-[#00ff88]/20'
+                ? 'bg-[#E50914] text-white shadow-md shadow-[#E50914]/20'
                 : 'bg-white/[0.04] text-white/45 border border-white/[0.06] hover:bg-white/[0.06] hover:text-white/60'
             }`}
           >
@@ -582,7 +582,7 @@ export default function ReplaySection(props: ReplaySectionProps) {
           <p className="mt-1 text-xs text-white/25">{error}</p>
           <button
             onClick={fetchRecordings}
-            className="mt-4 rounded-xl bg-[#00ff88]/10 px-4 py-2 text-xs font-medium text-[#00ff88] ring-1 ring-[#00ff88]/20 transition-all hover:bg-[#00ff88]/15"
+            className="mt-4 rounded-xl bg-[#E50914]/10 px-4 py-2 text-xs font-medium text-[#E50914] ring-1 ring-[#E50914]/20 transition-all hover:bg-[#E50914]/15"
           >
             Try Again
           </button>

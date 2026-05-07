@@ -70,7 +70,7 @@ export function ReactionSummary({ reactions, compact = false }: ReactionSummaryP
       {/* Total count */}
       <div className="flex items-center gap-1.5">
         {topEmoji && <span className="text-base">{topEmoji}</span>}
-        {!topEmoji && <Heart className="h-4 w-4 text-[#00ff88]" />}
+        {!topEmoji && <Heart className="h-4 w-4 text-[#E50914]" />}
         <span className={`font-semibold text-white ${compact ? 'text-xs' : 'text-sm'}`}>
           {totalCount >= 1000 ? `${(totalCount / 1000).toFixed(1)}k` : totalCount}
         </span>
@@ -295,7 +295,7 @@ export default function LiveReactions({
         <div
           className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-full bg-black/50 px-3 py-1.5 backdrop-blur-sm"
         >
-          <Zap className="h-3.5 w-3.5 text-[#00ff88]" />
+          <Zap className="h-3.5 w-3.5 text-[#E50914]" />
           <span className="text-xs font-semibold text-white tabular-nums">
             {totalCount >= 1000 ? `${(totalCount / 1000).toFixed(1)}k` : totalCount} reactions
           </span>
@@ -307,7 +307,7 @@ export default function LiveReactions({
         <div
           className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-full bg-black/50 px-3 py-1.5 backdrop-blur-sm"
         >
-          <TrendingUp className="h-3.5 w-3.5 text-[#00ff88]" />
+          <TrendingUp className="h-3.5 w-3.5 text-[#E50914]" />
           <span className="text-xs font-semibold text-white tabular-nums">
             {totalCount >= 1000 ? `${(totalCount / 1000).toFixed(1)}k` : totalCount}
           </span>
@@ -340,7 +340,7 @@ export default function LiveReactions({
               {count > 0 && (
                 <span
                   className={`text-[10px] font-medium tabular-nums leading-none ${
-                    position === 'right' ? 'text-[#00ff88]/80' : 'text-[#00ff88]/80'
+                    position === 'right' ? 'text-[#E50914]/80' : 'text-[#E50914]/80'
                   }`}
                 >
                   {count >= 1000 ? `${(count / 1000).toFixed(1)}k` : count}

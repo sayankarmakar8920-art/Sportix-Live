@@ -140,7 +140,7 @@ export default function AdOverlay({ ad, onClose, onAdClick }: AdOverlayProps) {
           >
             {/* Sponsored Badge */}
             <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 rounded-lg bg-black/50 px-2.5 py-1">
-              <Megaphone className="h-3 w-3 text-[#00ff88]" />
+              <Megaphone className="h-3 w-3 text-[#E50914]" />
               <span className="text-[10px] font-semibold uppercase tracking-wider text-white/60">
                 Sponsored
               </span>
@@ -198,15 +198,15 @@ export default function AdOverlay({ ad, onClose, onAdClick }: AdOverlayProps) {
               ) : (
                 /* Text-only fallback */
                 <div className="flex min-h-[200px] flex-col items-center justify-center gap-4 p-8">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#00ff88]/10 ring-1 ring-[#00ff88]/20">
-                    <Megaphone className="h-8 w-8 text-[#00ff88]" />
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#E50914]/10 ring-1 ring-[#E50914]/20">
+                    <Megaphone className="h-8 w-8 text-[#E50914]" />
                   </div>
                   <div className="text-center">
                     <p className="text-base font-semibold text-white">
                       {ad.title || 'Advertisement'}
                     </p>
                     {ad.targetUrl && (
-                      <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-[#00ff88]/70">
+                      <div className="mt-2 flex items-center justify-center gap-1.5 text-xs text-[#E50914]/70">
                         <ExternalLink className="h-3 w-3" />
                         <span>Click to learn more</span>
                       </div>
@@ -219,7 +219,7 @@ export default function AdOverlay({ ad, onClose, onAdClick }: AdOverlayProps) {
             {/* Bottom bar */}
             <div className="flex items-center justify-between border-t border-white/[0.06] px-4 py-2.5">
               <div className="flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-[#00ff88]" />
+                <div className="h-1.5 w-1.5 rounded-full bg-[#E50914]" />
                 <span className="text-[11px] text-white/30">Advertisement</span>
               </div>
 
@@ -227,7 +227,7 @@ export default function AdOverlay({ ad, onClose, onAdClick }: AdOverlayProps) {
                 <button
                   type="button"
                   onClick={handleClick}
-                  className="flex items-center gap-1.5 rounded-lg bg-[#00ff88]/10 px-3 py-1.5 text-xs font-medium text-[#00ff88] transition-all hover:bg-[#00ff88]/20"
+                  className="flex items-center gap-1.5 rounded-lg bg-[#E50914]/10 px-3 py-1.5 text-xs font-medium text-[#E50914] transition-all hover:bg-[#E50914]/20"
                 >
                   <ExternalLink className="h-3 w-3" />
                   <span>Visit</span>

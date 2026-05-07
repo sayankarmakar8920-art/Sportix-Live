@@ -33,10 +33,10 @@ export default function BottomNav() {
   // More menu
   if (showMore) {
     return (
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.06] bg-[#0a0e1a]/98 backdrop-blur-xl lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.06] bg-[#141414]/98 backdrop-blur-xl lg:hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
           <span className="text-sm font-semibold text-white">More Options</span>
-          <button onClick={() => setShowMore(false)} className="text-xs text-[#00ff88] font-medium">Close</button>
+          <button onClick={() => setShowMore(false)} className="text-xs text-[#E50914] font-medium">Close</button>
         </div>
         <div className="grid grid-cols-3 gap-1 p-3">
           {MORE_ITEMS.map((item) => (
@@ -44,7 +44,7 @@ export default function BottomNav() {
               key={item.id}
               onClick={() => { setCurrentView(item.id); setShowMore(false) }}
               className={`flex flex-col items-center gap-1.5 rounded-xl py-3 transition-all touch-active ${
-                currentView === item.id ? 'bg-[#00ff88]/10 text-[#00ff88]' : 'text-white/50 hover:bg-white/[0.03]'
+                currentView === item.id ? 'bg-[#E50914]/10 text-[#E50914]' : 'text-white/50 hover:bg-white/[0.03]'
               }`}
             >
               <span className="text-[13px]">{item.label}</span>
@@ -57,7 +57,7 @@ export default function BottomNav() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.06] bg-[#0a0e1a]/95 backdrop-blur-xl lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/[0.06] bg-[#141414]/95 backdrop-blur-xl lg:hidden">
       <div className="flex items-center justify-around py-1.5 px-2">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon
@@ -74,17 +74,17 @@ export default function BottomNav() {
               }}
               className={`relative flex flex-col items-center gap-0.5 rounded-lg px-4 py-1.5 transition-all duration-150 touch-active ${
                 isActive
-                  ? 'text-[#00ff88]'
+                  ? 'text-[#E50914]'
                   : 'text-white/30 hover:text-white/50'
               }`}
             >
-              <Icon className={`h-5 w-5 ${isActive ? 'drop-shadow-[0_0_6px_rgba(0,255,136,0.4)]' : ''}`} />
+              <Icon className={`h-5 w-5 ${isActive ? 'drop-shadow-[0_0_6px_rgba(229,9,20,0.4)]' : ''}`} />
               <span className="text-[10px] font-medium">{item.label}</span>
               {item.id === 'live' && (
                 <span className="absolute top-0.5 right-3 h-2 w-2 rounded-full bg-[#ff3b3b] animate-pulse" />
               )}
               {isActive && (
-                <span className="absolute -bottom-1.5 h-[3px] w-5 rounded-full bg-[#00ff88]" />
+                <span className="absolute -bottom-1.5 h-[3px] w-5 rounded-full bg-[#E50914]" />
               )}
             </button>
           )

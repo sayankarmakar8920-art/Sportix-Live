@@ -189,20 +189,20 @@ export default function PreRollAd({ ads, onComplete, streamId, onSkip }: PreRoll
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
       className="fixed inset-0 z-[100] flex flex-col items-center justify-center"
-      style={{ background: '#02040a' }}
+      style={{ background: '#141414' }}
     >
       {/* Background gradient */}
       <div
         className="absolute inset-0"
         style={{
-          background: 'radial-gradient(ellipse at center, rgba(0, 255, 136, 0.03) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse at center, rgba(229, 9, 20, 0.03) 0%, transparent 70%)',
         }}
       />
 
       {/* Overall progress bar at very top */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-white/5">
         <motion.div
-          className="h-full bg-[#00ff88]"
+          className="h-full bg-[#E50914]"
           initial={{ width: '0%' }}
           animate={{ width: `${overallProgress}%` }}
           transition={{ duration: 0.5, ease: 'linear' }}
@@ -228,7 +228,7 @@ export default function PreRollAd({ ads, onComplete, streamId, onSkip }: PreRoll
               {/* Ad header */}
               <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <Megaphone className="h-4 w-4 text-[#00ff88]" />
+                  <Megaphone className="h-4 w-4 text-[#E50914]" />
                   <span className="text-xs font-semibold uppercase tracking-wider text-white/50">
                     Advertisement
                   </span>
@@ -289,8 +289,8 @@ export default function PreRollAd({ ads, onComplete, streamId, onSkip }: PreRoll
                 ) : (
                   /* Text-only fallback */
                   <div className="flex min-h-[280px] flex-col items-center justify-center gap-6 p-8 md:min-h-[350px]">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#00ff88]/10 ring-1 ring-[#00ff88]/20">
-                      <Megaphone className="h-10 w-10 text-[#00ff88]" />
+                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#E50914]/10 ring-1 ring-[#E50914]/20">
+                      <Megaphone className="h-10 w-10 text-[#E50914]" />
                     </div>
                     <div className="text-center">
                       <p className="text-xl font-bold text-white">
@@ -300,7 +300,7 @@ export default function PreRollAd({ ads, onComplete, streamId, onSkip }: PreRoll
                         Your content will begin shortly
                       </p>
                       {currentAd.targetUrl && (
-                        <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-[#00ff88]/10 px-3 py-1.5 text-xs font-medium text-[#00ff88]">
+                        <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-[#E50914]/10 px-3 py-1.5 text-xs font-medium text-[#E50914]">
                           <ExternalLink className="h-3 w-3" />
                           <span>Click to learn more</span>
                         </div>
@@ -329,9 +329,9 @@ export default function PreRollAd({ ads, onComplete, streamId, onSkip }: PreRoll
                         key={i}
                         className={`h-1.5 rounded-full transition-all duration-300 ${
                           i < currentAdIndex
-                            ? 'w-4 bg-[#00ff88]'
+                            ? 'w-4 bg-[#E50914]'
                             : i === currentAdIndex
-                              ? 'w-6 bg-[#00ff88]/60'
+                              ? 'w-6 bg-[#E50914]/60'
                               : 'w-1.5 bg-white/15'
                         }`}
                       />
@@ -368,7 +368,7 @@ export default function PreRollAd({ ads, onComplete, streamId, onSkip }: PreRoll
               {/* Per-ad progress bar */}
               <div className="h-0.5 bg-white/5">
                 <motion.div
-                  className="h-full bg-[#00ff88]/50"
+                  className="h-full bg-[#E50914]/50"
                   initial={{ width: '0%' }}
                   animate={{
                     width: `${(elapsedForCurrentAd / adDuration) * 100}%`,

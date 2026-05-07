@@ -87,7 +87,7 @@ export default function LiveSlider({ streams }: { streams: StreamItem[] }) {
         {/* Scroll buttons — desktop */}
         {canScrollLeft && (
           <button onClick={() => scroll('left')}
-            className="absolute left-0 top-0 bottom-0 z-10 hidden items-center justify-center bg-gradient-to-r from-[#0a0e1a] via-[#0a0e1a]/80 to-transparent lg:flex">
+            className="absolute left-0 top-0 bottom-0 z-10 hidden items-center justify-center bg-gradient-to-r from-[#141414] via-[#141414]/80 to-transparent lg:flex">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-white/50 shadow-lg backdrop-blur-sm transition-all hover:bg-white/10 hover:text-white">
               <ChevronLeft className="h-4 w-4" />
             </div>
@@ -95,7 +95,7 @@ export default function LiveSlider({ streams }: { streams: StreamItem[] }) {
         )}
         {canScrollRight && (
           <button onClick={() => scroll('right')}
-            className="absolute right-0 top-0 bottom-0 z-10 hidden items-center justify-center bg-gradient-to-l from-[#0a0e1a] via-[#0a0e1a]/80 to-transparent lg:flex">
+            className="absolute right-0 top-0 bottom-0 z-10 hidden items-center justify-center bg-gradient-to-l from-[#141414] via-[#141414]/80 to-transparent lg:flex">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-white/50 shadow-lg backdrop-blur-sm transition-all hover:bg-white/10 hover:text-white">
               <ChevronRight className="h-4 w-4" />
             </div>
@@ -147,7 +147,7 @@ export default function LiveSlider({ streams }: { streams: StreamItem[] }) {
 
                   {/* Viewer count */}
                   <div className="absolute right-3 top-3 flex items-center gap-1 rounded-md bg-black/50 px-2 py-0.5 text-[10px] text-white/70 backdrop-blur-sm">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#00ff88]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#E50914]" />
                     {stream.viewerCount >= 1000 ? `${(stream.viewerCount / 1000).toFixed(1)}K` : stream.viewerCount}
                   </div>
 
@@ -163,7 +163,7 @@ export default function LiveSlider({ streams }: { streams: StreamItem[] }) {
                       </div>
                       <div className="flex items-center gap-2 px-2">
                         <span className="text-lg font-bold text-white tabular-nums">{stream.homeScore}</span>
-                        <span className="text-[10px] text-[#00ff88] font-medium">{stream.matchTime || 'LIVE'}</span>
+                        <span className="text-[10px] text-[#E50914] font-medium">{stream.matchTime || 'LIVE'}</span>
                         <span className="text-lg font-bold text-white tabular-nums">{stream.awayScore}</span>
                       </div>
                       <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
