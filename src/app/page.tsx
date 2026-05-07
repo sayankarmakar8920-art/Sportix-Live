@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, Suspense } from 'react'
+import { useEffect, useState, useCallback, Suspense, lazy, useRef } from 'react'
 import { useAppStore } from '@/lib/store'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import Header from '@/components/sportix/Header'
@@ -11,6 +11,7 @@ import CategoryTabs from '@/components/sportix/CategoryTabs'
 import VideoPlayer from '@/components/sportix/VideoPlayer'
 import BottomNav from '@/components/sportix/BottomNav'
 import { ContentSection, VideoCard } from '@/components/sportix/VideoCard'
+import { useIsMobile } from '@/hooks/use-mobile'
 import {
   Star, Clock, Flame, TrendingUp, Play, ArrowLeft,
   Radio, Trophy, Calendar, Award, Heart, ListVideo, Settings,
@@ -21,6 +22,7 @@ import {
 
 // Lazy load heavy components for faster initial page load
 const LiveControlRoom = lazy(() => import('@/components/sportix/LiveControlRoom'))
+const AdminPanel = lazy(() => import('@/components/sportix/AdminPanel'))
 const HLSPlayer = lazy(() => import('@/components/sportix/HLSPlayer'))
 const ReplaySection = lazy(() => import('@/components/sportix/ReplaySection'))
 const LiveReactions = lazy(() => import('@/components/sportix/LiveReactions'))
@@ -700,6 +702,28 @@ function SettingsPage() {
         </div>
       </div>
 
+    </div>
+  )
+}
+
+/* ──────────────────────── Mobile Admin Blocked ──────────────────────── */
+function MobileAdminBlocked() {
+  const store = useAppStore()
+  return (
+    <div className="fixed inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center" style={{ background: '#0B0F14' }}>
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5">
+        <Tablet className="h-8 w-8 text-white/20" />
+      </div>
+      <div>
+        <h2 className="text-lg font-bold text-white">Admin Panel Unavailable</h2>
+        <p className="mt-1 text-sm text-white/40">Please use a larger screen (tablet or desktop) to access the admin panel.</p>
+      </div>
+      <button
+        onClick={() => store.setState(s => ({ currentView: 'home' }))}
+        className="rounded-xl bg-[#00ff88]/10 px-5 py-2.5 text-sm font-medium text-[#00ff88] ring-1 ring-[#00ff88]/20 transition-all hover:bg-[#00ff88]/20"
+      >
+        Back to Home
+      </button>
     </div>
   )
 }
