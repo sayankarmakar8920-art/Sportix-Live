@@ -69,7 +69,7 @@ export default function FooterTopBanner() {
   const fetchAds = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/ads?position=footer&active=true')
+      const res = await fetch('/api/ads/footer?active=true')
       if (res.ok) {
         const data = await res.json()
         const adList: Ad[] = Array.isArray(data) ? data : data.ads || []
@@ -80,7 +80,20 @@ export default function FooterTopBanner() {
           setDismissed(true)
         }
       } else {
-        setDismissed(true)
+        // Fallback: try main ads endpoint
+        try {
+          const fallbackRes = await fetch('/api/ads?active=true')
+          if (fallbackRes.ok) {
+            const fallbackData = await fallbackRes.json()
+            const fallbackAds: Ad[] = Array.isArray(fallbackData) ? fallbackData : fallbackData.ads || []
+            setAds(fallbackAds)
+            if (fallbackAds.length === 0) setDismissed(true)
+          } else {
+            setDismissed(true)
+          }
+        } catch {
+          setDismissed(true)
+        }
       }
     } catch {
       setDismissed(true)

@@ -385,11 +385,24 @@ export default function HeroBannerAds({ featuredStream }: HeroBannerAdsProps) {
   const fetchAds = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/ads?position=hero&active=true')
+      const device = isDesktop ? 'desktop' : 'mobile'
+      const res = await fetch(`/api/ads/hero?device=${device}`)
       if (res.ok) {
         const data = await res.json()
         const adList = Array.isArray(data) ? data : data.ads || []
         setAds(adList)
+      } else {
+        // Fallback: try main ads endpoint
+        try {
+          const fallbackRes = await fetch('/api/ads?active=true')
+          if (fallbackRes.ok) {
+            const fallbackData = await fallbackRes.json()
+            const fallbackAds = Array.isArray(fallbackData) ? fallbackData : fallbackData.ads || []
+            setAds(fallbackAds)
+          }
+        } catch {
+          // Silent fail
+        }
       }
     } catch {
       // Silent fail
@@ -400,7 +413,7 @@ export default function HeroBannerAds({ featuredStream }: HeroBannerAdsProps) {
 
   useEffect(() => {
     fetchAds()
-  }, [fetchAds])
+  }, [fetchAds, isDesktop])
 
   // ── Build rotation queue ──
   // Desktop: 70% featured stream, 30% ads → interleave

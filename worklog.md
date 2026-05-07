@@ -553,3 +553,31 @@ Stage Summary:
 - Device targeting uses category field convention: "mobile-only", "desktop-only", null = all devices
 - No Prisma schema modifications needed (used existing Ad and AdEvent models)
 - Zero lint errors
+
+---
+Task ID: 9
+Agent: Main Agent
+Task: Fix Hero Banner Ads & Footer Banner Ads not showing — critical bug fixes
+
+Work Log:
+- Diagnosed root cause: HeroBannerAds.tsx called `/api/ads?position=hero` but main ads route didn't filter by position
+- Diagnosed second root cause: Seed function created ads with positions 'top'/'sidebar'/'bottom' but NO 'hero' or 'footer' ads
+- Fixed HeroBannerAds.tsx: Changed API call from `/api/ads?position=hero` to `/api/ads/hero?device=${device}` with fallback
+- Fixed FooterTopBanner.tsx: Changed API call from `/api/ads?position=footer` to `/api/ads/footer?active=true` with fallback
+- Added `isDesktop` to HeroBannerAds useEffect dependency array for proper re-fetching on resize
+- Added `position` query parameter support to `/api/ads/route.ts` GET handler
+- Updated seed function to create 3 hero banner ads (UCL, Premium, NBA Playoffs) and 2 footer banner ads (App Download, Merch)
+- Seed function now deletes existing hero/footer ads before re-seeding (supports re-seeding)
+- Changed seed logic to always re-seed hero/footer ads even when streams already exist
+- Verified all API endpoints return correct data: /api/ads/hero returns 3 ads, /api/ads/footer returns 2 ads
+- Verified page renders correctly with FooterTopBanner lazy loading skeleton visible
+- Lint passes clean with zero errors
+
+Stage Summary:
+- Hero Banner Ads now show 3 rotating ads (UCL, Premium, NBA) on the homepage
+- Footer Banner Ads now show 2 rotating ads (App Download, Merch) above the footer
+- Both components have fallback to main ads API if specialized endpoint fails
+- Mobile/tablet: Hero shows only ads (no live match UI)
+- Desktop: Hero interleaves live stream + ads (70/30 ratio)
+- Admin panel has full Hero/Footer Ads management page (already existed)
+- Zero lint errors

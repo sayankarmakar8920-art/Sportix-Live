@@ -7,11 +7,8 @@ export async function GET() {
     const existingStreams = await db.stream.count()
 
     if (existingStreams > 0) {
-      // Seed ads even if streams exist
-      const existingAds = await db.ad.count()
-      if (existingAds === 0) {
-        await seedAds()
-      }
+      // Always seed hero/footer ads (they may have been deleted/updated)
+      await seedAds()
       return NextResponse.json({ message: 'Database already seeded', adsSeeded: true })
     }
 
@@ -271,7 +268,96 @@ export async function GET() {
 }
 
 async function seedAds() {
+  // First, delete any existing hero/footer ads to allow re-seeding
+  await db.ad.deleteMany({ where: { position: { in: ['hero', 'footer'] } } })
+
   await Promise.all([
+    // ═══════════════════════════════════════════════════════════
+    // HERO BANNER ADS (position='hero') — these show in the big hero area
+    // ═══════════════════════════════════════════════════════════
+    db.ad.create({
+      data: {
+        title: 'Champions League Live — Watch Now on Sportix',
+        description: 'Stream every UCL match live in 4K HDR. Free for premium members.',
+        type: 'banner',
+        mediaUrl: 'https://placehold.co/1200x520/E50914/white?text=UEFA+Champions+League+LIVE+on+Sportix',
+        targetUrl: 'https://sportix.io/ucl',
+        duration: 30,
+        position: 'hero',
+        isActive: true,
+        impressions: 852000,
+        clicks: 42500,
+        priority: 10,
+      },
+    }),
+    db.ad.create({
+      data: {
+        title: 'Sportix Premium — Ad-Free 4K Streaming',
+        description: 'Get 50% off your first 3 months. Cancel anytime.',
+        type: 'banner',
+        mediaUrl: 'https://placehold.co/1200x520/b20710/white?text=Go+Premium+50%25+OFF+Ad-Free+4K',
+        targetUrl: 'https://sportix.io/premium',
+        duration: 30,
+        position: 'hero',
+        isActive: true,
+        impressions: 624800,
+        clicks: 31200,
+        priority: 9,
+      },
+    }),
+    db.ad.create({
+      data: {
+        title: 'NBA Playoffs — Every Game Live',
+        description: 'Don\'t miss a single dunk. Stream all NBA Playoffs games exclusively on Sportix.',
+        type: 'banner',
+        mediaUrl: 'https://placehold.co/1200x520/c9082a/white?text=NBA+Playoffs+LIVE+Every+Game',
+        targetUrl: 'https://sportix.io/nba-playoffs',
+        duration: 30,
+        position: 'hero',
+        isActive: true,
+        impressions: 534200,
+        clicks: 22400,
+        priority: 8,
+      },
+    }),
+
+    // ═══════════════════════════════════════════════════════════
+    // FOOTER BANNER ADS (position='footer') — show above footer
+    // ═══════════════════════════════════════════════════════════
+    db.ad.create({
+      data: {
+        title: 'Download Sportix App — Available Now',
+        description: 'Get the Sportix app for iOS and Android. Watch on the go.',
+        type: 'banner',
+        mediaUrl: 'https://placehold.co/1200x120/E50914/white?text=Download+Sportix+App+iOS+%26+Android',
+        targetUrl: 'https://sportix.io/download',
+        duration: 20,
+        position: 'footer',
+        isActive: true,
+        impressions: 485600,
+        clicks: 18400,
+        priority: 10,
+      },
+    }),
+    db.ad.create({
+      data: {
+        title: 'Official Sportix Merch — Shop Now',
+        description: 'Wear your team colors. Official jerseys and accessories.',
+        type: 'banner',
+        mediaUrl: 'https://placehold.co/1200x120/1a1a1a/white?text=Sportix+Official+Merch+Shop+Now',
+        targetUrl: 'https://sportix.io/shop',
+        duration: 15,
+        position: 'footer',
+        isActive: true,
+        impressions: 312400,
+        clicks: 9850,
+        priority: 7,
+      },
+    }),
+
+    // ═══════════════════════════════════════════════════════════
+    // REGULAR ADS (other positions)
+    // ═══════════════════════════════════════════════════════════
     db.ad.create({
       data: {
         title: 'Summer Sale Banner — 50% Off',
@@ -300,21 +386,6 @@ async function seedAds() {
         impressions: 312480,
         clicks: 9850,
         priority: 8,
-      },
-    }),
-    db.ad.create({
-      data: {
-        title: 'App Install — Download Now',
-        type: 'banner',
-        mediaUrl: 'https://placehold.co/728x90/3498db/white?text=Download+Sportix+App',
-        targetUrl: 'https://sportix.io/download',
-        category: 'football',
-        duration: 10,
-        position: 'bottom',
-        isActive: true,
-        impressions: 285640,
-        clicks: 7860,
-        priority: 6,
       },
     }),
     db.ad.create({
@@ -375,21 +446,6 @@ async function seedAds() {
         impressions: 142800,
         clicks: 3890,
         priority: 4,
-      },
-    }),
-    db.ad.create({
-      data: {
-        title: 'NBA Store — Official Merch',
-        type: 'banner',
-        mediaUrl: 'https://placehold.co/728x90/c9082a/white?text=NBA+Official+Merch',
-        targetUrl: 'https://sportix.io/nba-store',
-        category: 'basketball',
-        duration: 20,
-        position: 'sidebar',
-        isActive: false,
-        impressions: 98400,
-        clicks: 2650,
-        priority: 3,
       },
     }),
   ])

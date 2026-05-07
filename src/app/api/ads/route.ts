@@ -7,6 +7,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const category = searchParams.get('category')
     const active = searchParams.get('active')
+    const position = searchParams.get('position')
 
     const where: Record<string, unknown> = {}
 
@@ -16,6 +17,10 @@ export async function GET(req: NextRequest) {
 
     if (active !== null) {
       where.isActive = active === 'true'
+    }
+
+    if (position) {
+      where.position = position
     }
 
     const ads = await db.ad.findMany({
