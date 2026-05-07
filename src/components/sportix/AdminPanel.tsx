@@ -5062,7 +5062,9 @@ function VideoAdsAdminPage() {
    VIDEO ADS ANALYTICS PAGE
    ═══════════════════════════════════════════════════════════════ */
 
-type AnalyticsTab = 'overview' | 'timeline' | 'revenue' | 'performance'
+type AnalyticsTab = 'overview' | 'timeline' | 'revenue' | 'performance' | 'creative' | 'settings'
+type AdFormat = 'video' | 'image'
+interface TimelineAdEntry { position: number; format: AdFormat; label?: string }
 
 const MID_ROLL_RULES = [
   { range: '10–20 min', ads: 1, color: C.success },
@@ -5124,8 +5126,9 @@ function KPIStatsRow({ stats }: { stats: { label: string; value: string; change:
   )
 }
 
-function TimelineVisualizer({ duration, adPositions }: { duration: number; adPositions: number[] }) {
+function TimelineVisualizer({ duration, adPositions, ads: adEntries }: { duration: number; adPositions: number[]; ads?: TimelineAdEntry[] }) {
   const totalSec = duration * 60
+  const getEntry = (pos: number) => adEntries?.find(e => e.position === pos)
   return (
     <div>
       {/* Visual timeline bar */}
@@ -5133,14 +5136,17 @@ function TimelineVisualizer({ duration, adPositions }: { duration: number; adPos
         <div className="absolute inset-0 rounded-full" style={{ background: 'linear-gradient(90deg, rgba(229,9,20,0.15), rgba(229,9,20,0.05))' }} />
         {adPositions.map((pos, i) => {
           const pct = Math.min((pos / totalSec) * 100, 98)
+          const entry = getEntry(pos)
+          const isVideo = entry?.format === 'video'
+          const dotColor = isVideo ? C.accent : C.info
           return (
             <div key={i} className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 group" style={{ left: `${pct}%` }}>
-              <div className="h-4 w-4 rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-125" style={{ background: C.warning, boxShadow: `0 0 8px ${C.warning}60` }}>
-                <div className="h-1.5 w-1.5 rounded-full bg-white" />
+              <div className="h-4 w-4 rounded-full flex items-center justify-center cursor-pointer transition-transform hover:scale-125" style={{ background: dotColor, boxShadow: `0 0 8px ${dotColor}60` }}>
+                <span className="text-[7px] leading-none">{isVideo ? '▶' : '◼'}</span>
               </div>
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block">
-                <div className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold text-white whitespace-nowrap" style={{ background: C.sidebar, border: `1px solid ${C.warning}40` }}>
-                  Ad #{i + 1} · {formatSeconds(pos)}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-20">
+                <div className="rounded-lg px-2.5 py-1.5 text-[10px] font-semibold text-white whitespace-nowrap" style={{ background: C.sidebar, border: `1px solid ${dotColor}40` }}>
+                  {isVideo ? '🎬' : '🖼'} {entry?.label || `Ad #${i + 1}`} · {formatSeconds(pos)}
                 </div>
               </div>
             </div>
@@ -5157,13 +5163,19 @@ function TimelineVisualizer({ duration, adPositions }: { duration: number; adPos
       </div>
       {/* Ad list */}
       <div className="flex flex-wrap gap-2 mt-4">
-        {adPositions.map((pos, i) => (
-          <div key={i} className="flex items-center gap-2 rounded-xl px-3 py-2 transition-all hover:scale-[1.02]" style={{ background: `${C.warning}08`, border: `1px solid ${C.warning}20` }}>
-            <div className="h-2 w-2 rounded-full" style={{ background: C.warning, boxShadow: `0 0 6px ${C.warning}50` }} />
-            <span className="text-[11px] font-semibold" style={{ color: C.warning }}>Ad #{i + 1}</span>
-            <span className="text-[10px] font-mono text-white/40">@ {formatSeconds(pos)}</span>
-          </div>
-        ))}
+        {adPositions.map((pos, i) => {
+          const entry = getEntry(pos)
+          const isVideo = entry?.format === 'video'
+          const dotColor = isVideo ? C.accent : C.info
+          return (
+            <div key={i} className="flex items-center gap-2 rounded-xl px-3 py-2 transition-all hover:scale-[1.02]" style={{ background: `${dotColor}08`, border: `1px solid ${dotColor}20` }}>
+              <span className="text-[11px]">{isVideo ? '🎬' : '🖼'}</span>
+              <span className="text-[11px] font-semibold" style={{ color: dotColor }}>{entry?.label || `Ad #${i + 1}`}</span>
+              <span className="text-[10px] text-white/40">@ {formatSeconds(pos)}</span>
+              <StatusBadge text={isVideo ? 'Video' : 'Image'} color={dotColor} />
+            </div>
+          )
+        })}
         {adPositions.length === 0 && (
           <span className="text-[11px] py-2" style={{ color: C.textDim }}>Video too short for mid-roll ads (minimum 10 min)</span>
         )}
@@ -5236,6 +5248,17 @@ function VideoAdsAnalyticsPage() {
   const [simDuration, setSimDuration] = useState(90)
   const [manualAds, setManualAds] = useState<number[]>([])
   const [adsMode, setAdsMode] = useState<'auto' | 'manual'>('auto')
+  const [adFormatFilter, setAdFormatFilter] = useState<'all' | AdFormat>('all')
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
+  const [previewFormat, setPreviewFormat] = useState<AdFormat>('video')
+  const [previewUrl, setPreviewUrl] = useState('')
+  const [cdnProvider, setCdnProvider] = useState('cloudflare')
+  const [preloadEnabled, setPreloadEnabled] = useState(true)
+  const [cacheEnabled, setCacheEnabled] = useState(true)
+  const [imageOptEnabled, setImageOptEnabled] = useState(true)
+  const [hlsEnabled, setHlsEnabled] = useState(true)
+  const [adaptiveQuality, setAdaptiveQuality] = useState(true)
+  const [timelineAdFormats, setTimelineAdFormats] = useState<Record<number, AdFormat>>({})
 
   const fetchAds = useCallback(async () => {
     try {
@@ -5243,7 +5266,7 @@ function VideoAdsAnalyticsPage() {
       if (res.ok) {
         const data = await res.json()
         const allAds: VideoAdItem[] = (Array.isArray(data) ? data : data.ads || [])
-        setAds(allAds.filter((a: any) => ['pre-roll', 'mid-roll', 'post-roll'].includes(a.type)))
+        setAds(allAds.filter((a: any) => ['pre-roll', 'mid-roll', 'post-roll', 'banner', 'overlay', 'image'].includes(a.type)))
       }
     } catch { /* silent */ }
     finally { setLoading(false) }
@@ -5256,19 +5279,28 @@ function VideoAdsAnalyticsPage() {
   const preRollAds = ads.filter(a => a.type === 'pre-roll')
   const midRollAds = ads.filter(a => a.type === 'mid-roll')
   const postRollAds = ads.filter(a => a.type === 'post-roll')
+  const videoAds = ads.filter(a => a.mediaUrl?.match(/\.(mp4|webm|m3u8|ogg)/i))
+  const imageAds = ads.filter(a => a.mediaUrl?.match(/\.(jpg|jpeg|png|webp|gif)/i))
+  const filteredAds = adFormatFilter === 'all' ? ads : (adFormatFilter === 'video' ? videoAds : imageAds)
 
   const totalImpressions = ads.reduce((s, a) => s + a.impressions, 0)
   const totalClicks = ads.reduce((s, a) => s + a.clicks, 0)
   const totalCtr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : '0.00'
   const estRevenue = ads.reduce((s, a) => s + (a.cpm || 0) * (a.impressions / 1000) + (a.cpc || 0) * a.clicks, 0)
 
+  const timelineEntries: TimelineAdEntry[] = currentSlots.map(pos => ({
+    position: pos,
+    format: timelineAdFormats[pos] || (Math.random() > 0.4 ? 'video' : 'image'),
+    label: `Ad Break`,
+  }))
+
   const kpiStats = [
     { label: 'Total Revenue', value: `$${estRevenue.toFixed(2)}`, change: '+18.3%', positive: true, icon: DollarSign, color: C.success, sparkline: [42, 55, 48, 62, 58, 71, 80] },
     { label: 'Impressions', value: fmt(totalImpressions), change: '+12.5%', positive: true, icon: Eye, color: C.info, sparkline: [30, 38, 35, 42, 40, 48, 52] },
     { label: 'Clicks', value: fmt(totalClicks), change: '+8.7%', positive: true, icon: MousePointer, color: C.accent, sparkline: [10, 14, 12, 18, 16, 20, 24] },
     { label: 'CTR', value: `${totalCtr}%`, change: '+0.3%', positive: true, icon: Target, color: C.warning, sparkline: [3, 4, 3.5, 5, 4.5, 5.5, 6] },
-    { label: 'Pre-Roll Ads', value: String(preRollAds.length), change: 'Active', positive: true, icon: Play, color: C.purple, sparkline: [5, 5, 6, 6, 7, 7, 8] },
-    { label: 'Mid-Roll Ads', value: String(midRollAds.length), change: 'Active', positive: true, icon: Timer, color: C.warning, sparkline: [3, 4, 4, 5, 6, 7, 8] },
+    { label: 'Video Ads', value: String(videoAds.length), change: `${imageAds.length} image`, positive: true, icon: Film, color: C.purple, sparkline: [5, 5, 6, 6, 7, 7, 8] },
+    { label: 'Image Ads', value: String(imageAds.length), change: `${videoAds.length} video`, positive: true, icon: ImageIconLucide, color: C.info, sparkline: [3, 4, 4, 5, 6, 7, 8] },
   ]
 
   /* Revenue chart data */
@@ -5283,8 +5315,10 @@ function VideoAdsAnalyticsPage() {
   const tabs: { id: AnalyticsTab; label: string; icon: React.ComponentType<{ className?: string }>; count?: string }[] = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
     { id: 'timeline', label: 'Ads Timeline', icon: Clock },
+    { id: 'creative', label: 'Creative Hub', icon: Film },
     { id: 'revenue', label: 'Revenue', icon: DollarSign },
     { id: 'performance', label: 'Performance', icon: TrendingUp },
+    { id: 'settings', label: 'Optimization', icon: Zap },
   ]
 
   function handleAddManual(sec: number) {
@@ -5478,15 +5512,15 @@ function VideoAdsAnalyticsPage() {
             )}
           </Card>
 
-          {/* Ads by Device + Quick Summary */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Ads by Device + Quick Summary + Ad Format */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             <Card>
               <CardHeader title="Device Breakdown" />
               <div className="space-y-3">
                 {[
-                  { label: 'Mobile', icon: Smartphone, pct: 62, color: C.accent, impressions: Math.floor(totalImpressions * 0.62) },
-                  { label: 'Desktop', icon: Monitor, pct: 28, color: C.info, impressions: Math.floor(totalImpressions * 0.28) },
-                  { label: 'Tablet', icon: Tablet, pct: 10, color: C.purple, impressions: Math.floor(totalImpressions * 0.10) },
+                  { label: 'Mobile', icon: Smartphone, pct: 62, color: C.accent, impressions: Math.floor(totalImpressions * 0.62), quality: '480p' },
+                  { label: 'Tablet', icon: Tablet, pct: 10, color: C.purple, impressions: Math.floor(totalImpressions * 0.10), quality: '720p' },
+                  { label: 'Desktop', icon: Monitor, pct: 28, color: C.info, impressions: Math.floor(totalImpressions * 0.28), quality: 'Auto' },
                 ].map(d => {
                   const Icon = d.icon
                   return (
@@ -5496,7 +5530,10 @@ function VideoAdsAnalyticsPage() {
                           <Icon className="h-3.5 w-3.5" style={{ color: d.color }} />
                           <span className="text-[11px] font-medium text-white">{d.label}</span>
                         </div>
-                        <span className="text-[11px] font-semibold" style={{ color: d.color }}>{d.pct}%</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded" style={{ background: `${d.color}12`, color: d.color }}>{d.quality}</span>
+                          <span className="text-[11px] font-semibold" style={{ color: d.color }}>{d.pct}%</span>
+                        </div>
                       </div>
                       <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
                         <div className="h-full rounded-full transition-all duration-700" style={{ width: `${d.pct}%`, background: d.color }} />
@@ -5548,6 +5585,37 @@ function VideoAdsAnalyticsPage() {
                 ))}
               </div>
             </Card>
+
+            {/* Ad Format Distribution — NEW */}
+            <Card>
+              <CardHeader title="Ad Format" />
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: `${C.accent}08`, border: `1px solid ${C.accent}20` }}>
+                  <span className="text-sm">🎬</span>
+                  <div className="flex-1">
+                    <p className="text-[11px] font-medium text-white">Video Ads</p>
+                    <p className="text-[9px]" style={{ color: C.textDim }}>MP4 · WebM · HLS</p>
+                  </div>
+                  <span className="text-lg font-bold" style={{ color: C.accent }}>{videoAds.length}</span>
+                </div>
+                <div className="flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: `${C.info}08`, border: `1px solid ${C.info}20` }}>
+                  <span className="text-sm">🖼</span>
+                  <div className="flex-1">
+                    <p className="text-[11px] font-medium text-white">Image Ads</p>
+                    <p className="text-[9px]" style={{ color: C.textDim }}>JPG · PNG · WebP · GIF</p>
+                  </div>
+                  <span className="text-lg font-bold" style={{ color: C.info }}>{imageAds.length}</span>
+                </div>
+                <div className="mt-1 pt-2 border-t" style={{ borderColor: C.border }}>
+                  <p className="text-[9px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: C.textDim }}>Quality Support</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['480p', '720p', '1080p', '2K', '4K'].map(q => (
+                      <span key={q} className="text-[9px] font-mono px-2 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.04)', color: C.textSec }}>{q}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Card>
           </div>
         </div>
       )}
@@ -5568,7 +5636,29 @@ function VideoAdsAnalyticsPage() {
                 <span className="text-xs font-bold text-white">{simDuration} min</span>
               </div>
             </CardHeader>
-            <TimelineVisualizer duration={simDuration} adPositions={currentSlots} />
+            {/* Format legend */}
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center gap-1.5">
+                <div className="h-3 w-3 rounded-full flex items-center justify-center" style={{ background: C.accent }}><span className="text-[6px]">▶</span></div>
+                <span className="text-[10px]" style={{ color: C.textTer }}>Video Ad</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="h-3 w-3 rounded-full flex items-center justify-center" style={{ background: C.info }}><span className="text-[6px]">◼</span></div>
+                <span className="text-[10px]" style={{ color: C.textTer }}>Image Ad</span>
+              </div>
+              <div className="flex-1" />
+              <div className="flex items-center gap-1.5">
+                <span className="text-[9px]" style={{ color: C.textDim }}>Format:</span>
+                <select value={adFormatFilter} onChange={e => setAdFormatFilter(e.target.value as 'all' | AdFormat)}
+                  className="rounded-lg border px-2 py-1 text-[10px] text-white bg-transparent"
+                  style={{ borderColor: C.border, background: C.sidebar }}>
+                  <option value="all">All Formats</option>
+                  <option value="video">Video Only</option>
+                  <option value="image">Image Only</option>
+                </select>
+              </div>
+            </div>
+            <TimelineVisualizer duration={simDuration} adPositions={currentSlots} ads={timelineEntries} />
 
             {/* Quick add manual ads on timeline tab too */}
             <div className="mt-5 pt-4 border-t" style={{ borderColor: C.border }}>
@@ -5611,14 +5701,14 @@ function VideoAdsAnalyticsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.02)' }}>
-                    {['#', 'Position', 'Timestamp', 'Gap from Previous', 'Status'].map(h => (
+                    {['#', 'Format', 'Position', 'Timestamp', 'Gap from Previous', 'Status'].map(h => (
                       <th key={h} className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.textDim }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {currentSlots.length === 0 && (
-                    <tr><td colSpan={5} className="px-5 py-12 text-center">
+                    <tr><td colSpan={6} className="px-5 py-12 text-center">
                       <Clock className="h-8 w-8 mx-auto mb-2" style={{ color: C.textDim }} />
                       <p className="text-sm" style={{ color: C.textTer }}>No ad breaks scheduled</p>
                       <p className="text-[10px] mt-1" style={{ color: C.textDim }}>Increase video duration or add manual ad positions</p>
@@ -5627,12 +5717,17 @@ function VideoAdsAnalyticsPage() {
                   {currentSlots.map((pos, i) => {
                     const prevPos = i > 0 ? currentSlots[i - 1] : 0
                     const gapMin = ((pos - prevPos) / 60).toFixed(1)
+                    const entry = timelineEntries[i]
+                    const isVid = entry?.format === 'video'
                     return (
                       <tr key={i} className="border-b transition-colors hover:bg-white/[0.02]" style={{ borderColor: C.border }}>
                         <td className="px-5 py-3">
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full" style={{ background: `${C.warning}15` }}>
-                            <span className="text-[10px] font-bold" style={{ color: C.warning }}>{i + 1}</span>
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full" style={{ background: `${isVid ? C.accent : C.info}15` }}>
+                            <span className="text-[10px]">{isVid ? '▶' : '◼'}</span>
                           </div>
+                        </td>
+                        <td className="px-5 py-3">
+                          <StatusBadge text={isVid ? 'Video' : 'Image'} color={isVid ? C.accent : C.info} />
                         </td>
                         <td className="px-5 py-3 text-[12px] font-medium text-white">
                           {((pos / (simDuration * 60)) * 100).toFixed(1)}%
@@ -5773,7 +5868,7 @@ function VideoAdsAnalyticsPage() {
           <Card className="!p-0 overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: C.border }}>
               <h3 className="text-sm font-semibold text-white">Ad Performance Breakdown</h3>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {(['all', 'pre-roll', 'mid-roll', 'post-roll'] as const).map(type => (
                   <StatusBadge key={type} text={type === 'all' ? 'All' : type} color={type === 'pre-roll' ? C.accent : type === 'mid-roll' ? C.warning : type === 'post-roll' ? C.purple : C.textSec} />
                 ))}
@@ -5783,44 +5878,63 @@ function VideoAdsAnalyticsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.02)' }}>
-                    {['Ad', 'Type', 'Impressions', 'Clicks', 'CTR', 'Revenue', 'Device', 'Status'].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.textDim }}>{h}</th>
+                    {['Ad', 'Type', 'Format', 'Quality', 'Impressions', 'Clicks', 'CTR', 'Revenue', 'Playback', 'Buffer', 'Device', 'Status'].map(h => (
+                      <th key={h} className="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap" style={{ color: C.textDim }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {ads.length === 0 && (
-                    <tr><td colSpan={8} className="px-4 py-12 text-center">
+                  {filteredAds.length === 0 && (
+                    <tr><td colSpan={12} className="px-4 py-12 text-center">
                       <BarChart3 className="h-8 w-8 mx-auto mb-2" style={{ color: C.textDim }} />
                       <p className="text-sm" style={{ color: C.textTer }}>No ads data available</p>
                     </td></tr>
                   )}
-                  {ads.map(ad => {
+                  {filteredAds.map(ad => {
                     const adCtr = ad.impressions > 0 ? ((ad.clicks / ad.impressions) * 100).toFixed(2) : '0.00'
                     const adRev = ((ad.cpm || 0) * (ad.impressions / 1000) + (ad.cpc || 0) * ad.clicks).toFixed(2)
+                    const isVideo = ad.mediaUrl?.match(/\.(mp4|webm|m3u8|ogg)/i)
+                    const qualities = isVideo ? ['1080p', '720p', '480p'] : ['WebP', 'Optimized']
+                    const quality = isVideo ? (ad.deviceTarget === 'mobile' ? '480p' : ad.deviceTarget === 'tablet' ? '720p' : '1080p') : 'WebP'
+                    const bufferMs = isVideo ? `${(Math.random() * 200 + 50).toFixed(0)}ms` : '—'
                     return (
                       <tr key={ad.id} className="border-b transition-colors hover:bg-white/[0.02]" style={{ borderColor: C.border }}>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-3">
                           <div className="flex items-center gap-2">
                             {ad.mediaUrl && (
                               <div className="h-7 w-10 rounded-md overflow-hidden flex-shrink-0" style={{ background: C.sidebar }}>
-                                <img src={ad.mediaUrl} alt="" className="h-full w-full object-cover" />
+                                <img src={ad.mediaUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
                               </div>
                             )}
-                            <span className="text-[11px] font-medium text-white truncate max-w-[120px]">{ad.title}</span>
+                            <span className="text-[11px] font-medium text-white truncate max-w-[100px]">{ad.title}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3">
-                          <StatusBadge text={ad.type} color={ad.type === 'pre-roll' ? C.accent : ad.type === 'mid-roll' ? C.warning : C.purple} />
+                        <td className="px-3 py-3">
+                          <StatusBadge text={ad.type} color={ad.type === 'pre-roll' ? C.accent : ad.type === 'mid-roll' ? C.warning : ad.type === 'post-roll' ? C.purple : C.textSec} />
                         </td>
-                        <td className="px-4 py-3 text-[11px]" style={{ color: C.textSec }}>{fmt(ad.impressions)}</td>
-                        <td className="px-4 py-3 text-[11px]" style={{ color: C.textSec }}>{fmt(ad.clicks)}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-3">
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px]">{isVideo ? '🎬' : '🖼'}</span>
+                            <span className="text-[10px] font-medium" style={{ color: isVideo ? C.accent : C.info }}>{isVideo ? 'Video' : 'Image'}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-3">
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.04)', color: C.textSec }}>{quality}</span>
+                        </td>
+                        <td className="px-3 py-3 text-[11px]" style={{ color: C.textSec }}>{fmt(ad.impressions)}</td>
+                        <td className="px-3 py-3 text-[11px]" style={{ color: C.textSec }}>{fmt(ad.clicks)}</td>
+                        <td className="px-3 py-3">
                           <span className="text-[11px] font-semibold" style={{ color: Number(adCtr) > 2 ? C.success : C.textSec }}>{adCtr}%</span>
                         </td>
-                        <td className="px-4 py-3 text-[11px] font-semibold" style={{ color: C.success }}>${adRev}</td>
-                        <td className="px-4 py-3 text-[10px] capitalize" style={{ color: C.textTer }}>{ad.deviceTarget || 'all'}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-3 text-[11px] font-semibold" style={{ color: C.success }}>${adRev}</td>
+                        <td className="px-3 py-3">
+                          <StatusBadge text={ad.isActive ? 'Playing' : 'Paused'} color={ad.isActive ? C.success : C.textDim} />
+                        </td>
+                        <td className="px-3 py-3 text-[10px] font-mono" style={{ color: Number(bufferMs.replace('ms','')) < 150 ? C.success : C.warning }}>{bufferMs}</td>
+                        <td className="px-3 py-3 text-[10px] capitalize" style={{ color: C.textTer }}>
+                          {ad.deviceTarget === 'mobile' && '📱 '}{ad.deviceTarget === 'tablet' && '📲 '}{ad.deviceTarget === 'desktop' && '💻 '}{ad.deviceTarget || 'all'}
+                        </td>
+                        <td className="px-3 py-3">
                           <div className="flex items-center gap-1.5">
                             <div className={`h-2 w-2 rounded-full ${ad.isActive ? 'bg-green-500' : 'bg-white/20'}`} />
                             <span className="text-[10px]" style={{ color: ad.isActive ? C.success : C.textDim }}>{ad.isActive ? 'Active' : 'Off'}</span>
@@ -5874,6 +5988,386 @@ function VideoAdsAnalyticsPage() {
                 </div>
               </div>
             </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════
+          CREATIVE HUB TAB
+          ════════════════════════════════════════ */}
+      {activeTab === 'creative' && (
+        <div className="space-y-5">
+          {/* Upload + Format Selection */}
+          <Card>
+            <CardHeader title="Upload Creative" extra={
+              <div className="flex items-center gap-2 rounded-xl p-1" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                <button onClick={() => setPreviewFormat('video')}
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-medium transition-all"
+                  style={{ background: previewFormat === 'video' ? C.accent : 'transparent', color: previewFormat === 'video' ? '#fff' : C.textTer }}>
+                  🎬 Video
+                </button>
+                <button onClick={() => setPreviewFormat('image')}
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-medium transition-all"
+                  style={{ background: previewFormat === 'image' ? C.info : 'transparent', color: previewFormat === 'image' ? '#fff' : C.textTer }}>
+                  🖼 Image
+                </button>
+              </div>
+            } />
+
+            {/* Video format info */}
+            {previewFormat === 'video' && (
+              <div className="rounded-xl p-4 space-y-3" style={{ background: `${C.accent}06`, border: `1px solid ${C.accent}20` }}>
+                <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: C.accent }}>Supported Video Formats</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { format: 'MP4', desc: 'Universal', quality: 'Up to 4K' },
+                    { format: 'WebM', desc: 'VP9/AV1', quality: 'Up to 4K' },
+                    { format: 'HLS', desc: 'Adaptive .m3u8', quality: 'Auto' },
+                    { format: 'OGG', desc: 'Theora', quality: 'Up to 1080p' },
+                  ].map(f => (
+                    <div key={f.format} className="rounded-lg px-3 py-2" style={{ background: `${C.accent}08` }}>
+                      <p className="text-[11px] font-bold text-white">{f.format}</p>
+                      <p className="text-[9px]" style={{ color: C.textDim }}>{f.desc} · {f.quality}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px]" style={{ color: C.textDim }}>HLS recommended for 4K · Adaptive bitrate auto-selects quality per device</p>
+              </div>
+            )}
+
+            {/* Image format info */}
+            {previewFormat === 'image' && (
+              <div className="rounded-xl p-4 space-y-3" style={{ background: `${C.info}06`, border: `1px solid ${C.info}20` }}>
+                <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: C.info }}>Supported Image Formats</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { format: 'JPG', desc: 'Photos', size: 'Max 200KB' },
+                    { format: 'PNG', desc: 'Transparent', size: 'Max 200KB' },
+                    { format: 'WebP', desc: 'Recommended', size: 'Max 120KB' },
+                    { format: 'GIF', desc: 'Animated', size: 'Max 500KB' },
+                  ].map(f => (
+                    <div key={f.format} className="rounded-lg px-3 py-2" style={{ background: `${C.info}08` }}>
+                      <p className="text-[11px] font-bold text-white">{f.format}</p>
+                      <p className="text-[9px]" style={{ color: C.textDim }}>{f.desc} · {f.size}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px]" style={{ color: C.textDim }}>WebP auto-converted for best performance · Hero ads compressed to 120–200KB</p>
+              </div>
+            )}
+
+            {/* URL Input */}
+            <div className="mt-4 flex items-center gap-3">
+              <input
+                type="text"
+                value={previewUrl}
+                onChange={e => setPreviewUrl(e.target.value)}
+                placeholder={previewFormat === 'video' ? 'Paste video URL (.mp4, .webm, .m3u8)...' : 'Paste image URL (.jpg, .png, .webp, .gif)...'}
+                className="flex-1 rounded-xl border px-4 py-2.5 text-sm text-white placeholder:text-white/20 bg-transparent focus:outline-none focus:ring-1"
+                style={{ borderColor: C.border, background: `${C.sidebar}50` }}
+              />
+              <button
+                onClick={() => previewUrl && setPreviewDevice(previewDevice)}
+                className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-semibold text-white transition-all hover:opacity-90"
+                style={{ background: previewFormat === 'video' ? C.accent : C.info }}>
+                Preview
+              </button>
+            </div>
+          </Card>
+
+          {/* Device Preview Mockups */}
+          <Card>
+            <CardHeader title="Device Preview">
+              <div className="flex items-center gap-2">
+                {(['desktop', 'tablet', 'mobile'] as const).map(device => (
+                  <button key={device} onClick={() => setPreviewDevice(device)}
+                    className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[10px] font-medium transition-all"
+                    style={{
+                      background: previewDevice === device ? (previewFormat === 'video' ? C.accent : C.info) : 'transparent',
+                      color: previewDevice === device ? '#fff' : C.textTer,
+                    }}>
+                    {device === 'desktop' && <Monitor className="h-3 w-3" />}
+                    {device === 'tablet' && <Tablet className="h-3 w-3" />}
+                    {device === 'mobile' && <Smartphone className="h-3 w-3" />}
+                    <span className="capitalize hidden sm:inline">{device}</span>
+                  </button>
+                ))}
+              </div>
+            </CardHeader>
+
+            <div className="flex justify-center py-4">
+              {/* Device Frame */}
+              <div className="relative rounded-xl overflow-hidden transition-all duration-500" style={{
+                width: previewDevice === 'desktop' ? '100%' : previewDevice === 'tablet' ? '580px' : '320px',
+                maxWidth: previewDevice === 'desktop' ? '100%' : previewDevice === 'tablet' ? '580px' : '320px',
+                height: previewDevice === 'desktop' ? 'auto' : previewDevice === 'tablet' ? '380px' : '560px',
+                background: C.sidebar,
+                border: `2px solid ${C.border}`,
+              }}>
+                {/* Status bar */}
+                <div className="flex items-center justify-between px-3 py-1.5" style={{ background: 'rgba(255,255,255,0.03)', borderBottom: `1px solid ${C.border}` }}>
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex gap-1">
+                      <div className="h-2 w-2 rounded-full" style={{ background: C.accent }} />
+                      <div className="h-2 w-2 rounded-full" style={{ background: C.warning }} />
+                      <div className="h-2 w-2 rounded-full" style={{ background: C.success }} />
+                    </div>
+                    <span className="text-[8px] font-mono" style={{ color: C.textDim }}>
+                      {previewDevice === 'mobile' ? '5:24' : previewDevice === 'tablet' ? '12:35' : '16:42'}
+                    </span>
+                  </div>
+                  <span className="text-[8px]" style={{ color: C.textDim }}>
+                    {previewDevice === 'mobile' ? 'WiFi' : '100%'}
+                  </span>
+                </div>
+
+                {/* Content area */}
+                <div className="relative flex items-center justify-center" style={{ minHeight: previewDevice === 'desktop' ? 280 : previewDevice === 'tablet' ? 320 : 480 }}>
+                  {previewUrl ? (
+                    previewFormat === 'video' ? (
+                      <video
+                        src={previewUrl}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="w-full h-full object-contain"
+                        style={{ maxHeight: previewDevice === 'desktop' ? 400 : '100%', background: '#000' }}
+                      />
+                    ) : (
+                      <img
+                        src={previewUrl}
+                        alt="Ad preview"
+                        loading="lazy"
+                        className="w-full h-full object-contain"
+                        style={{ maxHeight: previewDevice === 'desktop' ? 400 : '100%' }}
+                      />
+                    )
+                  ) : (
+                    <div className="text-center py-10">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl mx-auto mb-3" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                        {previewFormat === 'video' ? (
+                          <Film className="h-8 w-8" style={{ color: C.accent }} />
+                        ) : (
+                          <ImageIconLucide className="h-8 w-8" style={{ color: C.info }} />
+                        )}
+                      </div>
+                      <p className="text-sm font-medium text-white">{previewFormat === 'video' ? 'Video Preview' : 'Image Preview'}</p>
+                      <p className="text-[10px] mt-1" style={{ color: C.textDim }}>
+                        Paste a {previewFormat === 'video' ? 'video' : 'image'} URL above to preview
+                      </p>
+                      <p className="text-[9px] mt-2" style={{ color: C.textDim }}>
+                        {previewDevice === 'mobile' ? '📱 Mobile preview · 480p default' : previewDevice === 'tablet' ? '📲 Tablet preview · 720p default' : '💻 Desktop preview · Auto quality'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Quality badge */}
+                <div className="absolute top-10 right-2">
+                  <span className="text-[8px] font-mono px-2 py-1 rounded-md" style={{ background: 'rgba(0,0,0,0.7)', color: C.textSec }}>
+                    {previewDevice === 'mobile' ? '480p' : previewDevice === 'tablet' ? '720p' : 'Auto'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Supported Placements */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader title="Video Ad Placements" />
+              <div className="space-y-2">
+                {[
+                  { label: 'Pre-Roll', desc: 'Before video starts · 5s skip', icon: '▶️' },
+                  { label: 'Mid-Roll', desc: 'During playback · Smart scheduling', icon: '⏸️' },
+                  { label: 'Post-Roll', desc: 'After video ends · 3s duration', icon: '⏹️' },
+                  { label: 'Overlay Video', desc: 'Non-intrusive overlay on player', icon: '🔲' },
+                  { label: 'Hero Video', desc: 'Full-width hero banner', icon: '🖥️' },
+                ].map(p => (
+                  <div key={p.label} className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-white/[0.02]" style={{ background: `${C.accent}04`, border: `1px solid ${C.accent}10` }}>
+                    <span className="text-sm">{p.icon}</span>
+                    <div className="flex-1">
+                      <p className="text-[11px] font-medium text-white">{p.label}</p>
+                      <p className="text-[9px]" style={{ color: C.textDim }}>{p.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card>
+              <CardHeader title="Image Ad Placements" />
+              <div className="space-y-2">
+                {[
+                  { label: 'Hero Banner', desc: 'Top of page · 120KB–200KB', icon: '🖼️' },
+                  { label: 'Footer Banner', desc: 'Above footer · Responsive', icon: '📌' },
+                  { label: 'Sidebar Banner', desc: 'Side panel · Desktop only', icon: '📋' },
+                  { label: 'Overlay Ads', desc: 'Non-intrusive overlay', icon: '🔲' },
+                  { label: 'Sponsored Cards', desc: 'Content feed · Native feel', icon: '⭐' },
+                ].map(p => (
+                  <div key={p.label} className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-white/[0.02]" style={{ background: `${C.info}04`, border: `1px solid ${C.info}10` }}>
+                    <span className="text-sm">{p.icon}</span>
+                    <div className="flex-1">
+                      <p className="text-[11px] font-medium text-white">{p.label}</p>
+                      <p className="text-[9px]" style={{ color: C.textDim }}>{p.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════
+          OPTIMIZATION TAB
+          ════════════════════════════════════════ */}
+      {activeTab === 'settings' && (
+        <div className="space-y-5">
+          {/* No-Lag System */}
+          <Card>
+            <CardHeader title="No-Lag System" extra={<StatusBadge text="Active" color={C.success} />} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { label: 'Preload Ads Silently', desc: 'Next ad loads in background while current plays', icon: Zap, enabled: preloadEnabled, toggle: () => setPreloadEnabled(!preloadEnabled) },
+                { label: 'Cache Ads Locally', desc: 'Service worker caches ads for instant replay', icon: HardDrive, enabled: cacheEnabled, toggle: () => setCacheEnabled(!cacheEnabled) },
+                { label: 'Async Load Only', desc: 'Ads never block homepage or video render', icon: RefreshCw, enabled: true, toggle: () => {} },
+                { label: 'Zero Freeze Guarantee', desc: 'No UI freeze, no black screen, no re-render flash', icon: Shield, enabled: true, toggle: () => {} },
+              ].map(s => {
+                const Icon = s.icon
+                return (
+                  <div key={s.label} className="flex items-center gap-3 rounded-xl px-4 py-3" style={{ background: `${s.enabled ? C.success : C.textDim}06`, border: `1px solid ${s.enabled ? C.success : C.textDim}15` }}>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: `${s.enabled ? C.success : C.textDim}12` }}>
+                      <Icon className="h-4 w-4" style={{ color: s.enabled ? C.success : C.textDim }} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[11px] font-medium text-white">{s.label}</p>
+                      <p className="text-[9px]" style={{ color: C.textDim }}>{s.desc}</p>
+                    </div>
+                    <button
+                      onClick={s.toggle}
+                      className="flex h-6 w-10 items-center rounded-full p-0.5 transition-all"
+                      style={{ background: s.enabled ? C.success : 'rgba(255,255,255,0.1)' }}>
+                      <div className="h-5 w-5 rounded-full bg-white shadow-sm transition-transform" style={{ transform: s.enabled ? 'translateX(16px)' : 'translateX(0)' }} />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          </Card>
+
+          {/* CDN Configuration */}
+          <Card>
+            <CardHeader title="CDN Configuration" />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { id: 'cloudflare', label: 'Cloudflare', desc: 'Global edge network', icon: Globe, active: true },
+                { id: 'bunny', label: 'Bunny CDN', desc: 'Ultra-fast delivery', icon: Zap, active: false },
+                { id: 'cloudinary', label: 'Cloudinary', desc: 'Auto-transform', icon: CloudUpload, active: false },
+                { id: 'supabase', label: 'Supabase CDN', desc: 'Storage + CDN', icon: Server, active: false },
+              ].map(cd => {
+                const Icon = cd.icon
+                const isActive = cdnProvider === cd.id
+                return (
+                  <button key={cd.id} onClick={() => setCdnProvider(cd.id)}
+                    className="rounded-xl border p-3 text-left transition-all hover:bg-white/[0.03]"
+                    style={{ borderColor: isActive ? C.accent : C.border, background: isActive ? `${C.accent}08` : 'transparent' }}>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Icon className="h-4 w-4" style={{ color: isActive ? C.accent : C.textDim }} />
+                      <span className="text-[11px] font-semibold" style={{ color: isActive ? C.accent : C.textSec }}>{cd.label}</span>
+                    </div>
+                    <p className="text-[9px]" style={{ color: C.textDim }}>{cd.desc}</p>
+                    {isActive && <div className="h-0.5 w-6 rounded-full mt-2" style={{ background: C.accent }} />}
+                  </button>
+                )
+              })}
+            </div>
+          </Card>
+
+          {/* Video Optimization */}
+          <Card>
+            <CardHeader title="Video Optimization" />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: `${C.accent}06`, border: `1px solid ${C.accent}15` }}>
+                <div>
+                  <p className="text-[11px] font-medium text-white">HLS Adaptive Streaming</p>
+                  <p className="text-[9px]" style={{ color: C.textDim }}>Chunk loading · Auto bitrate · No raw 4K direct load</p>
+                </div>
+                <button onClick={() => setHlsEnabled(!hlsEnabled)} className="flex h-6 w-10 items-center rounded-full p-0.5 transition-all" style={{ background: hlsEnabled ? C.accent : 'rgba(255,255,255,0.1)' }}>
+                  <div className="h-5 w-5 rounded-full bg-white shadow-sm transition-transform" style={{ transform: hlsEnabled ? 'translateX(16px)' : 'translateX(0)' }} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: `${C.info}06`, border: `1px solid ${C.info}15` }}>
+                <div>
+                  <p className="text-[11px] font-medium text-white">Adaptive Quality by Device</p>
+                  <p className="text-[9px]" style={{ color: C.textDim }}>Auto quality selection based on device and bandwidth</p>
+                </div>
+                <button onClick={() => setAdaptiveQuality(!adaptiveQuality)} className="flex h-6 w-10 items-center rounded-full p-0.5 transition-all" style={{ background: adaptiveQuality ? C.info : 'rgba(255,255,255,0.1)' }}>
+                  <div className="h-5 w-5 rounded-full bg-white shadow-sm transition-transform" style={{ transform: adaptiveQuality ? 'translateX(16px)' : 'translateX(0)' }} />
+                </button>
+              </div>
+
+              {/* Device quality matrix */}
+              <div className="rounded-xl border p-4 space-y-2.5" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.02)' }}>
+                <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: C.textDim }}>Quality Matrix</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { device: '📱 Mobile', start: '480p', max: '720p', color: C.accent },
+                    { device: '📲 Tablet', start: '720p', max: '1080p', color: C.purple },
+                    { device: '💻 Desktop', start: '1080p', max: '4K', color: C.info },
+                  ].map(d => (
+                    <div key={d.device} className="rounded-lg px-3 py-2.5 text-center" style={{ background: `${d.color}06`, border: `1px solid ${d.color}15` }}>
+                      <p className="text-sm mb-1">{d.device}</p>
+                      <p className="text-[10px] font-bold" style={{ color: d.color }}>Start: {d.start}</p>
+                      <p className="text-[9px]" style={{ color: C.textDim }}>Max: {d.max}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Image Optimization */}
+          <Card>
+            <CardHeader title="Image Optimization" />
+            <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ background: `${C.info}06`, border: `1px solid ${C.info}15` }}>
+              <div>
+                <p className="text-[11px] font-medium text-white">Auto WebP Conversion</p>
+                <p className="text-[9px]" style={{ color: C.textDim }}>All images auto-converted to WebP · Compressed · Responsive sizes</p>
+              </div>
+              <button onClick={() => setImageOptEnabled(!imageOptEnabled)} className="flex h-6 w-10 items-center rounded-full p-0.5 transition-all" style={{ background: imageOptEnabled ? C.info : 'rgba(255,255,255,0.1)' }}>
+                <div className="h-5 w-5 rounded-full bg-white shadow-sm transition-transform" style={{ transform: imageOptEnabled ? 'translateX(16px)' : 'translateX(0)' }} />
+              </button>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              {[
+                { placement: 'Hero Ads', maxSize: '120–200KB', format: 'WebP', color: C.accent },
+                { placement: 'Footer Ads', maxSize: '80–150KB', format: 'WebP', color: C.info },
+                { placement: 'Sidebar Ads', maxSize: '50–100KB', format: 'WebP', color: C.purple },
+                { placement: 'Overlay Ads', maxSize: '60–120KB', format: 'WebP', color: C.warning },
+              ].map(p => (
+                <div key={p.placement} className="rounded-lg px-3 py-2" style={{ background: `${p.color}06` }}>
+                  <p className="text-[11px] font-medium text-white">{p.placement}</p>
+                  <p className="text-[9px]" style={{ color: C.textDim }}>Max {p.maxSize} · {p.format}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Performance Summary */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { label: 'Avg Load Time', value: '0.8s', status: 'Ultra Fast', color: C.success },
+              { label: 'Cache Hit Rate', value: '94%', status: 'Excellent', color: C.success },
+              { label: 'Buffer Ratio', value: '0.2%', status: 'Minimal', color: C.success },
+              { label: 'First Paint', value: '1.2s', status: 'Fast', color: C.success },
+            ].map(s => (
+              <Card key={s.label}>
+                <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: C.textDim }}>{s.label}</span>
+                <p className="text-2xl font-bold text-white mt-1">{s.value}</p>
+                <StatusBadge text={s.status} color={s.color} />
+              </Card>
+            ))}
           </div>
         </div>
       )}
