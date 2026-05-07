@@ -1069,17 +1069,15 @@ export default function Home() {
         <Header />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar />
-          <main className="flex-1 overflow-y-auto pb-20 lg:pb-6">
+          <main className="flex-1 overflow-y-auto pb-20 lg:pb-4">
             {renderMainContent()}
           </main>
         </div>
 
         {/* Footer Top Sponsored Banner */}
-        <div className="px-4 lg:px-6 mb-0 lg:mb-0">
-          <Suspense fallback={null}>
-            <FooterTopBanner />
-          </Suspense>
-        </div>
+        <Suspense fallback={null}>
+          <FooterTopBanner />
+        </Suspense>
 
         {/* Footer — desktop */}
         <footer className="hidden border-t border-white/[0.06] bg-[#080c16]/50 py-4 lg:block">

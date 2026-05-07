@@ -581,3 +581,28 @@ Stage Summary:
 - Desktop: Hero interleaves live stream + ads (70/30 ratio)
 - Admin panel has full Hero/Footer Ads management page (already existed)
 - Zero lint errors
+---
+Task ID: 1
+Agent: main
+Task: Fix footer banner ad positioning issue
+
+Work Log:
+- Read FooterTopBanner.tsx and page.tsx layout structure
+- Identified root causes: double padding wrapper in page.tsx + double padding in component, double margin-bottom, main element pb-20 creating large gap, empty wrapper div staying visible when component returns null
+- Removed outer padding wrapper div from page.tsx, placed FooterTopBanner directly in flex column
+- Reduced main element bottom padding from pb-20 lg:pb-6 to pb-20 lg:pb-4
+- Rewrote FooterTopBanner.tsx: fixed container padding (pt-3 pb-1 on mobile, sm:pt-4 sm:pb-2, lg:pt-4 lg:pb-2)
+- Changed background to darker #0f0f0f with soft red glow border shadow
+- Made loading state return null (no CLS from skeleton)
+- Made dismissed/empty state return null (auto-collapse, no blank space)
+- Rounded corners: rounded-xl on mobile, rounded-2xl on tablet+
+- Responsive CTA button on mobile with Play icon
+- Close button and dots properly sized and positioned
+- Verified with lint and dev server — no errors
+
+Stage Summary:
+- Footer ad now sits directly above footer with tight spacing (4px gap on desktop)
+- Empty state fully collapses — no blank space
+- No double padding or margin issues
+- Dark premium appearance with soft red glow
+- Fully responsive on all devices

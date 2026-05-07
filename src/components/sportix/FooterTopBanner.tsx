@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Megaphone, X, ExternalLink } from 'lucide-react'
+import { Megaphone, X, ExternalLink, Play } from 'lucide-react'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -39,16 +39,16 @@ async function trackAdEvent(
 // ─── Animation Variants ─────────────────────────────────────────────────────
 
 const bannerVariants = {
-  initial: { opacity: 0, y: 6 },
+  initial: { opacity: 0, y: 4 },
   animate: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.45, ease: 'easeOut' },
+    transition: { duration: 0.4, ease: 'easeOut' },
   },
   exit: {
     opacity: 0,
-    y: -4,
-    transition: { duration: 0.3, ease: 'easeIn' },
+    y: -3,
+    transition: { duration: 0.25, ease: 'easeIn' },
   },
 }
 
@@ -121,7 +121,7 @@ export default function FooterTopBanner() {
       setTimeout(() => {
         setCurrentIndex((prev) => (prev + 1) % ads.length)
         setVisible(true)
-      }, 350)
+      }, 300)
     }, 12000)
 
     return () => {
@@ -159,28 +159,11 @@ export default function FooterTopBanner() {
     setImgErrors((prev) => new Set(prev).add(adId))
   }, [])
 
-  // ── Render: dismissed or loading with no ads → return null ──
-  if (dismissed && !loading) return null
-  if (dismissed) return null
+  // ── Empty state: collapse completely, no space ──
+  if (dismissed || (!loading && ads.length === 0)) return null
 
-  // ── Loading skeleton ──
-  if (loading) {
-    return (
-      <div className="w-full px-3 sm:px-4 md:px-6 mb-4 sm:mb-6">
-        <div className="w-full max-h-[100px] sm:max-h-[80px] md:max-h-[120px] rounded-2xl bg-white/[0.03] border border-white/[0.06] animate-pulse overflow-hidden">
-          <div className="flex items-center h-20 sm:h-24 md:h-[120px] px-4 sm:px-6">
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="h-5 w-5 rounded-md bg-white/[0.06]" />
-              <div className="h-3 w-16 rounded bg-white/[0.06]" />
-            </div>
-            <div className="flex-1 flex justify-center">
-              <div className="h-4 w-48 rounded bg-white/[0.06]" />
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // ── Loading: don't render anything — avoid CLS ──
+  if (loading) return null
 
   const currentAd = ads[currentIndex]
   if (!currentAd) return null
@@ -189,7 +172,7 @@ export default function FooterTopBanner() {
   const isVideo = isVideoUrl(currentAd.mediaUrl)
 
   return (
-    <div className="w-full px-3 sm:px-4 md:px-6 mb-4 sm:mb-6">
+    <div className="w-full px-3 pt-3 pb-1 sm:px-4 sm:pt-4 sm:pb-2 lg:px-6 lg:pt-4 lg:pb-2">
       <AnimatePresence mode="wait">
         {visible && (
           <motion.div
@@ -198,18 +181,18 @@ export default function FooterTopBanner() {
             initial="initial"
             animate="animate"
             exit="exit"
-            className="relative w-full group overflow-hidden rounded-2xl border border-white/[0.06] bg-[#141414]"
+            className="relative w-full group overflow-hidden rounded-xl sm:rounded-2xl border border-white/[0.06] bg-[#0f0f0f] shadow-[0_0_20px_rgba(229,9,20,0.06)] transition-shadow duration-300 hover:shadow-[0_0_30px_rgba(229,9,20,0.12)]"
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
           >
             {/* ── Media Layout ──
-                Desktop: horizontal cinematic banner (max-height 120px)
+                Desktop: horizontal cinematic banner (100px)
                 Tablet: compact (80px)
-                Mobile: stacked (max-height 100px) */}
+                Mobile: stacked (90px) */}
 
             {isVideo ? (
               /* ── Video Ad ── */
-              <div className="relative w-full h-[100px] sm:h-[80px] md:h-[120px] overflow-hidden">
+              <div className="relative w-full h-[90px] sm:h-[80px] lg:h-[100px] overflow-hidden">
                 <video
                   autoPlay
                   muted
@@ -228,10 +211,10 @@ export default function FooterTopBanner() {
                 </video>
 
                 {/* Dark overlay for readability */}
-                <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-black/50" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-black/60" />
 
                 {/* Content overlay */}
-                <div className="absolute inset-0 flex items-center px-4 sm:px-6">
+                <div className="absolute inset-0 flex items-center px-4 lg:px-5">
                   {/* Sponsored badge */}
                   <div className="flex items-center gap-1.5 shrink-0">
                     <Megaphone className="h-3 w-3 text-[#E50914]" />
@@ -243,7 +226,7 @@ export default function FooterTopBanner() {
                   {/* Ad title */}
                   {currentAd.title && (
                     <div className="flex-1 flex justify-center px-4">
-                      <p className="text-xs sm:text-sm font-medium text-white/80 truncate max-w-[300px] sm:max-w-[400px] md:max-w-[600px]">
+                      <p className="text-xs sm:text-sm font-medium text-white/80 truncate max-w-[260px] sm:max-w-[400px] lg:max-w-[600px]">
                         {currentAd.title}
                       </p>
                     </div>
@@ -264,12 +247,12 @@ export default function FooterTopBanner() {
               <button
                 type="button"
                 onClick={handleClick}
-                className="relative block w-full h-[100px] sm:h-[80px] md:h-[120px] overflow-hidden cursor-pointer"
+                className="relative block w-full h-[90px] sm:h-[80px] lg:h-[100px] overflow-hidden cursor-pointer text-left"
               >
                 {/* Desktop/Tablet: horizontal layout */}
                 <div className="hidden sm:flex absolute inset-0 h-full w-full">
                   {/* Image takes left portion */}
-                  <div className="relative w-[40%] md:w-[45%] h-full shrink-0 overflow-hidden">
+                  <div className="relative w-[38%] lg:w-[42%] h-full shrink-0 overflow-hidden">
                     <img
                       src={currentAd.mediaUrl}
                       alt={currentAd.title || 'Advertisement'}
@@ -280,35 +263,36 @@ export default function FooterTopBanner() {
                   </div>
 
                   {/* Right side: dark area with text */}
-                  <div className="flex-1 bg-[#141414] flex items-center px-4 sm:px-5 md:px-6 gap-3 sm:gap-4">
+                  <div className="flex-1 bg-[#0f0f0f] flex items-center px-4 sm:px-5 lg:px-6 gap-3 lg:gap-4">
                     {/* Sponsored badge */}
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E50914]/10">
-                        <Megaphone className="h-4 w-4 text-[#E50914]" />
+                      <div className="flex h-7 w-7 lg:h-8 lg:w-8 items-center justify-center rounded-lg bg-[#E50914]/10">
+                        <Megaphone className="h-3.5 w-3.5 lg:h-4 lg:w-4 text-[#E50914]" />
                       </div>
                     </div>
 
                     {/* Ad text */}
                     <div className="flex-1 min-w-0">
                       {currentAd.title && (
-                        <p className="text-sm md:text-base font-semibold text-white/90 truncate">
+                        <p className="text-sm lg:text-base font-semibold text-white/90 truncate">
                           {currentAd.title}
                         </p>
                       )}
                       {currentAd.description && (
-                        <p className="text-xs text-white/40 truncate mt-0.5 hidden md:block">
+                        <p className="text-xs text-white/40 truncate mt-0.5 hidden lg:block">
                           {currentAd.description}
                         </p>
                       )}
                     </div>
 
-                    {/* CTA indicator */}
+                    {/* CTA button */}
                     {currentAd.targetUrl && (
-                      <div className="flex items-center gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="hidden md:inline-flex text-xs font-semibold text-[#E50914]">
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="hidden lg:inline-flex items-center gap-1.5 rounded-lg bg-[#E50914] px-3.5 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-[#c40812]">
                           Visit
+                          <ExternalLink className="h-3 w-3" />
                         </span>
-                        <ExternalLink className="h-3.5 w-3.5 text-[#E50914]" />
+                        <ExternalLink className="h-3.5 w-3.5 text-[#E50914]/60 sm:hidden" />
                       </div>
                     )}
                   </div>
@@ -326,22 +310,24 @@ export default function FooterTopBanner() {
                   <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
 
                   {/* Mobile overlay content */}
-                  <div className="absolute inset-0 flex items-center px-4 gap-3">
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <Megaphone className="h-3.5 w-3.5 text-[#E50914]" />
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-white/60">
+                  <div className="absolute inset-0 flex items-center px-3 gap-2.5">
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Megaphone className="h-3 w-3 text-[#E50914]" />
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-white/50">
                         Ad
                       </span>
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-white/90 truncate">
+                      <p className="text-[11px] font-semibold text-white/90 truncate">
                         {currentAd.title || 'Advertisement'}
                       </p>
                     </div>
 
                     {currentAd.targetUrl && (
-                      <ExternalLink className="h-3.5 w-3.5 text-white/40 shrink-0" />
+                      <div className="flex items-center gap-1 shrink-0 rounded-md bg-[#E50914] px-2.5 py-1">
+                        <Play className="h-2.5 w-2.5 text-white fill-white" />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -351,11 +337,11 @@ export default function FooterTopBanner() {
               <button
                 type="button"
                 onClick={handleClick}
-                className="flex w-full h-[100px] sm:h-[80px] md:h-[120px] items-center px-4 sm:px-6 gap-4 cursor-pointer"
+                className="flex w-full h-[90px] sm:h-[80px] lg:h-[100px] items-center px-4 lg:px-6 gap-3 lg:gap-4 cursor-pointer text-left"
               >
                 {/* Left: Sponsored badge */}
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-[#E50914]/10">
+                  <div className="flex h-8 w-8 lg:h-9 lg:w-9 items-center justify-center rounded-lg bg-[#E50914]/10">
                     <Megaphone className="h-4 w-4 text-[#E50914]" />
                   </div>
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40 hidden sm:block">
@@ -365,11 +351,11 @@ export default function FooterTopBanner() {
 
                 {/* Center: Ad text */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm sm:text-base font-medium text-white/70 truncate">
+                  <p className="text-sm lg:text-base font-medium text-white/70 truncate">
                     {currentAd.title || 'Learn more'}
                   </p>
                   {currentAd.description && (
-                    <p className="text-xs text-white/30 truncate mt-0.5 hidden md:block">
+                    <p className="text-xs text-white/30 truncate mt-0.5 hidden lg:block">
                       {currentAd.description}
                     </p>
                   )}
@@ -378,11 +364,11 @@ export default function FooterTopBanner() {
                 {/* Right: CTA */}
                 {currentAd.targetUrl && (
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="hidden md:inline-flex items-center gap-1.5 rounded-lg bg-[#E50914]/10 px-3 py-1.5 text-xs font-semibold text-[#E50914]">
+                    <span className="hidden lg:inline-flex items-center gap-1.5 rounded-lg bg-[#E50914] px-3.5 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-[#c40812]">
                       Visit
                       <ExternalLink className="h-3 w-3" />
                     </span>
-                    <ExternalLink className="h-3.5 w-3.5 text-white/30 md:hidden" />
+                    <ExternalLink className="h-3.5 w-3.5 text-white/30 lg:hidden" />
                   </div>
                 )}
               </button>
@@ -392,21 +378,21 @@ export default function FooterTopBanner() {
             <button
               type="button"
               onClick={handleClose}
-              className="absolute top-2 right-2 sm:top-3 sm:right-3 flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg bg-black/40 text-white/50 backdrop-blur-sm transition-all hover:bg-black/60 hover:text-white/80 opacity-0 group-hover:opacity-100 focus:opacity-100 z-10"
+              className="absolute top-1.5 right-1.5 sm:top-2.5 sm:right-2.5 flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-md bg-black/50 text-white/50 backdrop-blur-sm transition-all hover:bg-black/70 hover:text-white/80 opacity-0 group-hover:opacity-100 focus:opacity-100 z-10"
               aria-label="Close advertisement"
             >
-              <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
             </button>
 
             {/* ── Dot indicators (multiple ads only) ── */}
             {ads.length > 1 && (
-              <div className="absolute bottom-2 right-10 sm:bottom-3 sm:right-12 flex items-center gap-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute bottom-1.5 right-8 sm:bottom-2.5 sm:right-10 flex items-center gap-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                 {ads.map((ad, i) => (
                   <div
                     key={ad.id}
                     className={`h-1 rounded-full transition-all duration-300 ${
                       i === currentIndex
-                        ? 'w-4 bg-[#E50914]/70'
+                        ? 'w-3 bg-[#E50914]/70'
                         : 'w-1 bg-white/20'
                     }`}
                   />
