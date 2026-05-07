@@ -866,7 +866,6 @@ export default function Home() {
   const liveStreams = streams.filter(s => s.status === 'live')
   const featuredVideos = videos.filter(v => v.isFeatured)
   const highlightVideos = videos.filter(v => v.category === 'highlights')
-  const featuredStream = liveStreams[0]
   const filteredVideos = activeFilter === 'all' ? videos : videos.filter(v => v.category === activeFilter)
 
   // ── Route to the correct page content ──
@@ -906,7 +905,7 @@ export default function Home() {
         </div>
 
         {/* Hero Banner Ads — responsive, video/image support */}
-        <HeroBannerAds featuredStream={featuredStream || null} />
+        <HeroBannerAds />
 
         {/* Live Match Popular Slider */}
         <section>

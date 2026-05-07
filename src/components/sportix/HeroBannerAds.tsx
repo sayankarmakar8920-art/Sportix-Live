@@ -6,23 +6,6 @@ import { Play, Megaphone, X, Volume2, VolumeX } from 'lucide-react'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-interface StreamData {
-  id: string
-  title: string
-  homeTeam: string
-  awayTeam: string
-  homeScore: number
-  awayScore: number
-  matchTime?: string
-  thumbnail?: string
-  category: string
-  viewerCount: number
-}
-
-interface HeroBannerAdsProps {
-  featuredStream?: StreamData | null
-}
-
 interface Ad {
   id: string
   title: string
@@ -31,12 +14,6 @@ interface Ad {
   targetUrl?: string
   category?: string
   position?: string
-}
-
-interface BannerItem {
-  type: 'ad' | 'stream'
-  ad?: Ad
-  stream?: StreamData
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -276,116 +253,21 @@ function AdSlide({
   )
 }
 
-// ─── Live Match Slide (Desktop only) ────────────────────────────────────────
-
-function LiveStreamSlide({ stream }: { stream: StreamData }) {
-  const thumb = stream.thumbnail || ''
-  const hasThumb = !!thumb
-
-  return (
-    <motion.div
-      variants={fadeVariants}
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      className="relative w-full h-[260px] sm:h-[340px] md:h-[420px] lg:h-[520px] rounded-2xl overflow-hidden group"
-    >
-      {/* Background */}
-      {hasThumb ? (
-        <img
-          src={thumb}
-          alt={`${stream.homeTeam} vs ${stream.awayTeam}`}
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-          loading="eager"
-          draggable={false}
-        />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-[#111827] to-[#1a2235]" />
-      )}
-
-      {/* Gradient overlays */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-black/20" />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
-
-      {/* Live badge (hidden on mobile) */}
-      <div className="hidden md:flex absolute left-6 top-6 items-center gap-1.5 rounded-md bg-[#ff3b3b] px-2.5 py-1 text-[10px] font-bold text-white shadow-lg">
-        <span className="h-1.5 w-1.5 rounded-full bg-white live-pulse" />
-        LIVE
-      </div>
-
-      {/* Viewer count (hidden on mobile) */}
-      <div className="hidden md:flex absolute right-6 top-6 items-center gap-1.5 rounded-lg bg-black/40 px-3 py-1.5 text-[11px] text-white/70 backdrop-blur-sm">
-        {stream.viewerCount >= 1000
-          ? `${(stream.viewerCount / 1000).toFixed(1)}K`
-          : stream.viewerCount}{' '}
-        watching
-      </div>
-
-      {/* Content */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8">
-        <p className="text-[10px] sm:text-[11px] font-semibold text-[#E50914] mb-1 sm:mb-2 uppercase tracking-wider">
-          {stream.category === 'football' ? 'UEFA Champions League' : stream.category}
-        </p>
-        <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight mb-2 sm:mb-3">
-          {stream.homeTeam} vs {stream.awayTeam}
-        </h2>
-
-        {/* Score display */}
-        <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-xs sm:text-sm font-bold text-white/80">
-              {stream.homeTeam[0]}
-            </div>
-            <span className="text-base sm:text-xl font-bold text-white tabular-nums">
-              {stream.homeScore}
-            </span>
-          </div>
-          <span className="text-[10px] sm:text-xs font-semibold text-[#E50914] bg-[#E50914]/10 px-2 sm:px-3 py-1 rounded-md">
-            {stream.matchTime || 'LIVE'}
-          </span>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <span className="text-base sm:text-xl font-bold text-white tabular-nums">
-              {stream.awayScore}
-            </span>
-            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-xs sm:text-sm font-bold text-white/80">
-              {stream.awayTeam[0]}
-            </div>
-          </div>
-        </div>
-
-        <span className="inline-flex items-center gap-2 rounded-lg bg-[#E50914] px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white transition-all hover:bg-[#c40812]">
-          <Play className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-white" />
-          Watch Now
-        </span>
-      </div>
-    </motion.div>
-  )
-}
-
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export default function HeroBannerAds({ featuredStream }: HeroBannerAdsProps) {
+export default function HeroBannerAds() {
   const [ads, setAds] = useState<Ad[]>([])
   const [loading, setLoading] = useState(true)
   const [hovered, setHovered] = useState(false)
-  const [isDesktop, setIsDesktop] = useState(false)
   const rotationRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const impressionTrackedRef = useRef<Set<string>>(new Set())
   const containerRef = useRef<HTMLDivElement>(null)
-
-  // ── Responsive breakpoint detection ──
-  useEffect(() => {
-    const checkBreakpoint = () => setIsDesktop(window.innerWidth >= 768)
-    checkBreakpoint()
-    window.addEventListener('resize', checkBreakpoint)
-    return () => window.removeEventListener('resize', checkBreakpoint)
-  }, [])
 
   // ── Fetch ads ──
   const fetchAds = useCallback(async () => {
     try {
       setLoading(true)
-      const device = isDesktop ? 'desktop' : 'mobile'
+      const device = typeof window !== 'undefined' && window.innerWidth >= 768 ? 'desktop' : 'mobile'
       const res = await fetch(`/api/ads/hero?device=${device}`)
       if (res.ok) {
         const data = await res.json()
@@ -413,55 +295,23 @@ export default function HeroBannerAds({ featuredStream }: HeroBannerAdsProps) {
 
   useEffect(() => {
     fetchAds()
-  }, [fetchAds, isDesktop])
+  }, [fetchAds])
 
-  // ── Build rotation queue ──
-  // Desktop: 70% featured stream, 30% ads → interleave
-  // Mobile/Tablet: only ads
+  // Re-fetch on resize (device change)
+  useEffect(() => {
+    const handleResize = () => fetchAds()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [fetchAds])
+
   const hasAds = ads.length > 0
-  const hasStream = !!(featuredStream && isDesktop)
-
-  const queue = (() => {
-    if (!hasStream) {
-      // Only ads or fallback
-      return hasAds
-        ? ads.map((ad) => ({ type: 'ad' as const, ad }))
-        : []
-    }
-
-    if (!hasAds) {
-      // Only stream
-      return [{ type: 'stream' as const, stream: featuredStream }]
-    }
-
-    // Desktop: interleave stream + ads (roughly 70/30 ratio)
-    // For 3 ads: stream, ad, stream, stream, ad, stream, ad, stream, stream, ad...
-    // Simpler approach: pattern of [stream, stream, stream, ad, stream, stream, stream, ad, ...]
-    const items: BannerItem[] = []
-    const streamRatio = 7
-    const adRatio = 3
-    const cycleLength = streamRatio + adRatio
-    let adIdx = 0
-
-    for (let i = 0; i < cycleLength; i++) {
-      if (i < streamRatio) {
-        items.push({ type: 'stream', stream: featuredStream })
-      } else {
-        items.push({ type: 'ad', ad: ads[adIdx % ads.length] })
-        adIdx++
-      }
-    }
-
-    return items
-  })()
-
   const [currentIndex, setCurrentIndex] = useState(0)
   const [visible, setVisible] = useState(true)
-  const currentItem = queue[currentIndex]
+  const currentAd = hasAds ? ads[currentIndex] : null
 
-  // ── Auto-rotate ──
+  // ── Auto-rotate ads ──
   useEffect(() => {
-    if (queue.length <= 1 || hovered) {
+    if (!hasAds || ads.length <= 1 || hovered) {
       if (rotationRef.current) {
         clearInterval(rotationRef.current)
         rotationRef.current = null
@@ -472,7 +322,7 @@ export default function HeroBannerAds({ featuredStream }: HeroBannerAdsProps) {
     rotationRef.current = setInterval(() => {
       setVisible(false)
       setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % queue.length)
+        setCurrentIndex((prev) => (prev + 1) % ads.length)
         setVisible(true)
       }, 400)
     }, 8000)
@@ -480,24 +330,23 @@ export default function HeroBannerAds({ featuredStream }: HeroBannerAdsProps) {
     return () => {
       if (rotationRef.current) clearInterval(rotationRef.current)
     }
-  }, [queue.length, hovered])
+  }, [ads.length, hovered])
 
   // ── Track impressions ──
   useEffect(() => {
-    if (!currentItem || currentItem.type !== 'ad' || !currentItem.ad) return
-    const adId = currentItem.ad.id
-    if (!impressionTrackedRef.current.has(adId)) {
-      impressionTrackedRef.current.add(adId)
-      trackAdEvent(adId, 'impression')
+    if (!currentAd) return
+    if (!impressionTrackedRef.current.has(currentAd.id)) {
+      impressionTrackedRef.current.add(currentAd.id)
+      trackAdEvent(currentAd.id, 'impression')
     }
-  }, [currentIndex, currentItem])
+  }, [currentIndex, currentAd])
 
   // ── Handle ad click tracking ──
   const handleAdClick = useCallback(() => {
-    if (currentItem?.type === 'ad' && currentItem.ad) {
-      trackAdEvent(currentItem.ad.id, 'click')
+    if (currentAd) {
+      trackAdEvent(currentAd.id, 'click')
     }
-  }, [currentItem])
+  }, [currentAd])
 
   // ── Render ──
 
@@ -510,8 +359,8 @@ export default function HeroBannerAds({ featuredStream }: HeroBannerAdsProps) {
     )
   }
 
-  // No ads, no stream → fallback
-  if (!hasAds && !hasStream) {
+  // No ads → fallback
+  if (!hasAds) {
     return (
       <div className="relative w-full" ref={containerRef}>
         <AnimatePresence mode="wait">
@@ -529,36 +378,23 @@ export default function HeroBannerAds({ featuredStream }: HeroBannerAdsProps) {
       onMouseLeave={() => setHovered(false)}
     >
       <AnimatePresence mode="wait">
-        {visible && currentItem && (
-          <>
-            {currentItem.type === 'ad' && currentItem.ad && (
-              <AdSlide
-                key={`ad-${currentItem.ad.id}-${currentIndex}`}
-                ad={currentItem.ad}
-                onTrackClick={handleAdClick}
-              />
-            )}
-            {currentItem.type === 'stream' && currentItem.stream && (
-              <LiveStreamSlide
-                key={`stream-${currentItem.stream.id}-${currentIndex}`}
-                stream={currentItem.stream}
-              />
-            )}
-          </>
+        {visible && currentAd && (
+          <AdSlide
+            key={`ad-${currentAd.id}-${currentIndex}`}
+            ad={currentAd}
+            onTrackClick={handleAdClick}
+          />
         )}
-
-        {/* Show fallback if queue is empty but we should never get here */}
-        {!visible && !currentItem && <FallbackBanner />}
       </AnimatePresence>
 
-      {/* Ad counter dots (only when there are multiple ads in the queue) */}
-      {!isDesktop && hasAds && ads.length > 1 && (
+      {/* Ad counter dots (only when there are multiple ads) */}
+      {hasAds && ads.length > 1 && (
         <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 flex items-center gap-1 z-20">
           {ads.map((ad, i) => (
             <div
               key={ad.id}
               className={`h-1 rounded-full transition-all duration-300 ${
-                i === (currentItem?.type === 'ad' ? currentIndex % ads.length : -1)
+                i === currentIndex
                   ? 'w-4 bg-[#E50914]/80'
                   : 'w-1 bg-white/20'
               }`}
