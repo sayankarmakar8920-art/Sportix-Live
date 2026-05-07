@@ -125,6 +125,7 @@ type AdminPage =
   | 'admins'
   | 'replays'
   | 'ads-manager'
+  | 'create-ad'
   | 'rtmp-config'
 
 interface MenuSection {
@@ -156,6 +157,7 @@ const menuSections: MenuSection[] = [
       { id: 'comments', label: 'Comments', icon: MessageSquare },
       { id: 'banners', label: 'Banners', icon: ImageIcon },
       { id: 'ads-manager', label: 'Ads Manager', icon: Megaphone, badge: 'AD' },
+      { id: 'create-ad', label: 'Create Ad', icon: Plus },
     ],
   },
   {
@@ -4352,6 +4354,7 @@ function renderPage(page: AdminPage): React.ReactNode {
   if (page === 'admins') return <GenericPage title="Admins" subtitle="Admin team management" icon={<ShieldCheck className="h-5 w-5" style={{ color: C.info }} />} accent={C.info} />
   if (page === 'replays') return <ReplaysManagerPage />
   if (page === 'ads-manager') return <AdsManagerPage />
+  if (page === 'create-ad') return <CreateNewAdSection />
   if (page === 'rtmp-config') return <RTMPConfigPage />
   return null
 }
