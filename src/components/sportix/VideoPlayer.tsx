@@ -1,11 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAppStore } from '@/lib/store'
 import { ArrowLeft, Settings, Maximize, Volume2, VolumeX, Users, Radio } from 'lucide-react'
+import { AnimatePresence } from 'framer-motion'
 import LiveChat from './LiveChat'
+import InPlayerAd from './InPlayerAd'
+import { useVideoAds } from '@/lib/useVideoAds'
 
 const QUALITY_OPTIONS = ['Auto', '1080p', '720p', '480p', '360p']
+const VIDEO_DURATION = 5400 // 90 min simulated
 
 export default function VideoPlayer() {
   const { selectedStream, setCurrentView, setSelectedStream } = useAppStore()
@@ -14,6 +18,55 @@ export default function VideoPlayer() {
   const [showQuality, setShowQuality] = useState(false)
   const [viewerCount, setViewerCount] = useState(selectedStream?.viewerCount || 0)
 
+  // ── Simulated playback ──
+  const [isPaused, setIsPaused] = useState(false)
+  const [playbackPosition, setPlaybackPosition] = useState(0)
+  const [videoEnded, setVideoEnded] = useState(false)
+
+  // ── Ad system ──
+  const {
+    phase: adPhase,
+    currentAd,
+    isAdPlaying,
+    midRollSlots,
+    shownBreaks,
+    skipAd,
+    tick: adTick,
+    checkEnd: adCheckEnd,
+  } = useVideoAds({
+    videoDurationSec: VIDEO_DURATION,
+    category: selectedStream?.category,
+    playbackPosition,
+    onPauseForAd: useCallback(() => setIsPaused(true), []),
+    onResumeFromAd: useCallback(() => setIsPaused(false), []),
+    videoEnded,
+  })
+
+  // Playback tick — calls ad tick + checkEnd inside interval handler
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!isPaused && !videoEnded) {
+        setPlaybackPosition(prev => {
+          const next = prev + 1
+          if (next >= VIDEO_DURATION) {
+            setVideoEnded(true)
+            return VIDEO_DURATION
+          }
+          return next
+        })
+      }
+      // Run ad system checks from the interval handler (event handler, not render)
+      adTick()
+      adCheckEnd()
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [isPaused, videoEnded, adTick, adCheckEnd])
+
+  const handleAdComplete = useCallback(() => {
+    skipAd()
+  }, [skipAd])
+
+  // Viewer count simulation
   useEffect(() => {
     if (!selectedStream) return
     const interval = setInterval(() => {
@@ -53,6 +106,12 @@ export default function VideoPlayer() {
           </span>
           <h1 className="truncate text-sm font-semibold text-white">{selectedStream.title}</h1>
         </div>
+        {isAdPlaying && (
+          <span className="flex items-center gap-1.5 rounded-lg bg-[#E50914]/10 px-2.5 py-1 text-[10px] font-bold text-[#E50914]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#E50914] animate-pulse" />
+            {adPhase === 'pre-roll' ? 'Ad' : adPhase === 'mid-roll' ? 'Ad Break' : 'Sponsored'}
+          </span>
+        )}
         <div className="flex items-center gap-1.5 text-xs text-white/40">
           <Users className="h-3.5 w-3.5" />
           {formatViewers(viewerCount)}
@@ -67,7 +126,6 @@ export default function VideoPlayer() {
             <div className="relative aspect-video overflow-hidden rounded-2xl border border-white/5 bg-black">
               {/* Video Player Placeholder */}
               <div className="absolute inset-0 bg-gradient-to-br from-[#141414] via-[#111827] to-[#1a2235]">
-                {/* Simulated video content */}
                 <div className="flex h-full items-center justify-center">
                   <div className="text-center">
                     <div className="mb-4 flex items-center justify-center gap-3">
@@ -84,12 +142,43 @@ export default function VideoPlayer() {
                     </p>
                   </div>
                 </div>
-
-                {/* Scan line effect */}
                 <div className="absolute inset-0 opacity-[0.03]" style={{
                   backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.05) 2px, rgba(255,255,255,0.05) 4px)',
                 }} />
               </div>
+
+              {/* ── In-Player Ad Overlay ── */}
+              <AnimatePresence>
+                {isAdPlaying && currentAd && (
+                  <InPlayerAd
+                    ad={currentAd}
+                    phase={adPhase as 'pre-roll' | 'mid-roll' | 'post-roll'}
+                    onComplete={handleAdComplete}
+                    onSkip={skipAd}
+                  />
+                )}
+              </AnimatePresence>
+
+              {/* ── Mid-roll ad markers ── */}
+              {midRollSlots.length > 0 && !isAdPlaying && (
+                <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none">
+                  {midRollSlots.map(slot => {
+                    const pct = (slot.timestamp / VIDEO_DURATION) * 100
+                    const shown = shownBreaks.has(slot.timestamp)
+                    return (
+                      <div
+                        key={slot.timestamp}
+                        className="absolute bottom-0 h-2 w-[3px] rounded-t-sm"
+                        style={{
+                          left: `${pct}%`,
+                          background: shown ? 'rgba(255,255,255,0.2)' : '#E50914',
+                        }}
+                        title={shown ? `Ad break at ${slot.label} (played)` : `Ad break at ${slot.label}`}
+                      />
+                    )
+                  })}
+                </div>
+              )}
 
               {/* Player Controls Overlay */}
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 pt-16">
@@ -103,7 +192,6 @@ export default function VideoPlayer() {
                     </button>
                   </div>
                   <div className="flex items-center gap-2">
-                    {/* Quality selector */}
                     <div className="relative">
                       <button
                         onClick={() => setShowQuality(!showQuality)}

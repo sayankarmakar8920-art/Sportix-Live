@@ -606,3 +606,31 @@ Stage Summary:
 - No double padding or margin issues
 - Dark premium appearance with soft red glow
 - Fully responsive on all devices
+
+---
+Task ID: 2
+Agent: main
+Task: Create advanced smart video ads placement system
+
+Work Log:
+- Updated Prisma schema with 13 new fields: placement, deviceTarget, countryTarget, cpm, cpc, skipAfter, scheduleStart, scheduleEnd, abTestGroup, midRollTimes, autoSchedule, adFrequency
+- Pushed schema to DB, regenerated Prisma Client
+- Created /src/lib/adScheduler.ts — smart mid-roll scheduling engine with rules: 36-50min→2-3ads, 1h→3ads, 2h→4ads, 3h→6ads, min 12-15min gap
+- Created /src/app/api/ads/video-ads/route.ts — fetches pre-roll, mid-roll, post-roll ads grouped by type with device targeting and schedule filtering
+- Updated /src/app/api/ads/route.ts — added device targeting, schedule filtering, new fields support in CRUD
+- Updated /src/app/api/ads/event/route.ts — added 'complete', 'skip', 'midroll-trigger', 'postroll-trigger' event types
+- Created /src/lib/useVideoAds.ts — React hook managing ad phases: idle→pre-roll→playing→mid-roll→playing→post-roll→done
+- Created /src/components/sportix/InPlayerAd.tsx — in-player ad overlay with video/image support, progress bar, skip button, mute toggle
+- Updated /src/components/sportix/VideoPlayer.tsx — integrated ad system without changing video UI: simulated playback timer drives ad checks, mid-roll markers on seek bar, ad phase indicator in header
+- Added VideoAdsAdminPage to AdminPanel.tsx — full CRUD for video ads with: ad type selector, duration/skip timing, smart scheduling preview, mid-roll settings (auto/custom), device targeting, country targeting, A/B testing, schedule dates, CPM/CPC, priority
+
+Stage Summary:
+- Complete YouTube-like video ads system: pre-roll, mid-roll, post-roll
+- Smart auto-scheduling engine calculates optimal ad intervals based on video duration
+- Admin can create/edit/delete video ads with full targeting (device, country, schedule, A/B)
+- Admin can preview smart mid-roll timestamps for any video duration
+- In-player ad overlay shows over video (not fullscreen), smooth transitions, 5-second skip
+- Mid-roll ad break markers visible on player seek bar
+- Video UI unchanged — all controls, layout, and styling preserved
+- All new API routes: /api/ads/video-ads (grouped video ads)
+- Zero lint errors, clean dev server compilation

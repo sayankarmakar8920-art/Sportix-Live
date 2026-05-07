@@ -127,6 +127,7 @@ type AdminPage =
   | 'ads-manager'
   | 'create-ad'
   | 'hero-ads'
+  | 'video-ads'
   | 'rtmp-config'
 
 interface MenuSection {
@@ -158,6 +159,7 @@ const menuSections: MenuSection[] = [
       { id: 'comments', label: 'Comments', icon: MessageSquare },
       { id: 'banners', label: 'Banners', icon: ImageIcon },
       { id: 'ads-manager', label: 'Ads Manager', icon: Megaphone, badge: 'AD' },
+      { id: 'video-ads', label: 'Video Ads', icon: Film, badge: 'NEW' },
       { id: 'create-ad', label: 'Create Ad', icon: Plus },
       { id: 'hero-ads', label: 'Hero/Footer Ads', icon: Film, badge: 'NEW' },
     ],
@@ -4592,6 +4594,467 @@ function CategoriesPage() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   VIDEO ADS ADMIN PAGE — Pre-Roll / Mid-Roll / Post-Roll Manager
+   ═══════════════════════════════════════════════════════════════ */
+
+interface VideoAdItem {
+  id: string; title: string; type: string; mediaUrl: string; targetUrl?: string;
+  duration?: number; skipAfter?: number; position?: string; placement?: string;
+  deviceTarget?: string; countryTarget?: string; cpm?: number; cpc?: number;
+  priority?: number; isActive: boolean; impressions: number; clicks: number;
+  scheduleStart?: string; scheduleEnd?: string; midRollTimes?: string;
+  autoSchedule?: boolean; adFrequency?: string; abTestGroup?: string;
+  category?: string; description?: string;
+}
+
+function VideoAdsAdminPage() {
+  const [ads, setAds] = useState<VideoAdItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'all' | 'pre-roll' | 'mid-roll' | 'post-roll'>('all')
+  const [showForm, setShowForm] = useState(false)
+  const [editingAd, setEditingAd] = useState<VideoAdItem | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [videoDuration, setVideoDuration] = useState(90)
+
+  // Form state
+  const [form, setForm] = useState({
+    title: '', type: 'pre-roll', mediaUrl: '', targetUrl: '', description: '',
+    duration: 8, skipAfter: 5, position: '', placement: 'video-page',
+    deviceTarget: 'all', countryTarget: '', cpm: '', cpc: '', priority: 0,
+    category: '', scheduleStart: '', scheduleEnd: '', abTestGroup: '',
+    midRollTimes: '', autoSchedule: true, adFrequency: 'medium', isActive: true,
+  })
+
+  const fetchAds = useCallback(async () => {
+    try {
+      const res = await fetch('/api/ads')
+      if (res.ok) {
+        const data = await res.json()
+        const allAds: VideoAdItem[] = (Array.isArray(data) ? data : data.ads || [])
+        setAds(allAds.filter((a: any) => ['pre-roll', 'mid-roll', 'post-roll'].includes(a.type)))
+      }
+    } catch { /* silent */ }
+    finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => { fetchAds() }, [fetchAds])
+
+  const filteredAds = activeTab === 'all' ? ads : ads.filter(a => a.type === activeTab)
+  const preRollCount = ads.filter(a => a.type === 'pre-roll').length
+  const midRollCount = ads.filter(a => a.type === 'mid-roll').length
+  const postRollCount = ads.filter(a => a.type === 'post-roll').length
+
+  // Smart scheduling preview
+  const previewSlots = (() => {
+    const dur = videoDuration * 60
+    const totalMin = videoDuration
+    let count: number
+    if (totalMin <= 50) count = totalMin >= 42 ? 3 : 2
+    else if (totalMin <= 75) count = 3
+    else if (totalMin <= 150) count = totalMin >= 120 ? 5 : 4
+    else count = Math.min(8, Math.floor(totalMin / 25))
+
+    const interval = dur / (count + 1)
+    const slots: string[] = []
+    for (let i = 1; i <= count; i++) {
+      const ts = Math.round(interval * i)
+      const h = Math.floor(ts / 3600)
+      const m = Math.floor((ts % 3600) / 60)
+      slots.push(h > 0 ? `${h}:${String(m).padStart(2, '0')}:00` : `${m}:00`)
+    }
+    return slots
+  })()
+
+  function openCreate() {
+    setEditingAd(null)
+    setForm({ title: '', type: 'pre-roll', mediaUrl: '', targetUrl: '', description: '',
+      duration: 8, skipAfter: 5, position: '', placement: 'video-page',
+      deviceTarget: 'all', countryTarget: '', cpm: '', cpc: '', priority: 0,
+      category: '', scheduleStart: '', scheduleEnd: '', abTestGroup: '',
+      midRollTimes: '', autoSchedule: true, adFrequency: 'medium', isActive: true })
+    setShowForm(true)
+  }
+
+  function openEdit(ad: VideoAdItem) {
+    setEditingAd(ad)
+    setForm({
+      title: ad.title, type: ad.type, mediaUrl: ad.mediaUrl,
+      targetUrl: ad.targetUrl || '', description: ad.description || '',
+      duration: ad.duration || 8, skipAfter: ad.skipAfter || 5,
+      position: ad.position || '', placement: ad.placement || 'video-page',
+      deviceTarget: ad.deviceTarget || 'all', countryTarget: ad.countryTarget || '',
+      cpm: ad.cpm ? String(ad.cpm) : '', cpc: ad.cpc ? String(ad.cpc) : '',
+      priority: ad.priority || 0, category: ad.category || '',
+      scheduleStart: ad.scheduleStart?.slice(0, 16) || '',
+      scheduleEnd: ad.scheduleEnd?.slice(0, 16) || '',
+      abTestGroup: ad.abTestGroup || '',
+      midRollTimes: ad.midRollTimes || '',
+      autoSchedule: ad.autoSchedule !== false,
+      adFrequency: ad.adFrequency || 'medium', isActive: ad.isActive,
+    })
+    setShowForm(true)
+  }
+
+  async function handleSave() {
+    if (!form.title || !form.mediaUrl) return
+    setSaving(true)
+    try {
+      const body: any = { ...form, duration: Number(form.duration), skipAfter: Number(form.skipAfter), priority: Number(form.priority) }
+      if (form.cpm) body.cpm = Number(form.cpm)
+      if (form.cpc) body.cpc = Number(form.cpc)
+      if (form.scheduleStart) body.scheduleStart = new Date(form.scheduleStart).toISOString()
+      if (form.scheduleEnd) body.scheduleEnd = new Date(form.scheduleEnd).toISOString()
+
+      if (editingAd) {
+        body.id = editingAd.id
+        await fetch('/api/ads', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      } else {
+        await fetch('/api/ads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      }
+      setShowForm(false)
+      fetchAds()
+    } catch { /* silent */ }
+    finally { setSaving(false) }
+  }
+
+  async function handleDelete(id: string) {
+    await fetch('/api/ads', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    fetchAds()
+  }
+
+  async function handleToggle(ad: VideoAdItem) {
+    await fetch('/api/ads', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: ad.id, isActive: !ad.isActive }) })
+    fetchAds()
+  }
+
+  const inputCls = 'w-full rounded-xl border px-3 py-2 text-sm text-white placeholder:text-white/20 focus:outline-none focus:ring-1'
+  const labelCls = 'text-[11px] font-semibold uppercase tracking-wider mb-1.5 block'
+
+  if (loading) {
+    return (
+      <div className="space-y-5 fade-in-up">
+        <PageHeader title="Video Ads" subtitle="Pre-roll, Mid-roll & Post-roll management" icon={<Film className="h-5 w-5" style={{ color: C.info }} />} />
+        <Card><div className="flex items-center justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-[#3b82f6]" /></div></Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-5 fade-in-up">
+      <PageHeader
+        title="Video Ads Manager"
+        subtitle="Pre-Roll • Mid-Roll • Post-Roll"
+        icon={<Film className="h-5 w-5" style={{ color: C.info }} />}
+        extra={<button onClick={openCreate} className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-white transition-all" style={{ background: C.accent }}>
+          <Plus className="h-3.5 w-3.5" /> Create Video Ad
+        </button>}
+      />
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Pre-Roll', value: preRollCount, color: C.accent, desc: 'Before video starts' },
+          { label: 'Mid-Roll', value: midRollCount, color: C.warning, desc: 'During playback' },
+          { label: 'Post-Roll', value: postRollCount, color: C.purple, desc: 'After video ends' },
+          { label: 'Total Impressions', value: fmt(ads.reduce((s, a) => s + a.impressions, 0)), color: C.info, desc: 'All video ads' },
+        ].map(s => (
+          <Card key={s.label}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: C.textDim }}>{s.label}</span>
+              <div className="h-2 w-2 rounded-full" style={{ background: s.color }} />
+            </div>
+            <p className="text-xl font-bold text-white">{s.value}</p>
+            <p className="text-[10px] mt-1" style={{ color: C.textDim }}>{s.desc}</p>
+          </Card>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-2">
+        {(['all', 'pre-roll', 'mid-roll', 'post-roll'] as const).map(tab => (
+          <button key={tab} onClick={() => setActiveTab(tab)}
+            className="rounded-xl px-4 py-2 text-xs font-medium transition-all"
+            style={{
+              background: activeTab === tab ? `${C.accent}20` : 'transparent',
+              color: activeTab === tab ? C.accent : C.textTer,
+              border: `1px solid ${activeTab === tab ? `${C.accent}40` : C.border}`,
+            }}>
+            {tab === 'all' ? `All (${ads.length})` : tab === 'pre-roll' ? `Pre-Roll (${preRollCount})` : tab === 'mid-roll' ? `Mid-Roll (${midRollCount})` : `Post-Roll (${postRollCount})`}
+          </button>
+        ))}
+      </div>
+
+      {/* Smart Scheduling Preview */}
+      <Card>
+        <CardHeader title="Smart Mid-Roll Scheduling">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px]" style={{ color: C.textDim }}>Video:</span>
+            <input type="number" value={videoDuration} onChange={e => setVideoDuration(Math.max(10, Math.min(300, Number(e.target.value))))}
+              className="w-16 rounded-lg border px-2 py-1 text-xs text-white bg-transparent"
+              style={{ borderColor: C.border }} />
+            <span className="text-[10px]" style={{ color: C.textDim }}>min</span>
+          </div>
+        </CardHeader>
+        <div className="flex flex-wrap gap-2">
+          {previewSlots.map((slot, i) => (
+            <div key={i} className="flex items-center gap-1.5 rounded-lg px-3 py-1.5" style={{ background: `${C.warning}10`, border: `1px solid ${C.warning}30` }}>
+              <div className="h-1.5 w-1.5 rounded-full" style={{ background: C.warning }} />
+              <span className="text-[11px] font-semibold" style={{ color: C.warning }}>Ad #{i + 1}</span>
+              <span className="text-[11px] text-white/50">@ {slot}</span>
+            </div>
+          ))}
+          {previewSlots.length === 0 && <span className="text-[11px]" style={{ color: C.textDim }}>Video too short for mid-roll ads</span>}
+        </div>
+        <p className="text-[10px] mt-2" style={{ color: C.textDim }}>Automatic scheduling with minimum 12-15 minute gap between ads</p>
+      </Card>
+
+      {/* Ads Table */}
+      <Card className="!p-0 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.02)' }}>
+                {['Title', 'Type', 'Duration', 'Skip', 'Device', 'Impressions', 'Clicks', 'Status', 'Actions'].map(h => (
+                  <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.textDim }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAds.length === 0 && (
+                <tr><td colSpan={9} className="px-4 py-12 text-center">
+                  <Film className="h-8 w-8 mx-auto mb-2" style={{ color: C.textDim }} />
+                  <p className="text-sm" style={{ color: C.textTer }}>No video ads yet</p>
+                </td></tr>
+              )}
+              {filteredAds.map(ad => (
+                <tr key={ad.id} className="border-b transition-colors hover:bg-white/[0.02]" style={{ borderColor: C.border }}>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {ad.mediaUrl && <div className="h-8 w-12 rounded-md overflow-hidden flex-shrink-0" style={{ background: C.sidebar }}><img src={ad.mediaUrl} alt="" className="h-full w-full object-cover" /></div>}
+                      <span className="text-[12px] font-medium text-white truncate max-w-[140px]">{ad.title}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <StatusBadge text={ad.type} color={ad.type === 'pre-roll' ? C.accent : ad.type === 'mid-roll' ? C.warning : C.purple} />
+                  </td>
+                  <td className="px-4 py-3 text-[12px]" style={{ color: C.textSec }}>{ad.duration || 8}s</td>
+                  <td className="px-4 py-3 text-[12px]" style={{ color: C.textSec }}>{ad.skipAfter || 5}s</td>
+                  <td className="px-4 py-3 text-[11px] capitalize" style={{ color: C.textSec }}>{ad.deviceTarget || 'all'}</td>
+                  <td className="px-4 py-3 text-[12px]" style={{ color: C.textSec }}>{fmt(ad.impressions)}</td>
+                  <td className="px-4 py-3 text-[12px]" style={{ color: C.textSec }}>{fmt(ad.clicks)}</td>
+                  <td className="px-4 py-3">
+                    <button onClick={() => handleToggle(ad)} className="flex items-center gap-1.5">
+                      <div className={`h-2 w-2 rounded-full ${ad.isActive ? 'bg-green-500' : 'bg-white/20'}`} />
+                      <span className="text-[11px]" style={{ color: ad.isActive ? C.success : C.textDim }}>{ad.isActive ? 'Active' : 'Paused'}</span>
+                    </button>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => openEdit(ad)} className="rounded-lg p-1.5 text-white/40 hover:text-white hover:bg-white/5 transition-all"><Pencil className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => handleDelete(ad.id)} className="rounded-lg p-1.5 text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all"><Trash2 className="h-3.5 w-3.5" /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Create/Edit Modal */}
+      {showForm && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="relative z-10 w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl border p-6 space-y-5 no-scrollbar"
+            style={{ background: C.card, borderColor: C.border }}
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white">{editingAd ? 'Edit' : 'Create'} Video Ad</h3>
+              <button onClick={() => setShowForm(false)} className="rounded-lg p-1.5 text-white/40 hover:text-white hover:bg-white/5"><X className="h-5 w-5" /></button>
+            </div>
+
+            {/* Basic Info */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2"><label className={labelCls} style={{ color: C.textDim }}>Title *</label>
+                <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Ad title"
+                  className={inputCls} style={{ borderColor: C.border, background: `${C.sidebar}50` }} /></div>
+              <div className="col-span-2"><label className={labelCls} style={{ color: C.textDim }}>Description</label>
+                <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Ad description"
+                  className={inputCls} style={{ borderColor: C.border, background: `${C.sidebar}50` }} /></div>
+              <div className="col-span-2"><label className={labelCls} style={{ color: C.textDim }}>Media URL (image/video) *</label>
+                <input value={form.mediaUrl} onChange={e => setForm(f => ({ ...f, mediaUrl: e.target.value }))} placeholder="https://..."
+                  className={inputCls} style={{ borderColor: C.border, background: `${C.sidebar}50` }} /></div>
+              <div><label className={labelCls} style={{ color: C.textDim }}>Target URL</label>
+                <input value={form.targetUrl} onChange={e => setForm(f => ({ ...f, targetUrl: e.target.value }))} placeholder="https://..."
+                  className={inputCls} style={{ borderColor: C.border, background: `${C.sidebar}50` }} /></div>
+              <div><label className={labelCls} style={{ color: C.textDim }}>Category</label>
+                <input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="football, basketball..."
+                  className={inputCls} style={{ borderColor: C.border, background: `${C.sidebar}50` }} /></div>
+            </div>
+
+            {/* Ad Type & Timing */}
+            <div className="rounded-xl border p-4 space-y-3" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.02)' }}>
+              <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: C.textDim }}>Ad Timing & Type</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className={labelCls} style={{ color: C.textDim }}>Ad Type</label>
+                  <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+                    className={inputCls} style={{ borderColor: C.border, background: C.sidebar }}>
+                    <option value="pre-roll">Pre-Roll</option>
+                    <option value="mid-roll">Mid-Roll</option>
+                    <option value="post-roll">Post-Roll</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls} style={{ color: C.textDim }}>Duration (sec)</label>
+                  <input type="number" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: Number(e.target.value) }))}
+                    className={inputCls} style={{ borderColor: C.border, background: `${C.sidebar}50` }} />
+                </div>
+                <div>
+                  <label className={labelCls} style={{ color: C.textDim }}>Skip After (sec)</label>
+                  <input type="number" value={form.skipAfter} onChange={e => setForm(f => ({ ...f, skipAfter: Number(e.target.value) }))}
+                    className={inputCls} style={{ borderColor: C.border, background: `${C.sidebar}50` }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Mid-Roll Settings */}
+            {form.type === 'mid-roll' && (
+              <div className="rounded-xl border p-4 space-y-3" style={{ borderColor: `${C.warning}40`, background: `${C.warning}05` }}>
+                <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: C.warning }}>Mid-Roll Settings</p>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={form.autoSchedule} onChange={e => setForm(f => ({ ...f, autoSchedule: e.target.checked }))}
+                      className="rounded border-white/20" />
+                    <span className="text-[11px] text-white/60">Auto-calculate ad timestamps</span>
+                  </label>
+                </div>
+                {!form.autoSchedule && (
+                  <div>
+                    <label className={labelCls} style={{ color: C.textDim }}>Custom Timestamps (seconds, comma-separated)</label>
+                    <input value={form.midRollTimes} onChange={e => setForm(f => ({ ...f, midRollTimes: e.target.value }))}
+                      placeholder="900, 1920, 3000"
+                      className={inputCls} style={{ borderColor: C.border, background: `${C.sidebar}50` }} />
+                  </div>
+                )}
+                <div>
+                  <label className={labelCls} style={{ color: C.textDim }}>Ad Frequency</label>
+                  <select value={form.adFrequency} onChange={e => setForm(f => ({ ...f, adFrequency: e.target.value }))}
+                    className={inputCls} style={{ borderColor: C.border, background: C.sidebar }}>
+                    <option value="low">Low (fewer ads)</option>
+                    <option value="medium">Medium (balanced)</option>
+                    <option value="high">High (more ads)</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Targeting */}
+            <div className="rounded-xl border p-4 space-y-3" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.02)' }}>
+              <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: C.textDim }}>Targeting</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls} style={{ color: C.textDim }}>Device Target</label>
+                  <select value={form.deviceTarget} onChange={e => setForm(f => ({ ...f, deviceTarget: e.target.value }))}
+                    className={inputCls} style={{ borderColor: C.border, background: C.sidebar }}>
+                    <option value="all">All Devices</option>
+                    <option value="mobile">Mobile Only</option>
+                    <option value="tablet">Tablet Only</option>
+                    <option value="desktop">Desktop Only</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls} style={{ color: C.textDim }}>Placement</label>
+                  <select value={form.placement} onChange={e => setForm(f => ({ ...f, placement: e.target.value }))}
+                    className={inputCls} style={{ borderColor: C.border, background: C.sidebar }}>
+                    <option value="video-page">Video Page</option>
+                    <option value="player-overlay">Player Overlay</option>
+                    <option value="mid-roll-slot">Mid-Roll Slot</option>
+                    <option value="homepage">Homepage</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls} style={{ color: C.textDim }}>Country Codes</label>
+                  <input value={form.countryTarget} onChange={e => setForm(f => ({ ...f, countryTarget: e.target.value }))}
+                    placeholder="US, IN, GB" className={inputCls} style={{ borderColor: C.border, background: `${C.sidebar}50` }} />
+                </div>
+                <div>
+                  <label className={labelCls} style={{ color: C.textDim }}>A/B Test Group</label>
+                  <select value={form.abTestGroup} onChange={e => setForm(f => ({ ...f, abTestGroup: e.target.value }))}
+                    className={inputCls} style={{ borderColor: C.border, background: C.sidebar }}>
+                    <option value="">None</option>
+                    <option value="A">Group A</option>
+                    <option value="B">Group B</option>
+                    <option value="control">Control</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Schedule */}
+            <div className="rounded-xl border p-4 space-y-3" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.02)' }}>
+              <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: C.textDim }}>Schedule</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls} style={{ color: C.textDim }}>Start Date</label>
+                  <input type="datetime-local" value={form.scheduleStart} onChange={e => setForm(f => ({ ...f, scheduleStart: e.target.value }))}
+                    className={inputCls} style={{ borderColor: C.border, background: `${C.sidebar}50`, colorScheme: 'dark' }} />
+                </div>
+                <div>
+                  <label className={labelCls} style={{ color: C.textDim }}>End Date</label>
+                  <input type="datetime-local" value={form.scheduleEnd} onChange={e => setForm(f => ({ ...f, scheduleEnd: e.target.value }))}
+                    className={inputCls} style={{ borderColor: C.border, background: `${C.sidebar}50`, colorScheme: 'dark' }} />
+                </div>
+              </div>
+            </div>
+
+            {/* CPM/CPC */}
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className={labelCls} style={{ color: C.textDim }}>CPM ($)</label>
+                <input type="number" step="0.01" value={form.cpm} onChange={e => setForm(f => ({ ...f, cpm: e.target.value }))}
+                  placeholder="0.00" className={inputCls} style={{ borderColor: C.border, background: `${C.sidebar}50` }} />
+              </div>
+              <div>
+                <label className={labelCls} style={{ color: C.textDim }}>CPC ($)</label>
+                <input type="number" step="0.01" value={form.cpc} onChange={e => setForm(f => ({ ...f, cpc: e.target.value }))}
+                  placeholder="0.00" className={inputCls} style={{ borderColor: C.border, background: `${C.sidebar}50` }} />
+              </div>
+              <div>
+                <label className={labelCls} style={{ color: C.textDim }}>Priority</label>
+                <input type="number" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: Number(e.target.value) }))}
+                  className={inputCls} style={{ borderColor: C.border, background: `${C.sidebar}50` }} />
+              </div>
+            </div>
+
+            {/* Active toggle */}
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.isActive} onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))}
+                  className="rounded border-white/20" />
+                <span className="text-sm text-white/60">Active</span>
+              </label>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button onClick={() => setShowForm(false)}
+                className="rounded-xl border px-4 py-2 text-xs font-medium transition-all hover:bg-white/[0.03]"
+                style={{ borderColor: C.border, color: C.textSec }}>Cancel</button>
+              <button onClick={handleSave} disabled={saving || !form.title || !form.mediaUrl}
+                className="flex items-center gap-1.5 rounded-xl px-5 py-2 text-xs font-semibold text-white transition-all disabled:opacity-40"
+                style={{ background: C.accent }}>
+                {saving ? 'Saving...' : editingAd ? 'Update Ad' : 'Create Ad'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
    PAGE ROUTER
    ═══════════════════════════════════════════════════════════════ */
 
@@ -4618,6 +5081,7 @@ function renderPage(page: AdminPage): React.ReactNode {
   if (page === 'ads-manager') return <AdsManagerPage />
   if (page === 'create-ad') return <CreateNewAdSection />
   if (page === 'hero-ads') return <HeroFooterAdsPage />
+  if (page === 'video-ads') return <VideoAdsAdminPage />
   if (page === 'rtmp-config') return <RTMPConfigPage />
   return null
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
-const VALID_EVENTS = ['impression', 'click', 'close'] as const
+const VALID_EVENTS = ['impression', 'click', 'close', 'complete', 'skip', 'midroll-trigger', 'postroll-trigger'] as const
 
 // POST: Track ad event (impression, click, close)
 // Body: { adId, eventType, device?, sessionId?, userId?, streamId? }

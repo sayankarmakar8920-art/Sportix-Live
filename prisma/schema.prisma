@@ -89,22 +89,34 @@ model ContinueWatching {
 }
 
 model Ad {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  type        String   @default("banner")  // "pre-roll", "mid-roll", "overlay", "banner"
-  mediaUrl    String                        // image or video URL (R2 or local)
-  targetUrl   String?                       // click-through URL
-  category    String?                       // target sport: "football", "basketball", etc
-  duration    Int?                          // video ad duration in seconds
-  position    String?                       // "top", "bottom", "sidebar"
-  isActive    Boolean  @default(true)
-  impressions Int      @default(0)
-  clicks      Int      @default(0)
-  priority    Int      @default(0)
-  createdBy   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  type          String   @default("banner")  // "pre-roll", "mid-roll", "post-roll", "overlay", "banner", "hero"
+  mediaUrl      String                        // image or video URL (R2 or local)
+  targetUrl     String?                       // click-through URL
+  category      String?                       // target sport: "football", "basketball", etc
+  duration      Int?                          // video ad duration in seconds
+  position      String?                       // "hero", "footer", "top", "bottom", "sidebar"
+  placement     String?                       // "homepage", "video-page", "player-overlay", "mid-roll-slot"
+  deviceTarget  String?                       // "mobile", "tablet", "desktop", "all"
+  countryTarget String?                       // comma-separated country codes
+  cpm           Float?                        // cost per mille
+  cpc           Float?                        // cost per click
+  priority      Int      @default(0)
+  isActive      Boolean  @default(true)
+  impressions   Int      @default(0)
+  clicks        Int      @default(0)
+  skipAfter     Int      @default(5)          // seconds before skip allowed
+  scheduleStart DateTime?                     // ad start date
+  scheduleEnd   DateTime?                     // ad end date
+  abTestGroup   String?                       // "A", "B", "control"
+  midRollTimes  String?                       // JSON array of timestamps in seconds e.g. "[900,1920,3000]"
+  autoSchedule  Boolean  @default(true)       // auto-calculate mid-roll times
+  adFrequency   String?                       // "low", "medium", "high"
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model AdEvent {
