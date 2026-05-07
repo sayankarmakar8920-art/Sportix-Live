@@ -277,3 +277,25 @@ Stage Summary:
 - Create Ads form fully functional with all fields from screenshot
 - Sidebar "Highlights" renamed to "Video Upload"
 - Zero lint errors, dev server compiling successfully
+
+---
+Task ID: 1
+Agent: Main Agent
+Task: Remove Create Ad from Ads Manager top and keep it only at bottom as CreateNewAdSection
+
+Work Log:
+- Read AdminPanel.tsx to find AdsManagerPage function (line 2322)
+- Found "Create Ad" button in action bar (lines 2518-2525) and collapsible form (lines 2528-2656)
+- CreateNewAdSection component already existed at bottom (line 2534)
+- Removed "Create Ad" button from action bar
+- Removed entire collapsible create ad form section
+- Cleaned up unused states: showForm, uploading, creating, form
+- Cleaned up unused handlers: handleCreateAd, handleUploadImage
+- Cleaned up unused inputStyle variable
+- Verified lint passes with no errors
+- Verified dev server running correctly
+
+Stage Summary:
+- Ads Manager page now shows: Page Header → Stats Cards → Search bar + Refresh → Ads Table → CreateNewAdSection (bottom)
+- "Highlights" was already renamed to "Video Upload" in sidebar (line 139) and page render (line 3741)
+- CreateNewAdSection remains as the full-featured ad creation form at the bottom of Ads Manager

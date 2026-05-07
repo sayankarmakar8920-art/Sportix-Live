@@ -2323,25 +2323,6 @@ function AdsManagerPage() {
   const [ads, setAds] = useState<AdItem[]>([])
   const [analytics, setAnalytics] = useState<AdAnalytics>({ totalAds: 0, activeAds: 0, totalImpressions: 0, totalClicks: 0, ctr: 0 })
   const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [creating, setCreating] = useState(false)
-  const [form, setForm] = useState({
-    title: '',
-    type: 'banner',
-    mediaUrl: '',
-    targetUrl: '',
-    category: 'football',
-    duration: 30,
-    position: 'pre',
-    priority: 1,
-  })
-
-  const inputStyle: React.CSSProperties = {
-    background: 'rgba(255,255,255,0.03)',
-    borderColor: C.border,
-    borderRadius: 12,
-  }
 
   const fetchAds = useCallback(async () => {
     try {
@@ -2374,26 +2355,7 @@ function AdsManagerPage() {
 
   useEffect(() => { fetchAds() }, [fetchAds])
 
-  const handleCreateAd = async () => {
-    if (!form.title) return
-    setCreating(true)
-    try {
-      const res = await fetch('/api/ads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      })
-      if (res.ok) {
-        setShowForm(false)
-        setForm({ title: '', type: 'banner', mediaUrl: '', targetUrl: '', category: 'football', duration: 30, position: 'pre', priority: 1 })
-        fetchAds()
-      }
-    } catch {
-      // ignore
-    } finally {
-      setCreating(false)
-    }
-  }
+
 
   const handleDeleteAd = async (id: string) => {
     try {
@@ -2418,25 +2380,7 @@ function AdsManagerPage() {
     }
   }
 
-  const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('type', 'ad')
-      const res = await fetch('/api/upload', { method: 'POST', body: formData })
-      if (res.ok) {
-        const data = await res.json()
-        setForm(prev => ({ ...prev, mediaUrl: data.url || data.fileUrl || '' }))
-      }
-    } catch {
-      // ignore
-    } finally {
-      setUploading(false)
-    }
-  }
+
 
   const getCtr = (impressions: number, clicks: number) => {
     if (impressions === 0) return '0.00'
@@ -2507,153 +2451,16 @@ function AdsManagerPage() {
             <input type="text" placeholder="Search ads..." className="flex-1 bg-transparent text-sm text-white placeholder:text-white/20 focus:outline-none" />
           </div>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={fetchAds}
-            className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition-all hover:bg-white/[0.03]"
-            style={{ borderColor: C.border, color: C.textSec }}
-          >
-            <RefreshCw className="h-3.5 w-3.5" /> Refresh
-          </button>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-[12px] font-semibold text-white transition-all hover:opacity-90"
-            style={{ background: C.warning }}
-          >
-            <Plus className="h-3.5 w-3.5" /> Create Ad
-          </button>
-        </div>
+        <button
+          onClick={fetchAds}
+          className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition-all hover:bg-white/[0.03]"
+          style={{ borderColor: C.border, color: C.textSec }}
+        >
+          <RefreshCw className="h-3.5 w-3.5" /> Refresh
+        </button>
       </div>
 
-      {/* Create Ad Form */}
-      {showForm && (
-        <Card>
-          <CardHeader title="Create New Ad">
-            <button onClick={() => setShowForm(false)} className="rounded-lg p-1 transition-colors hover:bg-white/[0.05]">
-              <X className="h-4 w-4" style={{ color: C.textTer }} />
-            </button>
-          </CardHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-[11px] font-medium mb-1.5" style={{ color: C.textTer }}>Title *</label>
-              <input
-                type="text"
-                value={form.title}
-                onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
-                className="w-full border px-3 py-2.5 text-sm text-white bg-transparent focus:outline-none focus:border-white/20"
-                style={inputStyle}
-                placeholder="Ad title..."
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium mb-1.5" style={{ color: C.textTer }}>Type</label>
-              <select
-                value={form.type}
-                onChange={(e) => setForm(prev => ({ ...prev, type: e.target.value }))}
-                className="w-full border px-3 py-2.5 text-sm text-white bg-transparent focus:outline-none"
-                style={{ ...inputStyle, background: '#1e1e1e' }}
-              >
-                <option value="banner" style={{ background: '#1e1e1e' }}>Banner</option>
-                <option value="pre-roll" style={{ background: '#1e1e1e' }}>Pre-Roll</option>
-                <option value="mid-roll" style={{ background: '#1e1e1e' }}>Mid-Roll</option>
-                <option value="overlay" style={{ background: '#1e1e1e' }}>Overlay</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium mb-1.5" style={{ color: C.textTer }}>Category</label>
-              <select
-                value={form.category}
-                onChange={(e) => setForm(prev => ({ ...prev, category: e.target.value }))}
-                className="w-full border px-3 py-2.5 text-sm text-white bg-transparent focus:outline-none"
-                style={{ ...inputStyle, background: '#1e1e1e' }}
-              >
-                <option value="football" style={{ background: '#1e1e1e' }}>Football</option>
-                <option value="basketball" style={{ background: '#1e1e1e' }}>Basketball</option>
-                <option value="racing" style={{ background: '#1e1e1e' }}>Racing</option>
-                <option value="tennis" style={{ background: '#1e1e1e' }}>Tennis</option>
-                <option value="cricket" style={{ background: '#1e1e1e' }}>Cricket</option>
-                <option value="mma" style={{ background: '#1e1e1e' }}>MMA</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium mb-1.5" style={{ color: C.textTer }}>Target URL</label>
-              <input
-                type="text"
-                value={form.targetUrl}
-                onChange={(e) => setForm(prev => ({ ...prev, targetUrl: e.target.value }))}
-                className="w-full border px-3 py-2.5 text-sm text-white bg-transparent focus:outline-none focus:border-white/20"
-                style={inputStyle}
-                placeholder="https://..."
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium mb-1.5" style={{ color: C.textTer }}>Duration (seconds)</label>
-              <input
-                type="number"
-                value={form.duration}
-                onChange={(e) => setForm(prev => ({ ...prev, duration: Number(e.target.value) }))}
-                className="w-full border px-3 py-2.5 text-sm text-white bg-transparent focus:outline-none focus:border-white/20"
-                style={inputStyle}
-                min={1}
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium mb-1.5" style={{ color: C.textTer }}>Position</label>
-              <select
-                value={form.position}
-                onChange={(e) => setForm(prev => ({ ...prev, position: e.target.value }))}
-                className="w-full border px-3 py-2.5 text-sm text-white bg-transparent focus:outline-none"
-                style={{ ...inputStyle, background: '#1e1e1e' }}
-              >
-                <option value="pre" style={{ background: '#1e1e1e' }}>Pre</option>
-                <option value="mid" style={{ background: '#1e1e1e' }}>Mid</option>
-                <option value="post" style={{ background: '#1e1e1e' }}>Post</option>
-                <option value="overlay" style={{ background: '#1e1e1e' }}>Overlay</option>
-              </select>
-            </div>
-          </div>
 
-          {/* Image Upload */}
-          <div className="mt-4">
-            <label className="block text-[11px] font-medium mb-1.5" style={{ color: C.textTer }}>Media (Upload Image)</label>
-            {form.mediaUrl ? (
-              <div className="flex items-center gap-3 rounded-xl border p-3" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.02)' }}>
-                <div className="h-12 w-20 rounded-lg overflow-hidden flex-shrink-0" style={{ background: C.sidebar }}>
-                  <img src={form.mediaUrl} alt="Ad preview" className="h-full w-full object-cover" />
-                </div>
-                <span className="text-xs text-white truncate flex-1">{form.mediaUrl}</span>
-                <button onClick={() => setForm(prev => ({ ...prev, mediaUrl: '' }))} className="rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]" style={{ color: C.accent }}>
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ) : (
-              <label className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-4 transition-colors hover:border-white/10 cursor-pointer" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.01)' }}>
-                {uploading ? (
-                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/10 border-t-[#f39c12]" />
-                ) : (
-                  <>
-                    <CloudUpload className="h-6 w-6 mb-1" style={{ color: C.textDim }} />
-                    <p className="text-[11px] font-medium text-white">Click to upload ad image</p>
-                    <p className="text-[10px]" style={{ color: C.textDim }}>JPG, PNG up to 5MB</p>
-                  </>
-                )}
-                <input type="file" accept="image/*" onChange={handleUploadImage} className="hidden" />
-              </label>
-            )}
-          </div>
-
-          {/* Submit */}
-          <div className="flex justify-end gap-2 mt-4">
-            <button onClick={() => setShowForm(false)} className="rounded-xl border px-4 py-2 text-[12px] font-medium transition-colors hover:bg-white/[0.05]" style={{ borderColor: C.border, color: C.textSec }}>
-              Cancel
-            </button>
-            <button onClick={handleCreateAd} disabled={creating || !form.title} className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-[12px] font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50" style={{ background: C.warning }}>
-              {creating ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-              {creating ? 'Creating...' : 'Create Ad'}
-            </button>
-          </div>
-        </Card>
-      )}
 
       {/* Ads Table */}
       <Card className="!p-0 overflow-hidden">
