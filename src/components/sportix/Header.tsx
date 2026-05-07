@@ -43,7 +43,9 @@ export default function Header() {
 
   if (currentView === 'admin' || currentView === 'live-control-room') return null
 
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+  const today = mounted ? new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : ''
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/[0.06] bg-[#141414]/90 backdrop-blur-xl">
