@@ -2349,14 +2349,21 @@ function AdsManagerPage() {
       ])
       if (adsRes.ok) {
         const adsData = await adsRes.json()
-        setAds(Array.isArray(adsData) ? adsData : adsData.ads || [])
+        const adsList = Array.isArray(adsData) ? adsData : adsData.ads || []
+        setAds(adsList.map((a: any) => ({ ...a, status: a.isActive ? 'active' : 'inactive' })))
       }
       if (analyticsRes.ok) {
         const analyticsData = await analyticsRes.json()
-        setAnalytics(analyticsData)
+        const activeAds = Array.isArray(analyticsData.ads) ? analyticsData.ads.filter((a: any) => a.isActive).length : 0
+        setAnalytics({
+          totalAds: analyticsData.ads?.length || 0,
+          activeAds,
+          totalImpressions: analyticsData.totalImpressions || 0,
+          totalClicks: analyticsData.totalClicks || 0,
+          ctr: parseFloat(String(analyticsData.ctr || 0)),
+        })
       }
     } catch {
-      // Use fallback data
       setAnalytics({ totalAds: 0, activeAds: 0, totalImpressions: 0, totalClicks: 0, ctr: 0 })
     } finally {
       setLoading(false)
@@ -2388,7 +2395,7 @@ function AdsManagerPage() {
 
   const handleDeleteAd = async (id: string) => {
     try {
-      await fetch(`/api/ads?id=${id}`, { method: 'DELETE' })
+      await fetch('/api/ads', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
       fetchAds()
     } catch {
       // ignore
@@ -2397,10 +2404,11 @@ function AdsManagerPage() {
 
   const handleToggleStatus = async (ad: AdItem) => {
     try {
+      const newActive = ad.status === 'active'
       await fetch('/api/ads', {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...ad, status: ad.status === 'active' ? 'inactive' : 'active' }),
+        body: JSON.stringify({ id: ad.id, isActive: newActive }),
       })
       fetchAds()
     } catch {

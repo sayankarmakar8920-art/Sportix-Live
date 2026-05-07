@@ -5,8 +5,14 @@ export async function GET() {
   try {
     // Check if data already exists
     const existingStreams = await db.stream.count()
+
     if (existingStreams > 0) {
-      return NextResponse.json({ message: 'Database already seeded' })
+      // Seed ads even if streams exist
+      const existingAds = await db.ad.count()
+      if (existingAds === 0) {
+        await seedAds()
+      }
+      return NextResponse.json({ message: 'Database already seeded', adsSeeded: true })
     }
 
     // Seed live streams
@@ -27,7 +33,7 @@ export async function GET() {
           awayTeam: 'Bayern Munich',
           homeScore: 2,
           awayScore: 1,
-          matchTime: "67'",
+          matchTime: "67",
           startTime: new Date(),
         },
       }),
@@ -87,7 +93,7 @@ export async function GET() {
           awayTeam: 'Atlético Madrid',
           homeScore: 3,
           awayScore: 2,
-          matchTime: "82'",
+          matchTime: "82",
           startTime: new Date(),
         },
       }),
@@ -254,9 +260,137 @@ export async function GET() {
       }),
     ])
 
-    return NextResponse.json({ message: 'Database seeded successfully', streamCount: streams.length })
+    // Seed ads
+    await seedAds()
+
+    return NextResponse.json({ message: 'Database seeded successfully', streamCount: streams.length, adsSeeded: true })
   } catch (error) {
     console.error('Seed error:', error)
     return NextResponse.json({ error: 'Failed to seed database' }, { status: 500 })
   }
+}
+
+async function seedAds() {
+  await Promise.all([
+    db.ad.create({
+      data: {
+        title: 'Summer Sale Banner — 50% Off',
+        type: 'banner',
+        mediaUrl: 'https://placehold.co/728x90/e63946/white?text=Summer+Sale+50%25+OFF',
+        targetUrl: 'https://sportix.io/summer-sale',
+        category: 'football',
+        duration: 30,
+        position: 'top',
+        isActive: true,
+        impressions: 425600,
+        clicks: 15420,
+        priority: 10,
+      },
+    }),
+    db.ad.create({
+      data: {
+        title: 'Gaming Promo — PS5 Bundle',
+        type: 'banner',
+        mediaUrl: 'https://placehold.co/728x90/9b59b6/white?text=Gaming+Promo+PS5',
+        targetUrl: 'https://sportix.io/gaming',
+        category: 'basketball',
+        duration: 15,
+        position: 'sidebar',
+        isActive: true,
+        impressions: 312480,
+        clicks: 9850,
+        priority: 8,
+      },
+    }),
+    db.ad.create({
+      data: {
+        title: 'App Install — Download Now',
+        type: 'banner',
+        mediaUrl: 'https://placehold.co/728x90/3498db/white?text=Download+Sportix+App',
+        targetUrl: 'https://sportix.io/download',
+        category: 'football',
+        duration: 10,
+        position: 'bottom',
+        isActive: true,
+        impressions: 285640,
+        clicks: 7860,
+        priority: 6,
+      },
+    }),
+    db.ad.create({
+      data: {
+        title: 'Premier League Pass — Subscribe',
+        type: 'pre-roll',
+        mediaUrl: 'https://placehold.co/1920x1080/2ecc71/white?text=EPL+Pass+Subscribe',
+        targetUrl: 'https://sportix.io/epl-pass',
+        category: 'football',
+        duration: 15,
+        position: 'pre',
+        isActive: true,
+        impressions: 210350,
+        clicks: 6240,
+        priority: 9,
+      },
+    }),
+    db.ad.create({
+      data: {
+        title: 'New Collection — Sportswear',
+        type: 'banner',
+        mediaUrl: 'https://placehold.co/728x90/f39c12/white?text=New+Sportswear+Collection',
+        targetUrl: 'https://sportix.io/shop',
+        category: 'racing',
+        duration: 20,
+        position: 'top',
+        isActive: true,
+        impressions: 195820,
+        clicks: 5120,
+        priority: 5,
+      },
+    }),
+    db.ad.create({
+      data: {
+        title: 'Cricket World Cup — Watch Live',
+        type: 'mid-roll',
+        mediaUrl: 'https://placehold.co/1920x1080/e6a817/white?text=CWC+2026+Live',
+        targetUrl: 'https://sportix.io/cwc',
+        category: 'cricket',
+        duration: 10,
+        position: 'mid',
+        isActive: false,
+        impressions: 156200,
+        clicks: 4350,
+        priority: 7,
+      },
+    }),
+    db.ad.create({
+      data: {
+        title: 'Brand Awareness — Sportix Premium',
+        type: 'overlay',
+        mediaUrl: 'https://placehold.co/728x90/e63946/white?text=Go+Premium+Today',
+        targetUrl: 'https://sportix.io/premium',
+        category: 'football',
+        duration: 5,
+        position: 'overlay',
+        isActive: true,
+        impressions: 142800,
+        clicks: 3890,
+        priority: 4,
+      },
+    }),
+    db.ad.create({
+      data: {
+        title: 'NBA Store — Official Merch',
+        type: 'banner',
+        mediaUrl: 'https://placehold.co/728x90/c9082a/white?text=NBA+Official+Merch',
+        targetUrl: 'https://sportix.io/nba-store',
+        category: 'basketball',
+        duration: 20,
+        position: 'sidebar',
+        isActive: false,
+        impressions: 98400,
+        clicks: 2650,
+        priority: 3,
+      },
+    }),
+  ])
 }
