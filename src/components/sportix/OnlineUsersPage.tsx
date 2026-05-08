@@ -446,11 +446,11 @@ export default function OnlineUsersPage() {
      RENDER
      ══════════════════════════════════════════════════════════ */
   return (
-    <div className="min-w-0 space-y-5" style={{ background: C.bg }}>
+    <div className="min-w-0 space-y-4" style={{ background: C.bg }}>
       {/* ════════════════════════════════════════
           1. PAGE HEADER
           ════════════════════════════════════════ */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 md:gap-4">
         <div className="flex items-center gap-3">
           <div
             className="flex items-center justify-center w-10 h-10 rounded-xl"
@@ -517,13 +517,13 @@ export default function OnlineUsersPage() {
       {/* ════════════════════════════════════════
           2. KPI METRIC CARDS
           ════════════════════════════════════════ */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
         {kpiCards.map((card, idx) => {
           const Icon = card.icon;
           return (
             <div
               key={idx}
-              className="rounded-2xl p-5 relative overflow-hidden transition-all hover:border-white/15"
+              className="rounded-2xl p-3 sm:p-4 relative overflow-hidden transition-all hover:border-white/15"
               style={{ background: C.card, border: `1px solid ${C.border}` }}
             >
               <div
@@ -566,10 +566,10 @@ export default function OnlineUsersPage() {
       {/* ════════════════════════════════════════
           3. MIDDLE CHARTS ROW
           ════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         {/* ── Users Over Time (Line Chart) ── */}
         <div
-          className="rounded-2xl p-5"
+          className="rounded-2xl p-3 sm:p-4"
           style={{ background: C.card, border: `1px solid ${C.border}` }}
         >
           <div className="flex items-center justify-between mb-4">
@@ -721,7 +721,7 @@ export default function OnlineUsersPage() {
 
         {/* ── Users by Country ── */}
         <div
-          className="rounded-2xl p-5"
+          className="rounded-2xl p-3 sm:p-4"
           style={{ background: C.card, border: `1px solid ${C.border}` }}
         >
           <div className="flex items-center justify-between mb-4">
@@ -731,7 +731,7 @@ export default function OnlineUsersPage() {
             </div>
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-5">
+          <div className="flex flex-col lg:flex-row gap-3 md:gap-4">
             {/* Left: World map placeholder with heat indicators */}
             <div className="flex-shrink-0 flex flex-col items-center justify-center w-full lg:w-[180px]">
               <svg viewBox="0 0 200 100" className="w-full max-w-[180px]" style={{ opacity: 0.6 }}>
@@ -802,10 +802,10 @@ export default function OnlineUsersPage() {
       {/* ════════════════════════════════════════
           4. TOP ACTIVE PAGES + USERS BY DEVICE
           ════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         {/* ── Top Active Pages ── */}
         <div
-          className="rounded-2xl p-5"
+          className="rounded-2xl p-3 sm:p-4"
           style={{ background: C.card, border: `1px solid ${C.border}` }}
         >
           <div className="flex items-center justify-between mb-4">
@@ -853,7 +853,7 @@ export default function OnlineUsersPage() {
 
         {/* ── Users by Device (Donut) ── */}
         <div
-          className="rounded-2xl p-5"
+          className="rounded-2xl p-3 sm:p-4"
           style={{ background: C.card, border: `1px solid ${C.border}` }}
         >
           <div className="flex items-center gap-2 mb-4">
@@ -869,7 +869,7 @@ export default function OnlineUsersPage() {
           5. ONLINE USERS LIST
           ════════════════════════════════════════ */}
       <div
-        className="rounded-2xl p-5"
+        className="rounded-2xl p-3 sm:p-4"
         style={{ background: C.card, border: `1px solid ${C.border}` }}
       >
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
@@ -1092,7 +1092,7 @@ export default function OnlineUsersPage() {
           6. REAL-TIME ACTIVITY FEED
           ════════════════════════════════════════ */}
       <div
-        className="rounded-2xl p-5"
+        className="rounded-2xl p-3 sm:p-4"
         style={{ background: C.card, border: `1px solid ${C.border}` }}
       >
         <div className="flex items-center justify-between mb-4">

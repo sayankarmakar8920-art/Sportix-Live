@@ -228,7 +228,7 @@ function VideoListRow({ video, onWatch, onEdit, onDelete }: {
     <motion.div
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
-      className="flex items-center gap-4 rounded-xl p-3 transition-all hover:bg-white/[0.02] group"
+      className="flex items-center gap-3 md:gap-4 rounded-xl p-3 transition-all hover:bg-white/[0.02] group"
       style={{ border: '1px solid transparent' }}
       onMouseEnter={e => e.currentTarget.style.borderColor = C.border}
       onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}
@@ -415,7 +415,7 @@ export default function VideosPage() {
   /* Loading state */
   if (loading) {
     return (
-      <div className="space-y-5">
+      <div className="space-y-4">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: C.infoDim }}>
             <Video className="h-5 w-5" style={{ color: C.info }} />
@@ -425,7 +425,7 @@ export default function VideosPage() {
             <div className="h-3 w-56 mt-1.5 rounded-lg animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }} />
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
           {Array.from({ length: 8 }, (_, i) => (
             <div key={i} className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
               <div className="aspect-video animate-pulse" style={{ background: 'rgba(255,255,255,0.04)' }} />
@@ -442,12 +442,12 @@ export default function VideosPage() {
   }
 
   return (
-    <div className="space-y-5 min-w-0">
+    <div className="space-y-4 min-w-0">
       {/* ═══ Page Header ═══ */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 md:gap-4"
       >
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: C.infoDim }}>
@@ -565,7 +565,7 @@ export default function VideosPage() {
       {/* ═══ Video Grid / List ═══ */}
       {paged.length > 0 ? (
         viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
             {paged.map((v, i) => (
               <VideoGridCard key={v.id} video={v} index={i} onWatch={handleWatch} onEdit={handleEdit} onDelete={setDeleteTarget} />
             ))}

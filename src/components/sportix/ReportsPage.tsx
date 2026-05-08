@@ -465,9 +465,9 @@ export default function ReportsPage() {
   const allStatuses = ['All Status', ...Array.from(new Set(detailedReports.map((r) => r.status)))];
 
   return (
-    <div className="min-h-screen p-4 md:p-6 space-y-5" style={{ background: C.bg }}>
+    <div className="space-y-4 min-w-0" style={{ background: C.bg }}>
       {/* ── 1. Page Header ──────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-4">
         <div className="flex items-center gap-3">
           <div
             className="flex items-center justify-center w-10 h-10 rounded-xl"
@@ -516,7 +516,7 @@ export default function ReportsPage() {
       </div>
 
       {/* ── 2. KPI Metric Cards ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
         {kpiCards.map((card, idx) => {
           const Icon = card.icon;
           return (
@@ -555,10 +555,10 @@ export default function ReportsPage() {
       </div>
 
       {/* ── 3. Charts Row ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
         {/* Performance Overview - Line Chart */}
         <div
-          className="lg:col-span-2 rounded-2xl p-5"
+          className="lg:col-span-2 rounded-2xl p-3 sm:p-4"
           style={{ background: C.card, border: `1px solid ${C.border}` }}
         >
           <div className="flex items-center justify-between mb-4">
@@ -657,7 +657,7 @@ export default function ReportsPage() {
 
         {/* Traffic Source - Donut */}
         <div
-          className="rounded-2xl p-5"
+          className="rounded-2xl p-3 sm:p-4"
           style={{ background: C.card, border: `1px solid ${C.border}` }}
         >
           <div className="flex items-center gap-2 mb-4">
@@ -670,7 +670,7 @@ export default function ReportsPage() {
 
         {/* Top Devices - Donut */}
         <div
-          className="rounded-2xl p-5 lg:col-span-1"
+          className="rounded-2xl p-3 sm:p-4 lg:col-span-1"
           style={{ background: C.card, border: `1px solid ${C.border}` }}
         >
           <div className="flex items-center gap-2 mb-4">
@@ -683,10 +683,10 @@ export default function ReportsPage() {
       </div>
 
       {/* ── 4. Second Row ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 md:gap-4">
         {/* User Engagement */}
         <div
-          className="rounded-2xl p-5"
+          className="rounded-2xl p-3 sm:p-4"
           style={{ background: C.card, border: `1px solid ${C.border}` }}
         >
           <div className="flex items-center gap-2 mb-4">
@@ -735,7 +735,7 @@ export default function ReportsPage() {
 
         {/* Top Countries */}
         <div
-          className="rounded-2xl p-5"
+          className="rounded-2xl p-3 sm:p-4"
           style={{ background: C.card, border: `1px solid ${C.border}` }}
         >
           <div className="flex items-center justify-between mb-4">
@@ -770,7 +770,7 @@ export default function ReportsPage() {
 
         {/* Reports Summary */}
         <div
-          className="rounded-2xl p-5"
+          className="rounded-2xl p-3 sm:p-4"
           style={{ background: C.card, border: `1px solid ${C.border}` }}
         >
           <div className="flex items-center gap-2 mb-4">
@@ -813,7 +813,7 @@ export default function ReportsPage() {
 
         {/* Detailed Reports Table */}
         <div
-          className="lg:col-span-2 rounded-2xl p-5"
+          className="lg:col-span-2 rounded-2xl p-3 sm:p-4"
           style={{ background: C.card, border: `1px solid ${C.border}` }}
         >
           <div className="flex items-center justify-between mb-4">
@@ -986,7 +986,7 @@ export default function ReportsPage() {
 
       {/* ── 5. Export Reports Section ───────────────────────────────────────── */}
       <div
-        className="rounded-2xl p-5"
+        className="rounded-2xl p-3 sm:p-4"
         style={{ background: C.card, border: `1px solid ${C.border}` }}
       >
         <div className="mb-4">
@@ -994,7 +994,7 @@ export default function ReportsPage() {
           <p className="text-xs text-[#808080]">Export detailed reports in multiple formats</p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-end gap-3 md:gap-4">
           {/* Format buttons */}
           <div className="flex items-center gap-2">
             {exportFormats.map((fmt) => {

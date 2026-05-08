@@ -220,7 +220,7 @@ function fmtCompact(n: number): string {
 
 function Card({ children, className = '', style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
-    <div className={`rounded-2xl border p-5 transition-all duration-200 ${className}`} style={{ background: C.card, borderColor: C.border, ...style }}>
+    <div className={`rounded-2xl border p-3 sm:p-4 transition-all duration-200 ${className}`} style={{ background: C.card, borderColor: C.border, ...style }}>
       {children}
     </div>
   )
@@ -306,9 +306,9 @@ function DashboardPage() {
   ]
 
   return (
-    <div className="space-y-5 fade-in-up">
+    <div className="space-y-4 fade-in-up">
       {/* ── Stats Cards Row ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4">
         {statsCards.map((s) => {
           const Icon = s.icon
           return (
@@ -333,7 +333,7 @@ function DashboardPage() {
       </div>
 
       {/* ── Charts Row ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         {/* Views Overview */}
         <Card>
           <CardHeader title="Views Overview">
@@ -398,7 +398,7 @@ function DashboardPage() {
       </div>
 
       {/* ── Live Users + Top Videos + System ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
         {/* Live Users */}
         <Card className="lg:col-span-1">
           <CardHeader title="Live Users">
@@ -491,7 +491,7 @@ function DashboardPage() {
       </div>
 
       {/* ── Reports + Quick Actions ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         {/* Recent Reports */}
         <Card>
           <CardHeader title="Recent Reports">
@@ -573,7 +573,7 @@ function GenericPage({ title, subtitle, icon, accent }: { title: string; subtitl
   }))
 
   return (
-    <div className="space-y-5 fade-in-up">
+    <div className="space-y-4 fade-in-up">
       {/* Page Header */}
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: `${color}15` }}>
@@ -667,7 +667,7 @@ function LiveMonitorPage() {
   ]
 
   return (
-    <div className="space-y-5 fade-in-up">
+    <div className="space-y-4 fade-in-up">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: `${C.accent}15` }}>
           <Activity className="h-5 w-5" style={{ color: C.accent }} />
@@ -684,7 +684,7 @@ function LiveMonitorPage() {
       </div>
 
       {/* Live Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {[
           { label: 'Active Streams', value: String(liveStreams.length), icon: Radio, color: C.accent },
           { label: 'Total Viewers', value: '64.8K', icon: Eye, color: C.success },
@@ -905,7 +905,7 @@ function AnalyticsPage() {
   ]
 
   return (
-    <div className="space-y-5 fade-in-up">
+    <div className="space-y-4 fade-in-up">
       <PageHeader title="Ad Performance Overview" subtitle="Get insights into your advertising performance" icon={<BarChart3 className="h-5 w-5" style={{ color: C.accent }} />} extra={
         <>
           <button className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition-all hover:bg-white/[0.03]" style={{ borderColor: C.border, color: C.textSec }}><Filter className="h-3.5 w-3.5" /> Filter</button>
@@ -922,7 +922,7 @@ function AnalyticsPage() {
         <MetricCard label="CPR" value="₹18.72" change="-4.2%" positive={false} icon={ArrowDownRight} color={C.warning} sparkline={[22, 20, 21, 19, 18, 17, 18.7]} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         <Card>
           <CardHeader title="Performance Trend">
             <div className="flex items-center gap-1">
@@ -946,7 +946,7 @@ function AnalyticsPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
         <Card>
           <CardHeader title="Device Performance"><button className="text-[11px] font-medium" style={{ color: C.accent }}>View All</button></CardHeader>
           <DonutChart segments={[
@@ -980,7 +980,7 @@ function AnalyticsPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         <Card>
           <CardHeader title="Audience Demographics" />
           <div className="space-y-3 mb-5">
@@ -1053,7 +1053,7 @@ function EngagementPage() {
   ]
 
   return (
-    <div className="space-y-5 fade-in-up">
+    <div className="space-y-4 fade-in-up">
       <PageHeader title="Engagement Overview" subtitle="Monitor interactions and engagement metrics" icon={<TrendingUp className="h-5 w-5" style={{ color: C.accent }} />} extra={
         <>
           <button className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition-all hover:bg-white/[0.03]" style={{ borderColor: C.border, color: C.textSec }}><Filter className="h-3.5 w-3.5" /> Filter</button>
@@ -1082,7 +1082,7 @@ function EngagementPage() {
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
         <Card>
           <CardHeader title="Engagement by Platform" />
           <DonutChart segments={platformSegments} size={160} center="35.6%" />
@@ -1177,7 +1177,7 @@ function RevenuePage() {
   ]
 
   return (
-    <div className="space-y-5 fade-in-up">
+    <div className="space-y-4 fade-in-up">
       <PageHeader title="Revenue Overview" subtitle="Track your revenue performance in real-time" icon={<DollarSign className="h-5 w-5" style={{ color: C.success }} />} extra={
         <>
           <button className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition-all hover:bg-white/[0.03]" style={{ borderColor: C.border, color: C.textSec }}><Filter className="h-3.5 w-3.5" /> Filter</button>
@@ -1193,7 +1193,7 @@ function RevenuePage() {
         <MetricCard label="Refunds" value="₹99,214" change="-4.3%" positive={false} icon={ArrowDownRight} color={C.warning} sparkline={[8, 7, 8, 6, 7, 6, 7]} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         <Card>
           <CardHeader title="Revenue Trend" />
           <div className="relative">
@@ -1210,7 +1210,7 @@ function RevenuePage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {[
           { label: 'This Week', value: '₹26.68M', change: '+12.5%', positive: true },
           { label: 'Last Week', value: '₹23.71M', change: '', positive: true },
@@ -1225,7 +1225,7 @@ function RevenuePage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
         <Card>
           <CardHeader title="Average Revenue" />
           <div className="space-y-4">
@@ -1277,7 +1277,7 @@ function RevenuePage() {
         <CardHeader title="Top Revenue Sources" />
         <div className="space-y-3">
           {topSources.map((s, i) => (
-            <div key={i} className="flex items-center gap-4">
+            <div key={i} className="flex items-center gap-3 md:gap-4">
               <span className="text-[10px] font-bold w-4" style={{ color: C.textDim }}>#{i + 1}</span>
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-1">
@@ -1371,7 +1371,7 @@ function HeroFooterAdsPage() {
   const footerAds = ads.filter((a: any) => a.position === 'footer')
 
   return (
-    <div className="space-y-5 fade-in-up">
+    <div className="space-y-4 fade-in-up">
       <PageHeader title="Hero / Footer Ads" subtitle={`${ads.length} banner ads configured`} icon={<Film className="h-5 w-5" style={{ color: C.accent }} />} extra={
         <button onClick={() => { setShowForm(true); setEditingId(null); setForm({ title: '', mediaUrl: '', targetUrl: '', type: 'image', category: '', deviceTarget: 'all' }) }} className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-[12px] font-semibold text-white transition-all hover:opacity-90" style={{ background: C.accent }}>
           <Upload className="h-3.5 w-3.5" /> New Ad
@@ -1472,7 +1472,7 @@ function HeroFooterAdsPage() {
             <p className="text-xs text-white/15 mt-1">Create one above to show in the hero banner</p>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             {heroAds.map((ad: any) => (
               <Card key={ad.id} className="!p-0 overflow-hidden group">
                 <div className="relative aspect-[21/9] overflow-hidden">
@@ -1588,7 +1588,7 @@ function BannerAnalyticsPage() {
   ]
 
   return (
-    <div className="space-y-5 fade-in-up">
+    <div className="space-y-4 fade-in-up">
       <PageHeader title="Banner Analytics" subtitle="Track detailed performance metrics for all banner advertisements" icon={<ImageIcon className="h-5 w-5" style={{ color: C.warning }} />} extra={
         <>
           <button className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition-all hover:bg-white/[0.03]" style={{ borderColor: C.border, color: C.textSec }}><Filter className="h-3.5 w-3.5" /> Filter</button>
@@ -1617,7 +1617,7 @@ function BannerAnalyticsPage() {
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         <Card>
           <CardHeader title="Top Performing Banners"><button className="text-[11px] font-medium" style={{ color: C.accent }}>View All</button></CardHeader>
           <div className="overflow-x-auto">
@@ -1680,7 +1680,7 @@ function BannerAnalyticsPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         <Card>
           <CardHeader title="CTR by Placement"><button className="text-[11px] font-medium" style={{ color: C.accent }}>View Full Report</button></CardHeader>
           <DonutChart segments={[
@@ -1711,7 +1711,7 @@ function BannerAnalyticsPage() {
 
 function SettingsPage() {
   return (
-    <div className="space-y-5 fade-in-up">
+    <div className="space-y-4 fade-in-up">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
           <Settings className="h-5 w-5" style={{ color: C.textSec }} />
@@ -1883,7 +1883,7 @@ function LiveControlPage() {
       </div>
 
       {/* ── 3-Column Grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
         {/* ═══ LEFT COLUMN ═══ */}
         <div className="space-y-4">
           {/* 1. Stream Preview Card */}
@@ -2356,7 +2356,7 @@ function AdsManagerPage() {
 
   if (loading) {
     return (
-      <div className="space-y-5 fade-in-up">
+      <div className="space-y-4 fade-in-up">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: `${C.warning}15` }}>
             <Megaphone className="h-5 w-5 animate-pulse" style={{ color: C.warning }} />
@@ -2376,7 +2376,7 @@ function AdsManagerPage() {
   }
 
   return (
-    <div className="space-y-5 fade-in-up">
+    <div className="space-y-4 fade-in-up">
       {/* Page Header */}
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: `${C.warning}15` }}>
@@ -2389,7 +2389,7 @@ function AdsManagerPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
         {[
           { label: 'Total Ads', value: String(analytics.totalAds || ads.length), icon: Megaphone, color: C.warning },
           { label: 'Active Ads', value: String(analytics.activeAds || ads.filter(a => a.status === 'active').length), icon: CheckCircle, color: C.success },
@@ -2589,7 +2589,7 @@ function CreateNewAdSection() {
   const selectedDevices = Object.entries(form.devices).filter(([, v]) => v).length
 
   return (
-    <div className="space-y-5 fade-in-up">
+    <div className="space-y-4 fade-in-up">
       {/* ── Header Bar ── */}
       <Card className="!p-0 overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 md:p-5">
@@ -2635,7 +2635,7 @@ function CreateNewAdSection() {
       </Card>
 
       {/* ── Two Column: Ad Details + Targeting ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         {/* LEFT COLUMN — AD DETAILS */}
         <Card>
           <div className="flex items-center gap-2.5 rounded-xl px-4 py-2.5 mb-5" style={sectionHeaderStyle}>
@@ -2928,7 +2928,7 @@ function CreateNewAdSection() {
       </div>
 
       {/* ── Bottom Row: Ad Preview + Estimated Summary ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         {/* AD PREVIEW */}
         <Card>
           <div className="flex items-center gap-2.5 rounded-xl px-4 py-2.5 mb-4" style={sectionHeaderStyle}>
@@ -3088,7 +3088,7 @@ function RTMPConfigPage() {
   }
 
   return (
-    <div className="space-y-5 fade-in-up">
+    <div className="space-y-4 fade-in-up">
       {/* Page Header */}
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: `${C.purple}15` }}>
@@ -3100,7 +3100,7 @@ function RTMPConfigPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         {/* Left Column - Config */}
         <div className="space-y-4">
           {/* Connection Status */}
@@ -3586,7 +3586,7 @@ function VideoUploadPage() {
               </div>
 
               {/* Category + Quality */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3 md:gap-4">
                 <div>
                   <label className="block text-[13px] mb-2" style={{ color: '#d1d5db' }}>Category</label>
                   <select
@@ -3831,7 +3831,7 @@ function CategoriesPage() {
   }
 
   return (
-    <div className="space-y-5 fade-in-up">
+    <div className="space-y-4 fade-in-up">
       {/* ── Page Header ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -3853,7 +3853,7 @@ function CategoriesPage() {
       </div>
 
       {/* ── Action Cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
         {[
           { title: 'CREATE NEW CATEGORY', desc: 'Add a new category to organize your content.', color: C.accent, icon: Plus, action: () => { setShowCreate(true); setEditCategory(null); setForm({ name: '', description: '' }) } },
           { title: 'EDIT CATEGORY', desc: 'Rename or update existing category details.', color: C.purple, icon: Pencil, action: () => { if (categories[0]) { setEditCategory(categories[0]); setForm({ name: categories[0].name || '', description: categories[0].description || '' }); setShowCreate(true) } } },
@@ -3936,7 +3936,7 @@ function CategoriesPage() {
         </Card>
       ) : (
         viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
             {filtered.map((cat) => (
               <Card key={cat.id} className="!p-0 overflow-hidden">
                 <div className="h-28 relative" style={{ background: `linear-gradient(135deg, ${C.purple}15, ${C.accent}10)` }}>
@@ -4220,7 +4220,7 @@ function VideoAdsAdminPage() {
 
   if (loading) {
     return (
-      <div className="space-y-5 fade-in-up">
+      <div className="space-y-4 fade-in-up">
         <PageHeader title="Video Ads" subtitle="Pre-roll, Mid-roll & Post-roll management" icon={<Film className="h-5 w-5" style={{ color: C.info }} />} />
         <Card><div className="flex items-center justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-[#3b82f6]" /></div></Card>
       </div>
@@ -4228,7 +4228,7 @@ function VideoAdsAdminPage() {
   }
 
   return (
-    <div className="space-y-5 fade-in-up">
+    <div className="space-y-4 fade-in-up">
       <PageHeader
         title="Video Ads Manager"
         subtitle="Pre-Roll • Mid-Roll • Post-Roll"
@@ -4239,7 +4239,7 @@ function VideoAdsAdminPage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {[
           { label: 'Pre-Roll', value: preRollCount, color: C.accent, desc: 'Before video starts' },
           { label: 'Mid-Roll', value: midRollCount, color: C.warning, desc: 'During playback' },
@@ -4362,7 +4362,7 @@ function VideoAdsAdminPage() {
             </div>
 
             {/* Basic Info */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
               <div className="col-span-2"><label className={labelCls} style={{ color: C.textDim }}>Title *</label>
                 <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Ad title"
                   className={inputCls} style={{ borderColor: C.border, background: `${C.sidebar}50` }} /></div>
@@ -5034,7 +5034,7 @@ export default function AdminPanel() {
         style={{ width: 280, background: C.sidebar, borderColor: C.border }}
       >
         {/* Logo */}
-        <div className="flex h-16 items-center gap-3 border-b px-5" style={{ borderColor: C.border }}>
+        <div className="flex h-12 items-center gap-3 border-b px-4" style={{ borderColor: C.border }}>
           <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: C.accent, boxShadow: `0 4px 16px ${C.accentGlow}` }}>
             <Activity className="h-4.5 w-4.5 text-white" />
           </div>
@@ -5050,7 +5050,7 @@ export default function AdminPanel() {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 no-scrollbar">
+        <nav className="flex-1 overflow-y-auto px-2 py-2 no-scrollbar">
           {menuSections.map((section) => (
             <div key={section.label || '_root'} className="mb-3">
               {section.label && (
@@ -5116,7 +5116,7 @@ export default function AdminPanel() {
       {/* ─── Main Content ─── */}
       <div className="flex-1 md:ml-[280px] min-h-screen flex flex-col transition-all duration-300">
         {/* ─── Top Header ─── */}
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b px-4 lg:px-6" style={{ background: 'rgba(20,20,20,0.92)', backdropFilter: 'blur(20px)', borderColor: C.border }}>
+        <header className="sticky top-0 z-30 flex h-12 items-center gap-2 sm:gap-3 border-b px-3 sm:px-4 lg:px-5" style={{ background: 'rgba(20,20,20,0.92)', backdropFilter: 'blur(20px)', borderColor: C.border }}>
           {/* Mobile Logo */}
           <div className="flex items-center gap-2 md:hidden">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: C.accent, boxShadow: `0 2px 10px ${C.accentGlow}` }}>
@@ -5163,7 +5163,7 @@ export default function AdminPanel() {
         </header>
 
         {/* ─── Page Content ─── */}
-        <main className="flex-1 p-4 md:p-5 lg:p-6">
+        <main className="flex-1 p-2.5 sm:p-3 md:p-4 lg:p-5">
           {renderPage(activePage)}
         </main>
       </div>

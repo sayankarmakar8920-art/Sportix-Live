@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -175,11 +175,8 @@ function AnimatedCounter({ value, prefix = '', suffix = '' }: { value: number; p
    ═══════════════════════════════════════════════════════════════ */
 function GlassCard({ children, className = '', style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className={`rounded-2xl p-5 ${className}`}
+    <div
+      className={`rounded-2xl p-3 sm:p-4 transition-all duration-200 ${className}`}
       style={{
         background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
         backdropFilter: 'blur(20px)',
@@ -188,7 +185,7 @@ function GlassCard({ children, className = '', style }: { children: React.ReactN
       }}
     >
       {children}
-    </motion.div>
+    </div>
   )
 }
 
@@ -319,14 +316,12 @@ export default function VideoAdsManager() {
   ]
 
   return (
-    <div className="space-y-5 min-w-0">
+    <div className="space-y-4 min-w-0">
       {/* ════════════════════════════════════════
           PAGE HEADER
           ════════════════════════════════════════ */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      <div
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 md:gap-4 transition-all duration-200"
       >
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Video Ads Manager</h1>
@@ -348,7 +343,7 @@ export default function VideoAdsManager() {
             <Plus className="h-4 w-4" /> Create New Ad
           </button>
         </div>
-      </motion.div>
+      </div>
 
       {/* ════════════════════════════════════════
           KPI CARDS
@@ -357,12 +352,9 @@ export default function VideoAdsManager() {
         {kpis.map((kpi, i) => {
           const Icon = kpi.icon
           return (
-            <motion.div
+            <div
               key={kpi.label}
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: i * 0.06, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="rounded-2xl p-4 relative overflow-hidden group cursor-default"
+              className="rounded-2xl p-4 relative overflow-hidden group cursor-default transition-all duration-200"
               style={{
                 background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
                 border: '1px solid rgba(255,255,255,0.06)',
@@ -384,7 +376,7 @@ export default function VideoAdsManager() {
               </p>
               <p className="text-[10px] mt-0.5" style={{ color: C.textTer }}>{kpi.label}</p>
               <p className="text-[9px] mt-1" style={{ color: C.textDim }}>from last 30 days</p>
-            </motion.div>
+            </div>
           )
         })}
       </div>
@@ -418,13 +410,12 @@ export default function VideoAdsManager() {
           OVERVIEW TAB
           ════════════════════════════════════════════════════ */}
       {activeTab === 'overview' && (
-        <AnimatePresence mode="wait">
-          <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+          <div className="space-y-4 transition-all duration-200">
             {/* Performance Chart + Ad Format Distribution */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
               {/* Performance Line Chart */}
               <GlassCard className="lg:col-span-2" style={{ padding: 0 }}>
-                <div className="flex items-center justify-between px-5 pt-5 pb-2">
+                <div className="flex items-center justify-between px-3 pt-3 pb-2">
                   <div className="flex items-center gap-2">
                     <h3 className="text-sm font-semibold text-white">Performance Over Time</h3>
                     <Info className="h-3.5 w-3.5" style={{ color: C.textDim }} />
@@ -433,7 +424,7 @@ export default function VideoAdsManager() {
                     Last 30 Days <ChevronDown className="h-3 w-3" />
                   </button>
                 </div>
-                <div className="px-3 pb-4 h-72">
+                <div className="px-3 pb-4 h-48">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={PERFORMANCE_DATA} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                       <defs>
@@ -473,7 +464,7 @@ export default function VideoAdsManager() {
 
               {/* Ad Format Distribution (Pie) */}
               <GlassCard>
-                <h3 className="text-sm font-semibold text-white mb-4">Ad Format Distribution</h3>
+                <h3 className="text-sm font-semibold text-white mb-2">Ad Format Distribution</h3>
                 <div className="flex justify-center">
                   <div className="relative">
                     <ResponsiveContainer width={180} height={180}>
@@ -517,7 +508,7 @@ export default function VideoAdsManager() {
 
             {/* Ad Type Distribution (Bar Chart) */}
             <GlassCard>
-              <h3 className="text-sm font-semibold text-white mb-4">Ad Type Distribution</h3>
+              <h3 className="text-sm font-semibold text-white mb-2">Ad Type Distribution</h3>
               <div className="h-56">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={AD_TYPE_DATA} margin={{ top: 0, right: 10, left: -10, bottom: 0 }} barCategoryGap="25%">
@@ -534,19 +525,17 @@ export default function VideoAdsManager() {
                 </ResponsiveContainer>
               </div>
             </GlassCard>
-          </motion.div>
-        </AnimatePresence>
+          </div>
       )}
 
       {/* ════════════════════════════════════════════════════
           UPLOAD TAB
           ════════════════════════════════════════════════════ */}
       {activeTab === 'upload' && (
-        <AnimatePresence mode="wait">
-          <motion.div key="upload" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+          <div className="space-y-4 transition-all duration-200">
             <GlassCard>
               {/* Upload Tabs */}
-              <div className="flex items-center gap-1 mb-5 p-1 rounded-xl w-fit" style={{ background: 'rgba(255,255,255,0.04)' }}>
+              <div className="flex items-center gap-1 mb-3 p-1 rounded-xl w-fit" style={{ background: 'rgba(255,255,255,0.04)' }}>
                 <button
                   onClick={() => setUploadTab('video')}
                   className="flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-medium transition-all"
@@ -633,7 +622,7 @@ export default function VideoAdsManager() {
             {uploads.length > 0 && (
               <GlassCard>
                 <h3 className="text-sm font-semibold text-white mb-3">Upload Queue</h3>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {uploads.map(u => (
                     <div key={u.id} className="rounded-xl p-3.5 space-y-2.5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
                       <div className="flex items-center justify-between">
@@ -664,12 +653,9 @@ export default function VideoAdsManager() {
                       {u.status === 'uploading' && (
                         <>
                           <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                            <motion.div
-                              className="h-full rounded-full"
-                              style={{ background: 'linear-gradient(90deg, #E50914, #ff4d58)' }}
-                              initial={{ width: 0 }}
-                              animate={{ width: `${u.progress}%` }}
-                              transition={{ duration: 0.3 }}
+                            <div
+                              className="h-full rounded-full transition-all duration-300"
+                              style={{ background: 'linear-gradient(90deg, #E50914, #ff4d58)', width: `${u.progress}%` }}
                             />
                           </div>
                           <div className="flex items-center justify-between text-[10px]" style={{ color: C.textDim }}>
@@ -684,16 +670,14 @@ export default function VideoAdsManager() {
                 </div>
               </GlassCard>
             )}
-          </motion.div>
-        </AnimatePresence>
+          </div>
       )}
 
       {/* ════════════════════════════════════════════════════
           ADS LIST TAB
           ════════════════════════════════════════════════════ */}
       {activeTab === 'ads-list' && (
-        <AnimatePresence mode="wait">
-          <motion.div key="ads-list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+          <div className="space-y-4 transition-all duration-200">
             <GlassCard style={{ padding: 0 }}>
               {/* Filters */}
               <div className="p-4 border-b" style={{ borderColor: C.border }}>
@@ -753,7 +737,7 @@ export default function VideoAdsManager() {
                   <thead>
                     <tr className="border-b" style={{ borderColor: C.border }}>
                       {['Preview', 'Ad Name', 'Type', 'Placement', 'Duration', 'Status', 'Impressions', 'Clicks', 'Revenue', 'CTR', 'Actions'].map(h => (
-                        <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap" style={{ color: C.textDim }}>
+                        <th key={h} className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap" style={{ color: C.textDim }}>
                           {h}
                         </th>
                       ))}
@@ -761,27 +745,25 @@ export default function VideoAdsManager() {
                   </thead>
                   <tbody>
                     {pagedAds.map(ad => (
-                      <motion.tr
+                      <tr
                         key={ad.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
                         className="border-b transition-colors hover:bg-white/[0.02]"
                         style={{ borderColor: C.border }}
                       >
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-2.5">
                           <div className="h-8 w-12 rounded-lg flex items-center justify-center" style={{ background: ad.type === 'Video' ? 'rgba(59,130,246,0.1)' : 'rgba(234,179,8,0.1)' }}>
                             {ad.type === 'Video' ? <FileVideo className="h-4 w-4" style={{ color: '#3b82f6' }} /> : <Image className="h-4 w-4" style={{ color: '#eab308' }} />}
                           </div>
                         </td>
-                        <td className="px-4 py-3 font-medium text-white whitespace-nowrap">{ad.name}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-2.5 font-medium text-white whitespace-nowrap">{ad.name}</td>
+                        <td className="px-3 py-2.5">
                           <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold" style={{ background: ad.type === 'Video' ? 'rgba(59,130,246,0.12)' : ad.type === 'Image' ? 'rgba(234,179,8,0.12)' : 'rgba(168,85,247,0.12)', color: ad.type === 'Video' ? '#3b82f6' : ad.type === 'Image' ? '#eab308' : '#a855f7' }}>
                             {ad.type}
                           </span>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap" style={{ color: C.textSec }}>{ad.placement}</td>
-                        <td className="px-4 py-3 whitespace-nowrap font-mono" style={{ color: C.textSec }}>{ad.duration}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: C.textSec }}>{ad.placement}</td>
+                        <td className="px-3 py-2.5 whitespace-nowrap font-mono" style={{ color: C.textSec }}>{ad.duration}</td>
+                        <td className="px-3 py-2.5">
                           <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold" style={{
                             background: ad.status === 'Active' ? C.successDim : ad.status === 'Paused' ? 'rgba(234,179,8,0.12)' : ad.status === 'Processing' ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.06)',
                             color: ad.status === 'Active' ? C.success : ad.status === 'Paused' ? C.warning : ad.status === 'Processing' ? C.info : C.textDim,
@@ -790,11 +772,11 @@ export default function VideoAdsManager() {
                             {ad.status}
                           </span>
                         </td>
-                        <td className="px-4 py-3 font-medium text-white whitespace-nowrap">{fmtNum(ad.impressions)}</td>
-                        <td className="px-4 py-3 font-medium text-white whitespace-nowrap">{fmtNum(ad.clicks)}</td>
-                        <td className="px-4 py-3 font-medium text-white whitespace-nowrap">{fmtCurrency(ad.revenue)}</td>
-                        <td className="px-4 py-3 font-medium text-white whitespace-nowrap">{ad.ctr.toFixed(2)}%</td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-2.5 font-medium text-white whitespace-nowrap">{fmtNum(ad.impressions)}</td>
+                        <td className="px-3 py-2.5 font-medium text-white whitespace-nowrap">{fmtNum(ad.clicks)}</td>
+                        <td className="px-3 py-2.5 font-medium text-white whitespace-nowrap">{fmtCurrency(ad.revenue)}</td>
+                        <td className="px-3 py-2.5 font-medium text-white whitespace-nowrap">{ad.ctr.toFixed(2)}%</td>
+                        <td className="px-3 py-2.5">
                           <div className="flex items-center gap-1">
                             <button className="h-7 w-7 rounded-lg flex items-center justify-center transition-colors hover:bg-white/[0.06]" style={{ color: C.textSec }}>
                               <Edit3 className="h-3.5 w-3.5" />
@@ -807,14 +789,14 @@ export default function VideoAdsManager() {
                             </button>
                           </div>
                         </td>
-                      </motion.tr>
+                      </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
 
               {/* Pagination */}
-              <div className="flex items-center justify-between px-4 py-3 border-t" style={{ borderColor: C.border }}>
+              <div className="flex items-center justify-between px-3 py-2.5 border-t" style={{ borderColor: C.border }}>
                 <p className="text-[10px]" style={{ color: C.textDim }}>Showing {((currentPage - 1) * perPage) + 1}–{Math.min(currentPage * perPage, filteredAds.length)} of {filteredAds.length} ads</p>
                 <div className="flex items-center gap-1">
                   <button
@@ -862,18 +844,16 @@ export default function VideoAdsManager() {
                 </div>
               </div>
             </GlassCard>
-          </motion.div>
-        </AnimatePresence>
+          </div>
       )}
 
       {/* ════════════════════════════════════════════════════
           TIMELINE TAB
           ════════════════════════════════════════════════════ */}
       {activeTab === 'timeline' && (
-        <AnimatePresence mode="wait">
-          <motion.div key="timeline" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+          <div className="space-y-4 transition-all duration-200">
             <GlassCard>
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-semibold text-white">Ads Timeline (Unlimited Ads)</h3>
                   <Info className="h-3.5 w-3.5" style={{ color: C.textDim }} />
@@ -924,12 +904,9 @@ export default function VideoAdsManager() {
                     { name: 'Spotify', start: 75, width: 2, type: 'image' },
                     { name: 'BMW M Series', start: 85, width: 4, type: 'video' },
                   ].map((ad, i) => (
-                    <motion.div
+                    <div
                       key={i}
-                      initial={{ opacity: 0, scaleX: 0 }}
-                      animate={{ opacity: 1, scaleX: 1 }}
-                      transition={{ delay: i * 0.05, duration: 0.4 }}
-                      className="absolute top-2 bottom-2 rounded-lg flex items-center px-2 overflow-hidden cursor-pointer group"
+                      className="absolute top-2 bottom-2 rounded-lg flex items-center px-2 overflow-hidden cursor-pointer group transition-all duration-200"
                       style={{
                         left: `${ad.start}%`,
                         width: `${ad.width}%`,
@@ -937,34 +914,27 @@ export default function VideoAdsManager() {
                           ? 'linear-gradient(135deg, rgba(59,130,246,0.3), rgba(59,130,246,0.15))'
                           : 'linear-gradient(135deg, rgba(229,9,20,0.3), rgba(229,9,20,0.15))',
                         border: `1px solid ${ad.type === 'video' ? 'rgba(59,130,246,0.3)' : 'rgba(229,9,20,0.3)'}`,
-                        transformOrigin: 'left center',
                       }}
                     >
                       <div className="flex items-center gap-1.5 min-w-0">
                         {ad.type === 'video' ? <FileVideo className="h-3 w-3 flex-shrink-0" style={{ color: '#3b82f6' }} /> : <Image className="h-3 w-3 flex-shrink-0" style={{ color: '#E50914' }} />}
                         <span className="text-[9px] font-medium text-white truncate">{ad.name}</span>
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
 
                 {/* Progress marker */}
                 <div className="relative mt-1">
                   <div className="h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                    <motion.div
-                      className="h-full rounded-full"
-                      style={{ background: C.accent }}
-                      initial={{ width: 0 }}
-                      animate={{ width: '35%' }}
-                      transition={{ duration: 2, ease: 'easeOut' }}
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ background: C.accent, width: '35%' }}
                     />
                   </div>
-                  <motion.div
+                  <div
                     className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full"
                     style={{ background: C.accent, boxShadow: `0 0 10px ${C.accentGlow}`, left: '35%' }}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 2 }}
                   />
                 </div>
               </div>
@@ -985,19 +955,17 @@ export default function VideoAdsManager() {
                 ))}
               </div>
             </GlassCard>
-          </motion.div>
-        </AnimatePresence>
+          </div>
       )}
 
       {/* ════════════════════════════════════════════════════
           SETTINGS TAB
           ════════════════════════════════════════════════════ */}
       {activeTab === 'settings' && (
-        <AnimatePresence mode="wait">
-          <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+          <div className="space-y-4 transition-all duration-200">
             <GlassCard>
-              <h3 className="text-sm font-semibold text-white mb-5">Ads Settings</h3>
-              <div className="space-y-5">
+              <h3 className="text-sm font-semibold text-white mb-3">Ads Settings</h3>
+              <div className="space-y-4">
                 {/* Auto Ads */}
                 <div className="flex items-center justify-between">
                   <div>
@@ -1009,10 +977,9 @@ export default function VideoAdsManager() {
                     className="relative h-6 w-11 rounded-full transition-colors"
                     style={{ background: autoAds ? C.success : 'rgba(255,255,255,0.1)' }}
                   >
-                    <motion.div
-                      className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md"
-                      animate={{ left: autoAds ? 22 : 2 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    <div
+                      className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-all duration-200"
+                      style={{ left: autoAds ? 22 : 2 }}
                     />
                   </button>
                 </div>
@@ -1139,10 +1106,9 @@ export default function VideoAdsManager() {
                     className="relative h-6 w-11 rounded-full transition-colors"
                     style={{ background: smartPlayback ? C.success : 'rgba(255,255,255,0.1)' }}
                   >
-                    <motion.div
-                      className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md"
-                      animate={{ left: smartPlayback ? 22 : 2 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    <div
+                      className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-all duration-200"
+                      style={{ left: smartPlayback ? 22 : 2 }}
                     />
                   </button>
                 </div>
@@ -1158,8 +1124,7 @@ export default function VideoAdsManager() {
                 </button>
               </div>
             </GlassCard>
-          </motion.div>
-        </AnimatePresence>
+          </div>
       )}
 
       {/* ════════════════════════════════════════════════════
@@ -1172,8 +1137,7 @@ export default function VideoAdsManager() {
         const filteredRollAds = ads.filter(a => a.placement === placementMap[activeTab])
 
         return (
-          <AnimatePresence mode="wait">
-            <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+          <div className="space-y-4 transition-all duration-200">
               {/* Header Card */}
               <GlassCard>
                 <div className="flex items-center justify-between">
@@ -1221,14 +1185,14 @@ export default function VideoAdsManager() {
                       <thead>
                         <tr className="border-b" style={{ borderColor: C.border }}>
                           {['Ad Name', 'Status', 'Duration', 'Impressions', 'Clicks', 'Revenue', 'CTR', 'Actions'].map(h => (
-                            <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.textDim }}>{h}</th>
+                            <th key={h} className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.textDim }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {filteredRollAds.map(ad => (
-                          <motion.tr key={ad.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="border-b transition-colors hover:bg-white/[0.02]" style={{ borderColor: C.border }}>
-                            <td className="px-4 py-3">
+                          <tr key={ad.id} className="border-b transition-colors hover:bg-white/[0.02]" style={{ borderColor: C.border }}>
+                            <td className="px-3 py-2.5">
                               <div className="flex items-center gap-2.5">
                                 <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: `${rollColor}15` }}>
                                   <FileVideo className="h-4 w-4" style={{ color: rollColor }} />
@@ -1236,7 +1200,7 @@ export default function VideoAdsManager() {
                                 <span className="font-medium text-white">{ad.name}</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-3 py-2.5">
                               <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold" style={{
                                 background: ad.status === 'Active' ? C.successDim : ad.status === 'Paused' ? 'rgba(234,179,8,0.12)' : 'rgba(255,255,255,0.06)',
                                 color: ad.status === 'Active' ? C.success : ad.status === 'Paused' ? C.warning : C.textDim,
@@ -1244,18 +1208,18 @@ export default function VideoAdsManager() {
                                 {ad.status}
                               </span>
                             </td>
-                            <td className="px-4 py-3 font-mono" style={{ color: C.textSec }}>{ad.duration}</td>
-                            <td className="px-4 py-3 font-medium text-white">{fmtNum(ad.impressions)}</td>
-                            <td className="px-4 py-3 font-medium text-white">{fmtNum(ad.clicks)}</td>
-                            <td className="px-4 py-3 font-medium text-white">{fmtCurrency(ad.revenue)}</td>
-                            <td className="px-4 py-3 font-medium text-white">{ad.ctr.toFixed(2)}%</td>
-                            <td className="px-4 py-3">
+                            <td className="px-3 py-2.5 font-mono" style={{ color: C.textSec }}>{ad.duration}</td>
+                            <td className="px-3 py-2.5 font-medium text-white">{fmtNum(ad.impressions)}</td>
+                            <td className="px-3 py-2.5 font-medium text-white">{fmtNum(ad.clicks)}</td>
+                            <td className="px-3 py-2.5 font-medium text-white">{fmtCurrency(ad.revenue)}</td>
+                            <td className="px-3 py-2.5 font-medium text-white">{ad.ctr.toFixed(2)}%</td>
+                            <td className="px-3 py-2.5">
                               <div className="flex items-center gap-1">
                                 <button className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-white/[0.06]" style={{ color: C.textSec }}><Edit3 className="h-3.5 w-3.5" /></button>
                                 <button className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-red-500/10" style={{ color: C.accent }}><Trash2 className="h-3.5 w-3.5" /></button>
                               </div>
                             </td>
-                          </motion.tr>
+                          </tr>
                         ))}
                       </tbody>
                     </table>
@@ -1275,29 +1239,21 @@ export default function VideoAdsManager() {
                   </div>
                 </GlassCard>
               )}
-            </motion.div>
-          </AnimatePresence>
+            </div>
         )
       })()}
 
       {/* ════════════════════════════════════════════════════
           CREATE AD MODAL
           ════════════════════════════════════════════════════ */}
-      <AnimatePresence>
-        {showCreateModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      {showCreateModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-200"
             onClick={() => setShowCreateModal(false)}
           >
             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg rounded-2xl p-6 space-y-5"
+            <div
+              className="relative w-full max-w-lg rounded-2xl p-4 space-y-3 transition-all duration-200"
               style={{
                 background: '#181818',
                 border: '1px solid rgba(255,255,255,0.08)',
@@ -1337,7 +1293,7 @@ export default function VideoAdsManager() {
                 </div>
                 <div>
                   <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: C.textTer }}>Ad File</label>
-                  <div className="border-2 border-dashed rounded-xl p-6 flex flex-col items-center gap-2 cursor-pointer transition-colors hover:border-red-500/40" style={{ borderColor: C.borderLight }}>
+                  <div className="border-2 border-dashed rounded-xl p-4 flex flex-col items-center gap-2 cursor-pointer transition-colors hover:border-red-500/40" style={{ borderColor: C.borderLight }}>
                     <CloudUpload className="h-6 w-6" style={{ color: C.accent }} />
                     <p className="text-xs" style={{ color: C.textTer }}>Click to upload or drag & drop</p>
                     <p className="text-[10px]" style={{ color: C.textDim }}>MP4, MOV, WebM, JPG, PNG (max 5GB)</p>
@@ -1352,10 +1308,9 @@ export default function VideoAdsManager() {
                   <Plus className="h-4 w-4" /> Create Ad
                 </button>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+          </div>
+      )}
     </div>
   )
 }

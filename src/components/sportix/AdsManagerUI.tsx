@@ -2,10 +2,6 @@
 
 import { useState, useMemo } from 'react'
 import {
-  AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis,
-  CartesianGrid, Tooltip, ResponsiveContainer,
-} from 'recharts'
-import {
   Eye, MousePointerClick, DollarSign, Target,
   Download, Calendar, Plus, Search,
   ChevronDown, ChevronLeft, ChevronRight,
@@ -14,6 +10,20 @@ import {
   Rocket, FileText, Layout, X, CloudUpload,
   type LucideIcon,
 } from 'lucide-react'
+
+/* ═══════════════════════════════════════════════════════════════
+   THEME CONSTANTS
+   ═══════════════════════════════════════════════════════════════ */
+const T = {
+  bg: '#141414',
+  card: '#1a1a1a',
+  border: 'rgba(255,255,255,0.08)',
+  accent: '#E50914',
+  white: '#ffffff',
+  textSec: '#b3b3b3',
+  textTer: '#808080',
+  textDim: '#555555',
+} as const
 
 /* ═══════════════════════════════════════════════════════════════
    TYPES
@@ -103,14 +113,169 @@ function fmtCur(n: number): string {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SPARKLINE — pure line, no gradient fill
+   PURE SVG: Area Chart
+   ═══════════════════════════════════════════════════════════════ */
+function AreaChartSVG({
+  data,
+  color,
+  yDomain,
+  metric,
+}: {
+  data: number[]
+  color: string
+  yDomain: [number, number]
+  metric: PerfMetric
+}) {
+  const w = 700
+  const h = 200
+  const padX = 40
+  const padY = 10
+  const padBottom = 25
+  const chartW = w - padX - padX
+  const chartH = h - padY - padBottom
+
+  const gradId = `grad-${metric}`
+
+  const points = data.map((v, i) => ({
+    x: padX + (i / (data.length - 1)) * chartW,
+    y: padY + chartH - ((v - yDomain[0]) / (yDomain[1] - yDomain[0])) * chartH,
+  }))
+
+  const linePath = points
+    .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`)
+    .join(' ')
+  const areaPath = `${linePath} L${points[points.length - 1].x},${padY + chartH} L${points[0].x},${padY + chartH} Z`
+
+  function formatY(val: number): string {
+    if (metric === 'revenue' || metric === 'cpc') return '₹' + val.toFixed(val % 1 === 0 ? 0 : 1)
+    if (metric === 'ctr') return val.toFixed(1) + '%'
+    return val >= 1000 ? (val / 1000).toFixed(1) + 'k' : String(val)
+  }
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-full">
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={0.25} />
+          <stop offset="100%" stopColor={color} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      {/* Grid lines */}
+      {Array.from({ length: 5 }, (_, i) => {
+        const y = padY + (i / 4) * chartH
+        return (
+          <line
+            key={i}
+            x1={padX}
+            y1={y}
+            x2={w - padX}
+            y2={y}
+            stroke="rgba(255,255,255,0.06)"
+            strokeDasharray="4 4"
+          />
+        )
+      })}
+      {/* Y-axis labels */}
+      {Array.from({ length: 5 }, (_, i) => {
+        const val = yDomain[1] - (i / 4) * (yDomain[1] - yDomain[0])
+        const y = padY + (i / 4) * chartH
+        return (
+          <text
+            key={i}
+            x={padX - 5}
+            y={y + 3}
+            textAnchor="end"
+            fill={T.textDim}
+            fontSize="9"
+          >
+            {formatY(val)}
+          </text>
+        )
+      })}
+      {/* X-axis labels */}
+      {data.map((_, i) => {
+        const x = padX + (i / (data.length - 1)) * chartW
+        return (
+          <text
+            key={i}
+            x={x}
+            y={h - 5}
+            textAnchor="middle"
+            fill={T.textDim}
+            fontSize="9"
+          >
+            {'May ' + (3 + i)}
+          </text>
+        )
+      })}
+      {/* Area fill */}
+      <path d={areaPath} fill={`url(#${gradId})`} />
+      {/* Line */}
+      <polyline
+        points={points.map((p) => `${p.x},${p.y}`).join(' ')}
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      {/* Dots */}
+      {points.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r="3" fill={color} />
+      ))}
+    </svg>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PURE SVG: Donut Chart
+   ═══════════════════════════════════════════════════════════════ */
+function DonutChartSVG({
+  pct,
+  color,
+  size = 120,
+}: {
+  pct: number
+  color: string
+  size?: number
+}) {
+  const r = size / 2 - 12
+  const circumference = 2 * Math.PI * r
+  const strokeW = 10
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke="rgba(255,255,255,0.06)"
+        strokeWidth={strokeW}
+      />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke={color}
+        strokeWidth={strokeW}
+        strokeDasharray={`${(pct / 100) * circumference} ${circumference}`}
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SPARKLINE — pure SVG mini line
    ═══════════════════════════════════════════════════════════════ */
 function Sparkline({ data, color }: { data: number[]; color: string }) {
   const max = Math.max(...data)
   const min = Math.min(...data)
   const range = max - min || 1
   const w = 80
-  const h = 24
+  const h = 20
   const pts = data
     .map((v, i) => `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * h}`)
     .join(' ')
@@ -129,183 +294,21 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   CHART TOOLTIP — dark bg, colored text
-   ═══════════════════════════════════════════════════════════════ */
-function ChartTooltip({
-  active,
-  payload,
-  label,
-  metric,
-}: {
-  active?: boolean
-  payload?: Array<{ value: number; dataKey: string; color: string }>
-  label?: string
-  metric: PerfMetric
-}) {
-  if (!active || !payload?.length) return null
-  const val = payload[0].value
-  const color = payload[0].color
-  let formatted = ''
-  switch (metric) {
-    case 'revenue':
-      formatted = `₹${val.toFixed(2)}`
-      break
-    case 'impressions':
-      formatted = fmtNum(val)
-      break
-    case 'clicks':
-      formatted = fmtNum(val)
-      break
-    case 'ctr':
-      formatted = `${val.toFixed(1)}%`
-      break
-    case 'cpc':
-      formatted = `₹${val.toFixed(2)}`
-      break
-  }
-  return (
-    <div
-      className="rounded-xl px-3 py-2 text-xs"
-      style={{ background: '#000', border: '1px solid #2A2A2A' }}
-    >
-      <p className="text-[#6B7280] mb-1">{label}</p>
-      <p style={{ color }} className="font-semibold">
-        {formatted}
-      </p>
-    </div>
-  )
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   FLAT CARD WRAPPER
+   CARD WRAPPER
    ═══════════════════════════════════════════════════════════════ */
 function Card({
   children,
   className = '',
-  style,
 }: {
   children: React.ReactNode
   className?: string
-  style?: React.CSSProperties
 }) {
   return (
     <div
-      className={`rounded-2xl bg-[#1F1F1F] border border-[#2A2A2A] ${className}`}
-      style={style}
+      className={`rounded-xl ${className}`}
+      style={{ background: T.card, border: `1px solid ${T.border}` }}
     >
       {children}
-    </div>
-  )
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   CREATE NEW AD MODAL
-   ═══════════════════════════════════════════════════════════════ */
-function CreateAdModal({
-  open,
-  onClose,
-}: {
-  open: boolean
-  onClose: () => void
-}) {
-  const [adName, setAdName] = useState('')
-  const [adType, setAdType] = useState('Video')
-  const [adPlacement, setAdPlacement] = useState('Homepage')
-
-  if (!open) return null
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div className="absolute inset-0 bg-black/70" />
-      <div
-        className="relative w-full max-w-lg rounded-2xl p-6 space-y-5"
-        style={{ background: '#1F1F1F', border: '1px solid #2A2A2A' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-bold text-white">Create New Ad</h3>
-          <button
-            onClick={onClose}
-            className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-white/5"
-            style={{ color: '#9CA3AF' }}
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5 text-[#6B7280]">
-              Ad Name
-            </label>
-            <input
-              value={adName}
-              onChange={(e) => setAdName(e.target.value)}
-              className="w-full rounded-xl border border-[#2A2A2A] bg-[#141414] px-3.5 py-2.5 text-sm text-white placeholder:text-[#4B5563] focus:outline-none focus:border-[#FF3B30]/40"
-              placeholder="Enter ad name..."
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5 text-[#6B7280]">
-                Type
-              </label>
-              <select
-                value={adType}
-                onChange={(e) => setAdType(e.target.value)}
-                className="w-full rounded-xl border border-[#2A2A2A] bg-[#141414] px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#FF3B30]/40"
-              >
-                <option>Video</option>
-                <option>Banner</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5 text-[#6B7280]">
-                Placement
-              </label>
-              <select
-                value={adPlacement}
-                onChange={(e) => setAdPlacement(e.target.value)}
-                className="w-full rounded-xl border border-[#2A2A2A] bg-[#141414] px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-[#FF3B30]/40"
-              >
-                <option>Homepage</option>
-                <option>Sidebar</option>
-                <option>Footer</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5 text-[#6B7280]">
-              Ad File
-            </label>
-            <div className="border-2 border-dashed border-[#2A2A2A] rounded-xl p-6 flex flex-col items-center gap-2 cursor-pointer hover:border-[#FF3B30]/40 transition-colors">
-              <CloudUpload className="h-6 w-6 text-[#FF3B30]" />
-              <p className="text-xs text-[#9CA3AF]">Click to upload</p>
-              <p className="text-[10px] text-[#6B7280]">
-                MP4, MOV, JPG, PNG (max 10MB)
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 justify-end pt-2">
-          <button
-            onClick={onClose}
-            className="rounded-xl px-4 py-2.5 text-xs font-medium text-[#9CA3AF] border border-[#2A2A2A] hover:bg-white/5 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onClose}
-            className="flex items-center gap-2 rounded-xl bg-[#FF3B30] px-5 py-2.5 text-xs font-semibold text-white hover:brightness-110 transition-all"
-          >
-            <Plus className="h-4 w-4" /> Create Ad
-          </button>
-        </div>
-      </div>
     </div>
   )
 }
@@ -333,35 +336,155 @@ function KpiCard({
   spark: number[]
 }) {
   return (
-    <Card className="p-4">
-      <div className="flex items-center justify-between mb-3">
+    <Card className="p-3">
+      <div className="flex items-center justify-between mb-2">
         <div
-          className="h-9 w-9 rounded-xl flex items-center justify-center"
+          className="h-7 w-7 rounded-lg flex items-center justify-center"
           style={{ background: iconBg }}
         >
-          <Icon className="h-4 w-4" style={{ color: iconColor }} />
+          <Icon className="h-3.5 w-3.5" style={{ color: iconColor }} />
         </div>
-        <MoreHorizontal className="h-4 w-4 text-[#6B7280]" />
+        <MoreHorizontal className="h-3.5 w-3.5" style={{ color: T.textTer }} />
       </div>
-      <p className="text-[10px] text-[#9CA3AF] mb-0.5">{label}</p>
-      <p className="text-xl font-bold text-white leading-tight">{value}</p>
-      <div className="flex items-center gap-1 mt-2">
+      <p className="text-[10px] mb-0.5" style={{ color: T.textTer }}>{label}</p>
+      <p className="text-lg font-bold text-white leading-tight">{value}</p>
+      <div className="flex items-center gap-1 mt-1.5">
         {positive ? (
-          <ArrowUpRight className="h-3 w-3 text-[#10B981]" />
+          <ArrowUpRight className="h-3 w-3 text-emerald-400" />
         ) : (
-          <ArrowDownRight className="h-3 w-3 text-[#FF3B30]" />
+          <ArrowDownRight className="h-3 w-3 text-red-400" />
         )}
         <span
           className="text-[10px] font-medium"
-          style={{ color: positive ? '#10B981' : '#FF3B30' }}
+          style={{ color: positive ? '#34d399' : '#f87171' }}
         >
           {change} vs last 7 days
         </span>
       </div>
-      <div className="mt-2">
+      <div className="mt-1.5">
         <Sparkline data={spark} color={iconColor} />
       </div>
     </Card>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CREATE AD MODAL
+   ═══════════════════════════════════════════════════════════════ */
+function CreateAdModal({
+  open,
+  onClose,
+}: {
+  open: boolean
+  onClose: () => void
+}) {
+  const [adName, setAdName] = useState('')
+  const [adType, setAdType] = useState('Video')
+  const [adPlacement, setAdPlacement] = useState('Homepage')
+
+  if (!open) return null
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-black/70" />
+      <div
+        className="relative w-full max-w-lg rounded-xl p-5 space-y-4"
+        style={{ background: T.card, border: `1px solid ${T.border}` }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-bold text-white">Create New Ad</h3>
+          <button
+            onClick={onClose}
+            className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-white/5 transition-colors"
+            style={{ color: T.textSec }}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: T.textTer }}>
+              Ad Name
+            </label>
+            <input
+              value={adName}
+              onChange={(e) => setAdName(e.target.value)}
+              className="w-full rounded-lg px-3 py-2 text-sm text-white placeholder:text-[#555] focus:outline-none transition-colors"
+              style={{ background: T.bg, border: `1px solid ${T.border}` }}
+              placeholder="Enter ad name..."
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <div>
+              <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: T.textTer }}>
+                Type
+              </label>
+              <select
+                value={adType}
+                onChange={(e) => setAdType(e.target.value)}
+                className="w-full rounded-lg px-3 py-2 text-sm text-white focus:outline-none transition-colors"
+                style={{ background: T.bg, border: `1px solid ${T.border}` }}
+              >
+                <option>Video</option>
+                <option>Banner</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: T.textTer }}>
+                Placement
+              </label>
+              <select
+                value={adPlacement}
+                onChange={(e) => setAdPlacement(e.target.value)}
+                className="w-full rounded-lg px-3 py-2 text-sm text-white focus:outline-none transition-colors"
+                style={{ background: T.bg, border: `1px solid ${T.border}` }}
+              >
+                <option>Homepage</option>
+                <option>Sidebar</option>
+                <option>Footer</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: T.textTer }}>
+              Ad File
+            </label>
+            <div
+              className="border-2 border-dashed rounded-lg p-5 flex flex-col items-center gap-2 cursor-pointer transition-colors hover:border-[#E50914]/50"
+              style={{ borderColor: T.border }}
+            >
+              <CloudUpload className="h-6 w-6" style={{ color: T.accent }} />
+              <p className="text-xs" style={{ color: T.textSec }}>Click to upload</p>
+              <p className="text-[10px]" style={{ color: T.textTer }}>
+                MP4, MOV, JPG, PNG (max 10MB)
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 justify-end pt-1">
+          <button
+            onClick={onClose}
+            className="rounded-lg px-4 py-2 text-xs font-medium transition-colors hover:bg-white/5"
+            style={{ color: T.textSec, border: `1px solid ${T.border}` }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onClose}
+            className="flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold text-white hover:brightness-110 transition-all"
+            style={{ background: T.accent }}
+          >
+            <Plus className="h-4 w-4" /> Create Ad
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -372,64 +495,67 @@ export default function AdsManagerUI() {
   const [search, setSearch] = useState('')
   const [perfMetric, setPerfMetric] = useState<PerfMetric>('revenue')
   const [currentPage, setCurrentPage] = useState(1)
-  const [perPage, setPerPage] = useState(5)
+  const [perPage] = useState(5)
   const [showCreateModal, setShowCreateModal] = useState(false)
 
   /* ── KPI data ── */
-  const kpis = [
-    {
-      label: 'Total Revenue',
-      value: '₹26.68',
-      change: '+12.5%',
-      positive: true,
-      icon: DollarSign,
-      iconColor: '#FF3B30',
-      iconBg: 'rgba(255,59,48,0.12)',
-      spark: [18, 22, 20, 28, 24, 30, 28],
-    },
-    {
-      label: 'Impressions',
-      value: '24,500',
-      change: '+8.3%',
-      positive: true,
-      icon: Eye,
-      iconColor: '#8B5CF6',
-      iconBg: 'rgba(139,92,246,0.12)',
-      spark: [30, 35, 32, 40, 38, 42, 45],
-    },
-    {
-      label: 'Clicks',
-      value: '735',
-      change: '+14.3%',
-      positive: true,
-      icon: MousePointerClick,
-      iconColor: '#F59E0B',
-      iconBg: 'rgba(245,158,11,0.12)',
-      spark: [12, 15, 14, 18, 16, 20, 22],
-    },
-    {
-      label: 'CTR',
-      value: '11.94%',
-      change: '+6.7%',
-      positive: true,
-      icon: Target,
-      iconColor: '#EC4899',
-      iconBg: 'rgba(236,72,153,0.12)',
-      spark: [5, 6, 5.5, 7, 6.5, 7.5, 7],
-    },
-    {
-      label: 'Avg. CPC',
-      value: '₹2.45',
-      change: '-4.2%',
-      positive: false,
-      icon: DollarSign,
-      iconColor: '#FBBF24',
-      iconBg: 'rgba(251,191,36,0.12)',
-      spark: [2.6, 2.5, 2.55, 2.4, 2.48, 2.42, 2.38],
-    },
-  ]
+  const kpis = useMemo(
+    () => [
+      {
+        label: 'Total Revenue',
+        value: '₹26.68',
+        change: '+12.5%',
+        positive: true,
+        icon: DollarSign,
+        iconColor: T.accent,
+        iconBg: 'rgba(229,9,20,0.12)',
+        spark: [18, 22, 20, 28, 24, 30, 28],
+      },
+      {
+        label: 'Impressions',
+        value: '24,500',
+        change: '+8.3%',
+        positive: true,
+        icon: Eye,
+        iconColor: '#8B5CF6',
+        iconBg: 'rgba(139,92,246,0.12)',
+        spark: [30, 35, 32, 40, 38, 42, 45],
+      },
+      {
+        label: 'Clicks',
+        value: '735',
+        change: '+14.3%',
+        positive: true,
+        icon: MousePointerClick,
+        iconColor: '#F59E0B',
+        iconBg: 'rgba(245,158,11,0.12)',
+        spark: [12, 15, 14, 18, 16, 20, 22],
+      },
+      {
+        label: 'CTR',
+        value: '11.94%',
+        change: '+6.7%',
+        positive: true,
+        icon: Target,
+        iconColor: '#EC4899',
+        iconBg: 'rgba(236,72,153,0.12)',
+        spark: [5, 6, 5.5, 7, 6.5, 7.5, 7],
+      },
+      {
+        label: 'Avg. CPC',
+        value: '₹2.45',
+        change: '-4.2%',
+        positive: false,
+        icon: DollarSign,
+        iconColor: '#FBBF24',
+        iconBg: 'rgba(251,191,36,0.12)',
+        spark: [2.6, 2.5, 2.55, 2.4, 2.48, 2.42, 2.38],
+      },
+    ],
+    [],
+  )
 
-  /* ── Budget data ── */
+  /* ── Budget ── */
   const budget = 10000
   const spent = 7500
   const budgetPct = (spent / budget) * 100
@@ -437,18 +563,24 @@ export default function AdsManagerUI() {
   /* ── Metric tab config ── */
   const metricConfig: Record<
     PerfMetric,
-    { color: string; yDomain: [number, number]; label: string }
-  > = {
-    revenue: { color: '#FF3B30', yDomain: [0, 30], label: 'revenue' },
-    impressions: { color: '#8B5CF6', yDomain: [0, 5000], label: 'impressions' },
-    clicks: { color: '#F59E0B', yDomain: [0, 600], label: 'clicks' },
-    ctr: { color: '#EC4899', yDomain: [10, 13], label: 'ctr' },
-    cpc: { color: '#FBBF24', yDomain: [2.2, 2.6], label: 'cpc' },
-  }
+    { color: string; yDomain: [number, number] }
+  > = useMemo(
+    () => ({
+      revenue: { color: T.accent, yDomain: [0, 30] },
+      impressions: { color: '#8B5CF6', yDomain: [0, 5000] },
+      clicks: { color: '#F59E0B', yDomain: [0, 600] },
+      ctr: { color: '#EC4899', yDomain: [10, 13] },
+      cpc: { color: '#FBBF24', yDomain: [2.2, 2.6] },
+    }),
+    [],
+  )
 
   const activeMetric = metricConfig[perfMetric]
 
-  /* ── Filter & paginate ads table ── */
+  /* ── Chart data for selected metric ── */
+  const chartData = useMemo(() => PERF_DATA.map((d) => d[perfMetric]), [perfMetric])
+
+  /* ── Filtered & paginated ads ── */
   const filtered = useMemo(() => {
     if (!search.trim()) return MOCK_ADS
     const q = search.toLowerCase()
@@ -457,49 +589,58 @@ export default function AdsManagerUI() {
         a.name.toLowerCase().includes(q) ||
         a.type.toLowerCase().includes(q) ||
         a.placement.toLowerCase().includes(q) ||
-        a.status.toLowerCase().includes(q)
+        a.status.toLowerCase().includes(q),
     )
   }, [search])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage))
-  const paged = filtered.slice((currentPage - 1) * perPage, currentPage * perPage)
+  const paged = useMemo(
+    () => filtered.slice((currentPage - 1) * perPage, currentPage * perPage),
+    [filtered, currentPage, perPage],
+  )
 
-  /* ── Pagination reset on search ── */
   function handleSearch(val: string) {
     setSearch(val)
     setCurrentPage(1)
   }
 
   return (
-    <div className="space-y-5 min-w-0">
+    <div className="space-y-3 min-w-0" style={{ background: T.bg }}>
       {/* ═══════════════════════════════════════════════════════
           ROW 1: HEADER
           ═══════════════════════════════════════════════════════ */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl flex items-center justify-center bg-[#FF3B30]">
-            <Megaphone className="h-5 w-5 text-white" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2.5">
+          <div
+            className="h-8 w-8 rounded-lg flex items-center justify-center"
+            style={{ background: T.accent }}
+          >
+            <Megaphone className="h-4 w-4 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">
+            <h1 className="text-base font-bold text-white tracking-tight">
               AdManager
             </h1>
-            <p className="text-xs text-gray-400">
+            <p className="text-[11px]" style={{ color: T.textTer }}>
               Track, manage and optimize your ad campaigns
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2.5 flex-wrap">
-          <button className="flex items-center gap-2 rounded-xl border border-[#2A2A2A] px-3.5 py-2 text-xs font-medium text-[#9CA3AF] hover:bg-white/5 transition-colors">
+          <button
+            className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors hover:bg-white/5"
+            style={{ color: T.textSec, border: `1px solid ${T.border}` }}
+          >
             <Calendar className="h-3.5 w-3.5" />
-            May 3, 2026 - May 9, 2026
+            May 3 - May 9, 2026
             <ChevronDown className="h-3 w-3" />
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 rounded-xl bg-[#FF3B30] px-4 py-2 text-xs font-semibold text-white hover:brightness-110 transition-all"
+            className="flex items-center gap-2 rounded-lg px-4 py-1.5 text-xs font-semibold text-white hover:brightness-110 transition-all"
+            style={{ background: T.accent }}
           >
-            <Plus className="h-4 w-4" /> Create New Ad
+            <Plus className="h-3.5 w-3.5" /> Create New Ad
           </button>
         </div>
       </div>
@@ -507,49 +648,59 @@ export default function AdsManagerUI() {
       {/* ═══════════════════════════════════════════════════════
           ROW 2: KPI CARDS
           ═══════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2.5">
         {kpis.map((kpi) => (
           <KpiCard key={kpi.label} {...kpi} />
         ))}
       </div>
 
       {/* ═══════════════════════════════════════════════════════
-          ROW 3: MAIN CONTENT GRID (2/3 + 1/3)
+          ROW 3: CHARTS ROW (2/3 + 1/3)
           ═══════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* ── LEFT COLUMN: Performance Overview ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2.5">
+        {/* ── LEFT: Performance Overview ── */}
         <Card className="lg:col-span-2 p-0">
-          <div className="flex items-center justify-between px-5 pt-5 pb-3">
+          {/* Header */}
+          <div className="flex items-center justify-between px-3 pt-3 pb-2">
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-white">
                 Performance Overview
               </h3>
-              <span className="flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[9px] font-bold bg-[#FF3B30]/15 text-[#FF3B30]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#FF3B30] animate-pulse" />
-                Live
+              <span
+                className="flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[9px] font-bold"
+                style={{ background: 'rgba(229,9,20,0.15)', color: T.accent }}
+              >
+                <span
+                  className="h-1.5 w-1.5 rounded-full animate-pulse"
+                  style={{ background: T.accent }}
+                />
+                LIVE
               </span>
             </div>
-            <button className="flex items-center gap-1.5 rounded-lg border border-[#2A2A2A] px-2.5 py-1.5 text-[10px] font-medium text-[#9CA3AF] hover:bg-white/5 transition-colors">
+            <button
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-medium transition-colors hover:bg-white/5"
+              style={{ color: T.textSec, border: `1px solid ${T.border}` }}
+            >
               7 Days
               <ChevronDown className="h-3 w-3" />
             </button>
           </div>
 
           {/* Metric Tabs */}
-          <div className="flex items-center gap-1 px-5 pb-3">
+          <div className="flex items-center gap-1 px-3 pb-2">
             {(['revenue', 'impressions', 'clicks', 'ctr', 'cpc'] as const).map(
               (m) => (
                 <button
                   key={m}
                   onClick={() => setPerfMetric(m)}
-                  className="px-3 py-1.5 rounded-lg text-[10px] font-medium capitalize transition-all"
+                  className="px-2.5 py-1 rounded-md text-[10px] font-medium capitalize transition-all"
                   style={{
                     background:
                       perfMetric === m
                         ? `${metricConfig[m].color}18`
                         : 'transparent',
                     color:
-                      perfMetric === m ? metricConfig[m].color : '#6B7280',
+                      perfMetric === m ? metricConfig[m].color : T.textTer,
                     border: `1px solid ${
                       perfMetric === m
                         ? `${metricConfig[m].color}30`
@@ -559,107 +710,38 @@ export default function AdsManagerUI() {
                 >
                   {m}
                 </button>
-              )
+              ),
             )}
           </div>
 
-          {/* Chart */}
-          <div className="px-3 pb-4 h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={PERF_DATA}
-                margin={{ top: 5, right: 10, left: -5, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient
-                    id="perfGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop
-                      offset="0%"
-                      stopColor={activeMetric.color}
-                      stopOpacity={0.25}
-                    />
-                    <stop
-                      offset="100%"
-                      stopColor={activeMetric.color}
-                      stopOpacity={0}
-                    />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#2A2A2A"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fill: '#6B7280', fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: '#6B7280', fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  domain={activeMetric.yDomain}
-                  tickFormatter={(v: number) =>
-                    perfMetric === 'revenue' || perfMetric === 'cpc'
-                      ? `₹${v}`
-                      : perfMetric === 'ctr'
-                        ? `${v}%`
-                        : fmtNum(v)
-                  }
-                />
-                <Tooltip
-                  content={
-                    <ChartTooltip metric={perfMetric} />
-                  }
-                />
-                <Area
-                  type="monotone"
-                  dataKey={perfMetric}
-                  stroke={activeMetric.color}
-                  fill="url(#perfGradient)"
-                  strokeWidth={2}
-                  name={activeMetric.label}
-                  dot={{
-                    fill: activeMetric.color,
-                    r: 3,
-                    strokeWidth: 0,
-                  }}
-                  activeDot={{
-                    r: 5,
-                    fill: activeMetric.color,
-                    stroke: '#fff',
-                    strokeWidth: 2,
-                  }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+          {/* Chart Area */}
+          <div className="px-3 pb-2 h-48">
+            <AreaChartSVG
+              data={chartData}
+              color={activeMetric.color}
+              yDomain={activeMetric.yDomain}
+              metric={perfMetric}
+            />
           </div>
         </Card>
 
         {/* ── RIGHT COLUMN ── */}
-        <div className="space-y-4">
-          {/* Card: Top Performing Ads */}
-          <Card className="p-4">
-            <div className="flex items-center justify-between mb-3">
+        <div className="space-y-2.5">
+          {/* Top Performing Ads */}
+          <Card className="p-3">
+            <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-semibold text-white">
                 Top Performing Ads
               </h3>
-              <button className="text-[10px] font-medium text-red-400 hover:text-red-300 transition-colors">
+              <button className="text-[10px] font-medium hover:brightness-110 transition-all" style={{ color: T.accent }}>
                 View All
               </button>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1">
               {TOP_ADS.map((ad) => (
                 <div
                   key={ad.rank}
-                  className="flex items-center gap-3 rounded-xl p-2.5 hover:bg-white/[0.03] transition-colors"
+                  className="flex items-center gap-2.5 rounded-lg p-2 hover:bg-white/[0.03] transition-colors"
                 >
                   <span
                     className="h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0"
@@ -668,145 +750,102 @@ export default function AdsManagerUI() {
                         ad.rank === 1
                           ? 'rgba(251,191,36,0.15)'
                           : 'rgba(255,255,255,0.05)',
-                      color: ad.rank === 1 ? '#FBBF24' : '#6B7280',
+                      color: ad.rank === 1 ? '#FBBF24' : T.textTer,
                     }}
                   >
                     #{ad.rank}
                   </span>
                   <div
-                    className="h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                    className="h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0"
                     style={{ background: `${ad.color}15` }}
                   >
                     {ad.type === 'Video' ? (
                       <Eye className="h-3.5 w-3.5" style={{ color: ad.color }} />
                     ) : (
-                      <Layout
-                        className="h-3.5 w-3.5"
-                        style={{ color: ad.color }}
-                      />
+                      <Layout className="h-3.5 w-3.5" style={{ color: ad.color }} />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-white truncate">
                       {ad.name}
                     </p>
-                    <p className="text-[10px] text-[#6B7280]">
+                    <p className="text-[10px]" style={{ color: T.textTer }}>
                       {ad.type} &bull; {ad.placement}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-xs font-bold text-[#FF3B30]">
+                    <p className="text-xs font-bold" style={{ color: T.accent }}>
                       {ad.revenue}
                     </p>
-                    <p className="text-[10px] text-[#6B7280]">{ad.clicks} clicks</p>
+                    <p className="text-[10px]" style={{ color: T.textTer }}>{ad.clicks} clicks</p>
                   </div>
                 </div>
               ))}
             </div>
           </Card>
 
-          {/* Card: Campaign Budget */}
-          <Card className="p-4">
-            <h3 className="text-sm font-semibold text-white mb-4">
+          {/* Campaign Budget */}
+          <Card className="p-3">
+            <h3 className="text-sm font-semibold text-white mb-2">
               Campaign Budget
             </h3>
-            <div className="flex justify-center mb-4">
-              <div className="relative">
-                <ResponsiveContainer width={130} height={130}>
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { value: spent, name: 'Spent' },
-                        { value: budget - spent, name: 'Remaining' },
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={38}
-                      outerRadius={58}
-                      dataKey="value"
-                      stroke="none"
-                      startAngle={90}
-                    >
-                      <Cell fill="#FF3B30" />
-                      <Cell fill="#2A2A2A" />
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-sm font-bold text-white">
-                    {Math.round(budgetPct)}%
-                  </span>
-                  <span className="text-[9px] text-[#6B7280]">
-                    of ₹{budget.toLocaleString('en-IN')}
-                  </span>
-                </div>
+            <div className="flex justify-center mb-2 relative">
+              <DonutChartSVG pct={budgetPct} color={T.accent} size={110} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-sm font-bold text-white">
+                  {Math.round(budgetPct)}%
+                </span>
+                <span className="text-[9px]" style={{ color: T.textTer }}>
+                  of ₹{budget.toLocaleString('en-IN')}
+                </span>
               </div>
             </div>
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-[#6B7280]">Spent</span>
-                <span className="text-xs font-bold text-[#FF3B30]">
+                <span className="text-[11px]" style={{ color: T.textTer }}>Spent</span>
+                <span className="text-xs font-bold" style={{ color: T.accent }}>
                   ₹{spent.toLocaleString('en-IN')}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-[#6B7280]">Remaining</span>
+                <span className="text-[11px]" style={{ color: T.textTer }}>Remaining</span>
                 <span className="text-xs font-bold text-white">
                   ₹{(budget - spent).toLocaleString('en-IN')}
                 </span>
               </div>
-              <div className="h-2 rounded-full overflow-hidden bg-[#2A2A2A]">
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
                 <div
-                  className="h-full rounded-full bg-[#FF3B30] transition-all duration-700"
-                  style={{ width: `${budgetPct}%` }}
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${budgetPct}%`, background: T.accent }}
                 />
               </div>
             </div>
           </Card>
 
-          {/* Card: Quick Actions */}
-          <Card className="p-4">
-            <h3 className="text-sm font-semibold text-white mb-3">
+          {/* Quick Actions */}
+          <Card className="p-3">
+            <h3 className="text-sm font-semibold text-white mb-2">
               Quick Actions
             </h3>
             <div className="grid grid-cols-2 gap-2">
               {[
-                {
-                  label: 'Create New Ad',
-                  icon: Plus,
-                  color: '#FF3B30',
-                  bg: 'rgba(255,59,48,0.1)',
-                },
-                {
-                  label: 'Duplicate Ad',
-                  icon: Copy,
-                  color: '#8B5CF6',
-                  bg: 'rgba(139,92,246,0.1)',
-                },
-                {
-                  label: 'Edit Ad',
-                  icon: Edit3,
-                  color: '#F59E0B',
-                  bg: 'rgba(245,158,11,0.1)',
-                },
-                {
-                  label: 'View Reports',
-                  icon: FileText,
-                  color: '#3B82F6',
-                  bg: 'rgba(59,130,246,0.1)',
-                },
+                { label: 'Create New Ad', icon: Plus, color: T.accent, bg: 'rgba(229,9,20,0.1)' },
+                { label: 'Duplicate Ad', icon: Copy, color: '#8B5CF6', bg: 'rgba(139,92,246,0.1)' },
+                { label: 'Edit Ad', icon: Edit3, color: '#F59E0B', bg: 'rgba(245,158,11,0.1)' },
+                { label: 'View Reports', icon: FileText, color: '#3B82F6', bg: 'rgba(59,130,246,0.1)' },
               ].map((action) => {
                 const Icon = action.icon
                 return (
                   <button
                     key={action.label}
-                    className="flex flex-col items-center gap-2 rounded-xl border border-[#2A2A2A] p-3 text-center hover:bg-white/[0.03] transition-colors"
+                    className="flex flex-col items-center gap-1.5 rounded-lg p-2.5 text-center hover:bg-white/[0.03] transition-colors"
+                    style={{ border: `1px solid ${T.border}` }}
                   >
                     <div
-                      className="h-8 w-8 rounded-lg flex items-center justify-center"
+                      className="h-7 w-7 rounded-lg flex items-center justify-center"
                       style={{ background: action.bg }}
                     >
-                      <Icon className="h-4 w-4" style={{ color: action.color }} />
+                      <Icon className="h-3.5 w-3.5" style={{ color: action.color }} />
                     </div>
                     <p className="text-[10px] font-medium text-white">
                       {action.label}
@@ -814,41 +853,6 @@ export default function AdsManagerUI() {
                   </button>
                 )
               })}
-            </div>
-          </Card>
-
-          {/* Card: Recommendations */}
-          <Card className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-white">
-                Recommendations
-              </h3>
-              <button className="text-[10px] font-medium text-red-400 hover:text-red-300 transition-colors">
-                View All
-              </button>
-            </div>
-            <div
-              className="flex items-start gap-3 rounded-xl p-3"
-              style={{
-                background: 'rgba(255,59,48,0.08)',
-                border: '1px solid rgba(239,68,68,0.15)',
-              }}
-            >
-              <div
-                className="h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: 'rgba(255,59,48,0.15)' }}
-              >
-                <Rocket className="h-4 w-4 text-[#FF3B30]" />
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold text-white">
-                  Increase budget for top ads
-                </p>
-                <p className="text-[10px] mt-0.5 text-[#6B7280]">
-                  Top performing ads are getting more engagement. Consider
-                  allocating more budget.
-                </p>
-              </div>
             </div>
           </Card>
         </div>
@@ -859,28 +863,40 @@ export default function AdsManagerUI() {
           ═══════════════════════════════════════════════════════ */}
       <Card className="p-0 overflow-hidden">
         {/* Table Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 pt-5 pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3 pt-3 pb-2">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-semibold text-white">All Ads</h3>
-            <span className="rounded-md bg-[#FF3B30]/15 px-2 py-0.5 text-[10px] font-bold text-[#FF3B30]">
+            <span
+              className="rounded-md px-2 py-0.5 text-[10px] font-bold"
+              style={{ background: 'rgba(229,9,20,0.15)', color: T.accent }}
+            >
               {MOCK_ADS.length} Total
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1 rounded-lg border border-[#2A2A2A] px-2.5 py-1.5 text-[10px] font-medium text-[#9CA3AF] hover:bg-white/5 transition-colors">
+            <button
+              className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-medium transition-colors hover:bg-white/5"
+              style={{ color: T.textSec, border: `1px solid ${T.border}` }}
+            >
               Columns <ChevronDown className="h-3 w-3" />
             </button>
-            <button className="flex items-center gap-1 rounded-lg border border-[#2A2A2A] px-2.5 py-1.5 text-[10px] font-medium text-[#9CA3AF] hover:bg-white/5 transition-colors">
+            <button
+              className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-medium transition-colors hover:bg-white/5"
+              style={{ color: T.textSec, border: `1px solid ${T.border}` }}
+            >
               Export <Download className="h-3 w-3" />
             </button>
-            <div className="flex items-center gap-2 rounded-lg border border-[#2A2A2A] px-3 py-1.5">
-              <Search className="h-3.5 w-3.5 text-[#6B7280]" />
+            <div
+              className="flex items-center gap-2 rounded-lg px-3 py-1.5"
+              style={{ border: `1px solid ${T.border}` }}
+            >
+              <Search className="h-3.5 w-3.5" style={{ color: T.textTer }} />
               <input
                 type="text"
                 placeholder="Search ads..."
                 value={search}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-28 bg-transparent text-[10px] text-white placeholder:text-[#4B5563] focus:outline-none"
+                className="w-28 bg-transparent text-[11px] text-white placeholder:text-[#555] focus:outline-none"
               />
             </div>
           </div>
@@ -890,136 +906,104 @@ export default function AdsManagerUI() {
         <div className="overflow-x-auto">
           <table className="w-full text-[11px]">
             <thead>
-              <tr className="bg-[#1A1A1A]">
-                {[
-                  'AD INFO',
-                  'TYPE/SLOT',
-                  'STATUS',
-                  'IMPRESSIONS',
-                  'CLICKS',
-                  'CTR',
-                  'REVENUE',
-                  'ACTIONS',
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="px-5 py-3 text-left text-[9px] font-bold uppercase tracking-wider text-[#6B7280]"
-                  >
-                    {h}
-                  </th>
-                ))}
+              <tr style={{ background: T.bg }}>
+                {['AD INFO', 'TYPE/SLOT', 'STATUS', 'IMPRESSIONS', 'CLICKS', 'CTR', 'REVENUE', 'ACTIONS'].map(
+                  (h) => (
+                    <th
+                      key={h}
+                      className="px-3 py-2 text-left text-[9px] font-bold uppercase tracking-wider"
+                      style={{ color: T.textTer }}
+                    >
+                      {h}
+                    </th>
+                  ),
+                )}
               </tr>
             </thead>
             <tbody>
               {paged.map((ad) => (
                 <tr
                   key={ad.id}
-                  className="border-t border-[#2A2A2A] hover:bg-white/[0.015] transition-colors"
+                  className="hover:bg-white/[0.015] transition-colors"
+                  style={{ borderTop: `1px solid ${T.border}` }}
                 >
-                  <td className="px-5 py-3">
+                  <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2.5">
                       <div
-                        className="h-9 w-12 rounded-lg flex items-center justify-center flex-shrink-0"
+                        className="h-8 w-11 rounded-lg flex items-center justify-center flex-shrink-0"
                         style={{
                           background:
                             ad.type === 'Video'
-                              ? 'rgba(255,59,48,0.1)'
+                              ? 'rgba(229,9,20,0.1)'
                               : 'rgba(59,130,246,0.1)',
                         }}
                       >
                         {ad.type === 'Video' ? (
                           <Eye
                             className="h-3.5 w-3.5"
-                            style={{
-                              color:
-                                ad.type === 'Video' ? '#FF3B30' : '#3B82F6',
-                            }}
+                            style={{ color: T.accent }}
                           />
                         ) : (
-                          <Layout
-                            className="h-3.5 w-3.5"
-                            style={{ color: '#3B82F6' }}
-                          />
+                          <Layout className="h-3.5 w-3.5" style={{ color: '#3B82F6' }} />
                         )}
                       </div>
-                      <div>
-                        <p className="text-xs font-medium text-white">
-                          {ad.name}
-                        </p>
-                      </div>
+                      <p className="text-xs font-medium text-white truncate max-w-[140px]">
+                        {ad.name}
+                      </p>
                     </div>
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-3 py-2.5">
                     <span
                       className="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold"
                       style={{
                         background:
                           ad.type === 'Video'
-                            ? 'rgba(255,59,48,0.1)'
+                            ? 'rgba(229,9,20,0.1)'
                             : 'rgba(59,130,246,0.1)',
-                        color: ad.type === 'Video' ? '#FF3B30' : '#3B82F6',
+                        color: ad.type === 'Video' ? T.accent : '#3B82F6',
                       }}
                     >
                       {ad.type}
                     </span>
-                    <p className="text-[9px] mt-1 text-[#6B7280]">
+                    <p className="text-[9px] mt-1" style={{ color: T.textTer }}>
                       {ad.placement}
                     </p>
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-3 py-2.5">
                     <span
                       className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold"
                       style={{
                         background:
                           ad.status === 'Active'
-                            ? 'rgba(16,185,129,0.12)'
-                            : 'rgba(245,158,11,0.12)',
+                            ? 'rgba(52,211,153,0.1)'
+                            : 'rgba(251,191,36,0.1)',
                         color:
-                          ad.status === 'Active' ? '#10B981' : '#F59E0B',
+                          ad.status === 'Active' ? '#34d399' : '#FBBF24',
                       }}
                     >
                       <span
-                        className="h-1.5 w-1.5 rounded-full bg-current"
-                        style={
-                          ad.status === 'Active'
-                            ? { animation: 'pulse 2s infinite' }
-                            : undefined
-                        }
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{
+                          background:
+                            ad.status === 'Active' ? '#34d399' : '#FBBF24',
+                        }}
                       />
                       {ad.status}
                     </span>
                   </td>
-                  <td className="px-5 py-3 font-medium text-white">
-                    {fmtNum(ad.impressions)}
-                  </td>
-                  <td className="px-5 py-3 font-medium text-white">
-                    {fmtNum(ad.clicks)}
-                  </td>
-                  <td className="px-5 py-3 font-semibold text-[#10B981]">
-                    {ad.ctr.toFixed(2)}%
-                  </td>
-                  <td className="px-5 py-3 font-bold text-[#FF3B30]">
+                  <td className="px-3 py-2.5 text-white">{fmtNum(ad.impressions)}</td>
+                  <td className="px-3 py-2.5 text-white">{fmtNum(ad.clicks)}</td>
+                  <td className="px-3 py-2.5 text-white">{ad.ctr}%</td>
+                  <td className="px-3 py-2.5 font-semibold" style={{ color: T.accent }}>
                     {fmtCur(ad.revenue)}
                   </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-0.5">
-                      <button
-                        className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-white/5 text-[#9CA3AF] transition-colors"
-                        title="View"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
+                  <td className="px-3 py-2.5">
+                    <div className="flex items-center gap-1">
+                      <button className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-white/5 transition-colors">
+                        <Edit3 className="h-3 w-3" style={{ color: T.textTer }} />
                       </button>
-                      <button
-                        className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-white/5 text-[#9CA3AF] transition-colors"
-                        title="Edit"
-                      >
-                        <Edit3 className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-red-500/10 text-[#9CA3AF] transition-colors"
-                        title="More"
-                      >
-                        <MoreHorizontal className="h-3.5 w-3.5" />
+                      <button className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-white/5 transition-colors">
+                        <MoreHorizontal className="h-3 w-3" style={{ color: T.textTer }} />
                       </button>
                     </div>
                   </td>
@@ -1030,66 +1014,52 @@ export default function AdsManagerUI() {
         </div>
 
         {/* Pagination */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3 border-t border-[#2A2A2A]">
-          <p className="text-[10px] text-[#6B7280]">
-            Showing {(currentPage - 1) * perPage + 1} to{' '}
-            {Math.min(currentPage * perPage, filtered.length)} of{' '}
-            {filtered.length} results
+        <div
+          className="flex flex-col sm:flex-row items-center justify-between gap-2 px-3 py-2.5"
+          style={{ borderTop: `1px solid ${T.border}` }}
+        >
+          <p className="text-[10px]" style={{ color: T.textTer }}>
+            Showing {(currentPage - 1) * perPage + 1}-{Math.min(currentPage * perPage, filtered.length)} of {filtered.length} ads
           </p>
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-white/5 disabled:opacity-30 text-[#9CA3AF] border border-[#2A2A2A] transition-colors"
+              className="h-7 w-7 rounded-lg flex items-center justify-center transition-colors hover:bg-white/5 disabled:opacity-30"
+              style={{ color: T.textSec, border: `1px solid ${T.border}` }}
             >
               <ChevronLeft className="h-3.5 w-3.5" />
             </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
               <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className="h-7 w-7 rounded-lg flex items-center justify-center text-[10px] font-medium transition-all"
+                key={p}
+                onClick={() => setCurrentPage(p)}
+                className="h-7 w-7 rounded-lg flex items-center justify-center text-[10px] font-medium transition-colors hover:bg-white/5"
                 style={{
-                  background:
-                    currentPage === page ? '#FF3B30' : 'transparent',
-                  color: currentPage === page ? '#fff' : '#6B7280',
+                  background: currentPage === p ? T.accent : 'transparent',
+                  color: currentPage === p ? '#fff' : T.textSec,
+                  border: `1px solid ${currentPage === p ? T.accent : T.border}`,
                 }}
               >
-                {page}
+                {p}
               </button>
             ))}
             <button
-              onClick={() =>
-                setCurrentPage((p) => Math.min(totalPages, p + 1))
-              }
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-white/5 disabled:opacity-30 text-[#9CA3AF] border border-[#2A2A2A] transition-colors"
+              className="h-7 w-7 rounded-lg flex items-center justify-center transition-colors hover:bg-white/5 disabled:opacity-30"
+              style={{ color: T.textSec, border: `1px solid ${T.border}` }}
             >
               <ChevronRight className="h-3.5 w-3.5" />
             </button>
-            <select
-              value={perPage}
-              onChange={(e) => {
-                setPerPage(Number(e.target.value))
-                setCurrentPage(1)
-              }}
-              className="ml-2 rounded-lg border border-[#2A2A2A] bg-[#1F1F1F] px-2 py-1 text-[10px] text-white focus:outline-none"
-            >
-              <option value={5}>5 / page</option>
-              <option value={10}>10 / page</option>
-              <option value={25}>25 / page</option>
-            </select>
           </div>
         </div>
       </Card>
 
       {/* ═══════════════════════════════════════════════════════
-          CREATE AD MODAL
+          MODAL
           ═══════════════════════════════════════════════════════ */}
-      <CreateAdModal
-        open={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-      />
+      <CreateAdModal open={showCreateModal} onClose={() => setShowCreateModal(false)} />
     </div>
   )
 }

@@ -305,14 +305,14 @@ export default function ReplaysPage() {
   }
 
   return (
-    <div className="space-y-5 min-w-0">
+    <div className="space-y-4 min-w-0">
       {/* ═══════════════════════════════════════════════════════
           1. PAGE HEADER
           ═══════════════════════════════════════════════════════ */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 md:gap-4"
       >
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: `${C.purple}15` }}>
@@ -354,7 +354,7 @@ export default function ReplaysPage() {
       {/* ═══════════════════════════════════════════════════════
           2. KPI METRIC CARDS
           ═══════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
         {kpiCards.map((card, i) => {
           const Icon = card.icon
           return (
@@ -407,9 +407,9 @@ export default function ReplaysPage() {
       {/* ═══════════════════════════════════════════════════════
           3. CHARTS ROW
           ═══════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         {/* Left: Replays Over Time */}
-        <GlassCard className="!p-5">
+        <GlassCard className="!p-3 sm:!p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-white">Replays Over Time</h3>
             <div className="relative">
@@ -422,7 +422,7 @@ export default function ReplaysPage() {
             </div>
           </div>
           {/* Legend */}
-          <div className="flex items-center gap-4 mb-3">
+          <div className="flex items-center gap-3 md:gap-4 mb-3">
             <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: '#3B82F6' }} /><span className="text-[11px]" style={{ color: C.textSec }}>Replays</span></div>
             <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: '#10B981' }} /><span className="text-[11px]" style={{ color: C.textSec }}>Unique Replays</span></div>
             <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: '#F97316' }} /><span className="text-[11px]" style={{ color: C.textSec }}>Watch Time</span></div>
@@ -483,7 +483,7 @@ export default function ReplaysPage() {
         </GlassCard>
 
         {/* Right: Replay Sources Donut */}
-        <GlassCard className="!p-5">
+        <GlassCard className="!p-3 sm:!p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-white">Replay Sources</h3>
           </div>
@@ -505,7 +505,7 @@ export default function ReplaysPage() {
       {/* ═══════════════════════════════════════════════════════
           4. TOP VIDEOS BY REPLAYS
           ═══════════════════════════════════════════════════════ */}
-      <GlassCard className="!p-5">
+      <GlassCard className="!p-3 sm:!p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-white">Top Videos by Replays</h3>
           <button className="text-[11px] font-medium transition-all hover:underline" style={{ color: C.info }}>View All</button>
@@ -539,7 +539,7 @@ export default function ReplaysPage() {
       {/* ═══════════════════════════════════════════════════════
           5. REPLAYS LIST
           ═══════════════════════════════════════════════════════ */}
-      <GlassCard className="!p-5">
+      <GlassCard className="!p-3 sm:!p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-white">Replays List</h3>
         </div>
@@ -731,9 +731,9 @@ export default function ReplaysPage() {
       {/* ═══════════════════════════════════════════════════════
           6. BOTTOM ROW
           ═══════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
         {/* Left: Devices Donut */}
-        <GlassCard className="!p-5">
+        <GlassCard className="!p-3 sm:!p-4">
           <div className="flex items-center gap-2 mb-4">
             <Monitor className="h-4 w-4" style={{ color: C.info }} />
             <h3 className="text-sm font-semibold text-white">Devices</h3>
@@ -753,7 +753,7 @@ export default function ReplaysPage() {
         </GlassCard>
 
         {/* Middle: Top Countries */}
-        <GlassCard className="!p-5">
+        <GlassCard className="!p-3 sm:!p-4">
           <div className="flex items-center gap-2 mb-4">
             <Globe className="h-4 w-4" style={{ color: C.success }} />
             <h3 className="text-sm font-semibold text-white">Top Countries</h3>
@@ -778,7 +778,7 @@ export default function ReplaysPage() {
         </GlassCard>
 
         {/* Right: Replay Settings */}
-        <GlassCard className="!p-5">
+        <GlassCard className="!p-3 sm:!p-4">
           <div className="flex items-center gap-2 mb-4">
             <Settings className="h-4 w-4" style={{ color: C.warning }} />
             <h3 className="text-sm font-semibold text-white">Replay Settings</h3>

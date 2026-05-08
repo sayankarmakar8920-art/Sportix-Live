@@ -358,11 +358,11 @@ export default function VideoAdsAnalyticsPage() {
      RENDER
      ══════════════════════════════════════════════════════════ */
   return (
-    <div className="min-w-0 space-y-5" style={{ background: C.bg }}>
+    <div className="min-w-0 space-y-4" style={{ background: C.bg }}>
       {/* ════════════════════════════════════════
           1. HEADER
           ════════════════════════════════════════ */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 md:gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight" style={{ fontSize: '24px' }}>
             Video Ads Analytics
@@ -414,7 +414,7 @@ export default function VideoAdsAnalyticsPage() {
       {/* ════════════════════════════════════════
           2. KPI METRIC CARDS
           ════════════════════════════════════════ */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4">
         {KPI_DATA.map((kpi) => (
           <KPICard key={kpi.label} kpi={kpi} />
         ))}
@@ -423,10 +423,10 @@ export default function VideoAdsAnalyticsPage() {
       {/* ════════════════════════════════════════
           3. THREE CHARTS ROW
           ════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
         {/* ── Performance Over Time (Line Chart) ── */}
         <div
-          className="lg:col-span-2 rounded-2xl p-5"
+          className="lg:col-span-2 rounded-2xl p-3 sm:p-4"
           style={{ background: C.cardInner, border: `1px solid ${C.border}` }}
         >
           <div className="flex items-center justify-between mb-4">
@@ -567,7 +567,7 @@ export default function VideoAdsAnalyticsPage() {
 
         {/* ── Ad Format Distribution (Pie Chart) ── */}
         <div
-          className="rounded-2xl p-5"
+          className="rounded-2xl p-3 sm:p-4"
           style={{ background: C.cardInner, border: `1px solid ${C.border}` }}
         >
           <h3 className="text-sm font-semibold text-white mb-4">Ad Format Distribution</h3>
@@ -601,14 +601,14 @@ export default function VideoAdsAnalyticsPage() {
 
       {/* ── Ad Type Distribution (Horizontal Bar Chart) ── */}
       <div
-        className="rounded-2xl p-5"
+        className="rounded-2xl p-3 sm:p-4"
         style={{ background: C.cardInner, border: `1px solid ${C.border}` }}
       >
         <h3 className="text-sm font-semibold text-white mb-5">Ad Type Distribution</h3>
 
         <div className="space-y-4">
           {AD_TYPE_DATA.map(d => (
-            <div key={d.name} className="flex items-center gap-4">
+            <div key={d.name} className="flex items-center gap-3 md:gap-4">
               <span className="text-xs font-medium text-white w-16 text-right flex-shrink-0">{d.name}</span>
               <div className="flex-1 h-7 rounded-lg overflow-hidden relative" style={{ background: 'rgba(255,255,255,0.04)' }}>
                 <div
@@ -640,10 +640,10 @@ export default function VideoAdsAnalyticsPage() {
       {/* ════════════════════════════════════════
           4. UPLOAD NEW AD + ALL ADS LIST
           ════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
         {/* ── Upload New Ad ── */}
         <div
-          className="rounded-2xl p-5"
+          className="rounded-2xl p-3 sm:p-4"
           style={{ background: C.cardInner, border: `1px solid ${C.border}` }}
         >
           <div className="flex items-center justify-between mb-5">
@@ -762,7 +762,7 @@ export default function VideoAdsAnalyticsPage() {
 
         {/* ── All Ads List ── */}
         <div
-          className="rounded-2xl p-5"
+          className="rounded-2xl p-3 sm:p-4"
           style={{ background: C.cardInner, border: `1px solid ${C.border}` }}
         >
           <h3 className="text-sm font-semibold text-white mb-4">All Ads List</h3>
@@ -876,7 +876,7 @@ export default function VideoAdsAnalyticsPage() {
           5. ADS TIMELINE
           ════════════════════════════════════════ */}
       <div
-        className="rounded-2xl p-5"
+        className="rounded-2xl p-3 sm:p-4"
         style={{ background: C.cardInner, border: `1px solid ${C.border}` }}
       >
         {/* Header */}
@@ -1005,10 +1005,10 @@ export default function VideoAdsAnalyticsPage() {
       {/* ════════════════════════════════════════
           6. BOTTOM ROW (4 columns)
           ════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
         {/* ── Top Performing Ads ── */}
         <div
-          className="rounded-2xl p-5"
+          className="rounded-2xl p-3 sm:p-4"
           style={{ background: C.cardInner, border: `1px solid ${C.border}` }}
         >
           <div className="flex items-center justify-between mb-4">
@@ -1042,7 +1042,7 @@ export default function VideoAdsAnalyticsPage() {
 
         {/* ── Device Performance (Donut Chart) ── */}
         <div
-          className="rounded-2xl p-5"
+          className="rounded-2xl p-3 sm:p-4"
           style={{ background: C.cardInner, border: `1px solid ${C.border}` }}
         >
           <h3 className="text-sm font-semibold text-white mb-4">Device Performance</h3>
@@ -1072,7 +1072,7 @@ export default function VideoAdsAnalyticsPage() {
 
         {/* ── Top Countries ── */}
         <div
-          className="rounded-2xl p-5"
+          className="rounded-2xl p-3 sm:p-4"
           style={{ background: C.cardInner, border: `1px solid ${C.border}` }}
         >
           <h3 className="text-sm font-semibold text-white mb-4">Top Countries</h3>
@@ -1100,7 +1100,7 @@ export default function VideoAdsAnalyticsPage() {
 
         {/* ── Ads Settings ── */}
         <div
-          className="rounded-2xl p-5"
+          className="rounded-2xl p-3 sm:p-4"
           style={{ background: C.cardInner, border: `1px solid ${C.border}` }}
         >
           <div className="flex items-center gap-2 mb-4">
