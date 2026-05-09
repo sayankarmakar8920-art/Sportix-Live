@@ -412,3 +412,24 @@ Stage Summary:
 - Bug fixed in src/components/sportix/Header.tsx
 - Admin login dialog (admin/admin123) now correctly triggers on 7 logo clicks
 - Admin panel opens after successful authentication
+---
+Task ID: 3
+Agent: Main Agent
+Task: Build custom Schedules page UI in admin panel
+
+Work Log:
+- Replaced GenericPage placeholder for Schedules with a full custom SchedulesPage component
+- Added schedulesData with 14 realistic match entries (Cricket, Football, Basketball, Tennis, Racing, MMA)
+- Built SchedulesPage with: stats cards (Total/Live/Upcoming/Completed), search, status filter, sport filter, table/card view toggle
+- Table view: columns for Match, League, Date & Time, Sport, Status, Actions (toggle/edit/delete)
+- Card view: team cards with VS/scores, sport badges, action buttons
+- Add New Match modal with form fields: Home Team, Away Team, League, Sport, Date, Time, Status, Venue
+- Edit modal support (pre-populated)
+- Status toggle: upcoming → live → completed → upcoming cycle
+- Delete with state update
+- All buttons fully functional with local state management
+
+Stage Summary:
+- SchedulesPage added in src/components/sportix/AdminPanel.tsx (before renderPage function)
+- 14 mock schedule entries covering 6 sports
+- Zero compilation errors

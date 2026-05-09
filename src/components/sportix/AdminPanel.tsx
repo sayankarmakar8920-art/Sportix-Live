@@ -4970,6 +4970,339 @@ function ManualAdsManager({ adPlacements, onUpdate }: { adPlacements: ManualAdEn
 
 
 /* ═══════════════════════════════════════════════════
+   SCHEDULES PAGE
+   ═══════════════════════════════════════════════════ */
+
+const schedulesData = [
+  { id: 1, title: 'India vs Australia - 3rd T20I', homeTeam: 'India', awayTeam: 'Australia', league: 'T20I', sport: 'Cricket', date: 'Today', time: '8:00 PM', status: 'live', venue: 'Wankhede Stadium', homeScore: 0, awayScore: 0 },
+  { id: 2, title: 'Arsenal vs Chelsea - EPL Matchday 34', homeTeam: 'Arsenal', awayTeam: 'Chelsea', league: 'EPL', sport: 'Football', date: 'Today', time: '8:30 PM', status: 'live', venue: 'Emirates Stadium', homeScore: 2, awayScore: 1 },
+  { id: 3, title: 'Lakers vs Celtics - Game 5', homeTeam: 'Lakers', awayTeam: 'Celtics', league: 'NBA', sport: 'Basketball', date: 'Today', time: '9:30 PM', status: 'live', venue: 'Crypto.com Arena', homeScore: 0, awayScore: 0 },
+  { id: 4, title: 'Real Madrid vs Atlético - La Liga', homeTeam: 'Real Madrid', awayTeam: 'Atlético Madrid', league: 'La Liga', sport: 'Football', date: 'Tomorrow', time: '8:00 PM', status: 'upcoming', venue: 'Santiago Bernabéu', homeScore: 0, awayScore: 0 },
+  { id: 5, title: 'Ferrari vs Red Bull - Monaco GP', homeTeam: 'Ferrari', awayTeam: 'Red Bull', league: 'F1', sport: 'Racing', date: 'Tomorrow', time: '2:00 PM', status: 'upcoming', venue: 'Circuit de Monaco', homeScore: 0, awayScore: 0 },
+  { id: 6, title: 'Djokovic vs Alcaraz - SF', homeTeam: 'Djokovic', awayTeam: 'Alcaraz', league: 'Wimbledon', sport: 'Tennis', date: 'Tomorrow', time: '10:00 AM', status: 'upcoming', venue: 'Centre Court', homeScore: 0, awayScore: 0 },
+  { id: 7, title: 'Man United vs Liverpool - EPL', homeTeam: 'Man United', awayTeam: 'Liverpool', league: 'EPL', sport: 'Football', date: 'Sat, Jun 7', time: '5:30 PM', status: 'upcoming', venue: 'Old Trafford', homeScore: 0, awayScore: 0 },
+  { id: 8, title: 'PSG vs AC Milan - UCL SF', homeTeam: 'PSG', awayTeam: 'AC Milan', league: 'UCL', sport: 'Football', date: 'Sun, Jun 8', time: '7:00 PM', status: 'upcoming', venue: 'Parc des Princes', homeScore: 0, awayScore: 0 },
+  { id: 9, title: 'Warriors vs Bucks - Game 3', homeTeam: 'Warriors', awayTeam: 'Bucks', league: 'NBA', sport: 'Basketball', date: 'Mon, Jun 9', time: '8:00 PM', status: 'upcoming', venue: 'Chase Center', homeScore: 0, awayScore: 0 },
+  { id: 10, title: 'Barcelona vs Bayern Munich - UCL QF', homeTeam: 'Barcelona', awayTeam: 'Bayern Munich', league: 'UCL', sport: 'Football', date: 'Yesterday', time: '8:00 PM', status: 'completed', venue: 'Camp Nou', homeScore: 3, awayScore: 2 },
+  { id: 11, title: 'India vs England - T20 WC Final', homeTeam: 'India', awayTeam: 'England', league: 'T20 WC', sport: 'Cricket', date: 'Yesterday', time: '7:30 PM', status: 'completed', venue: 'MCG Melbourne', homeScore: 198, awayScore: 175 },
+  { id: 12, title: 'McLaren vs Mercedes - Spanish GP', homeTeam: 'McLaren', awayTeam: 'Mercedes', league: 'F1', sport: 'Racing', date: 'Last Week', time: '2:00 PM', status: 'completed', venue: 'Circuit de Barcelona', homeScore: 0, awayScore: 0 },
+  { id: 13, title: 'Rohit Sharma vs Babar Azam', homeTeam: 'India', awayTeam: 'Pakistan', league: 'Asia Cup', sport: 'Cricket', date: 'Last Week', time: '3:00 PM', status: 'cancelled', venue: 'Galle Stadium', homeScore: 0, awayScore: 0 },
+  { id: 14, title: 'Makhachev vs Oliveira - UFC 312', homeTeam: 'Makhachev', awayTeam: 'Oliveira', league: 'UFC', sport: 'MMA', date: '2 Days Ago', time: '10:00 PM', status: 'completed', venue: 'T-Mobile Arena', homeScore: 0, awayScore: 0 },
+]
+
+function SchedulesPage() {
+  const [filter, setFilter] = useState<'all' | 'live' | 'upcoming' | 'completed' | 'cancelled'>('all')
+  const [sportFilter, setSportFilter] = useState('all')
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [editingSchedule, setEditingSchedule] = useState<typeof schedulesData[0] | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [viewMode, setViewMode] = useState<'table' | 'card'>('table')
+  const [selectedSchedule, setSelectedSchedule] = useState<string | null>(null)
+  const [schedules, setSchedules] = useState(schedulesData)
+
+  const sportOptions = ['all', 'Football', 'Cricket', 'Basketball', 'Tennis', 'Racing', 'MMA']
+
+  const filtered = schedules.filter(s => {
+    if (filter !== 'all' && s.status !== filter) return false
+    if (sportFilter !== 'all' && s.sport !== sportFilter) return false
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      return s.homeTeam.toLowerCase().includes(q) || s.awayTeam.toLowerCase().includes(q) || s.league.toLowerCase().includes(q) || s.title.toLowerCase().includes(q)
+    }
+    return true
+  })
+
+  const stats = [
+    { label: 'Total Matches', value: schedules.length, icon: Calendar, color: C.info },
+    { label: 'Live Now', value: schedules.filter(s => s.status === 'live').length, icon: Radio, color: C.accent },
+    { label: 'Upcoming', value: schedules.filter(s => s.status === 'upcoming').length, icon: Clock, color: C.warning },
+    { label: 'Completed', value: schedules.filter(s => s.status === 'completed').length, icon: CheckCircle, color: C.success },
+  ]
+
+  const handleDelete = (id: number) => {
+    setSchedules(prev => prev.filter(s => s.id !== id))
+    setSelectedSchedule(null)
+  }
+
+  const handleToggleStatus = (id: number) => {
+    setSchedules(prev => prev.map(s => {
+      if (s.id !== id) return s
+      const next: Record<string, string> = { upcoming: 'live', live: 'completed', completed: 'upcoming', cancelled: 'upcoming' }
+      return { ...s, status: (next[s.status] || 'upcoming') as any }
+    }))
+  }
+
+  return (
+    <div className="space-y-4 fade-in-up">
+      {/* Header */}
+      <PageHeader title="Schedules" subtitle={`${schedules.length} total matches managed`} icon={<CalendarClock className="h-5 w-5" style={{ color: C.info }} />} extra={
+        <button onClick={() => setShowAddModal(true)} className="flex items-center gap-1.5 rounded-xl px-4 py-2 text-[12px] font-semibold text-white transition-all hover:opacity-90 active:scale-[0.97]" style={{ background: C.info }}>
+          <Plus className="h-3.5 w-3.5" /> Add Match
+        </button>
+      } />
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        {stats.map(s => {
+          const Icon = s.icon
+          return (
+            <Card key={s.label}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: C.textDim }}>{s.label}</span>
+                <Icon className="h-4 w-4" style={{ color: s.color }} />
+              </div>
+              <p className="text-2xl font-bold text-white">{s.value}</p>
+            </Card>
+          )
+        })}
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          {/* Search */}
+          <div className="flex-1 flex items-center gap-2 rounded-xl border px-3 py-2" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.02)' }}>
+            <Search className="h-4 w-4" style={{ color: C.textDim }} />
+            <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search teams, leagues..." className="flex-1 bg-transparent text-sm text-white placeholder:text-white/20 focus:outline-none" />
+          </div>
+
+          {/* Status Filter */}
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+            {(['all', 'live', 'upcoming', 'completed', 'cancelled'] as const).map(f => (
+              <button key={f} onClick={() => setFilter(f)} className={`flex-shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-medium transition-all ${
+                filter === f ? 'text-white' : 'hover:bg-white/[0.04]'
+              }`} style={{ background: filter === f ? C.info + '20' : 'transparent', color: filter === f ? C.info : C.textTer }}>
+                {f === 'all' ? 'All' : f === 'live' ? '🔴 Live' : f.charAt(0).toUpperCase() + f.slice(1)}
+              </button>
+            ))}
+          </div>
+
+          {/* Sport Filter */}
+          <select value={sportFilter} onChange={e => setSportFilter(e.target.value)} className="rounded-xl border px-3 py-2 text-[12px] font-medium focus:outline-none" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.02)', color: C.textSec }}>
+            {sportOptions.map(s => <option key={s} value={s} style={{ background: C.card }}>{s === 'all' ? 'All Sports' : s}</option>)}
+          </select>
+
+          {/* View Toggle */}
+          <div className="flex rounded-lg border overflow-hidden" style={{ borderColor: C.border }}>
+            <button onClick={() => setViewMode('table')} className={`px-2.5 py-1.5 text-[11px] transition-all`} style={{ background: viewMode === 'table' ? C.info + '20' : 'transparent', color: viewMode === 'table' ? C.info : C.textDim }}><List className="h-3.5 w-3.5" /></button>
+            <button onClick={() => setViewMode('card')} className={`px-2.5 py-1.5 text-[11px] transition-all`} style={{ background: viewMode === 'card' ? C.info + '20' : 'transparent', color: viewMode === 'card' ? C.info : C.textDim }}><LayoutGrid className="h-3.5 w-3.5" /></button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Table View */}
+      {viewMode === 'table' ? (
+        <Card className="!p-0 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.02)' }}>
+                  {['Match', 'League', 'Date & Time', 'Sport', 'Status', 'Actions'].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider" style={{ color: C.textDim }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(s => (
+                  <tr key={s.id} className="border-b transition-colors hover:bg-white/[0.02] cursor-pointer" style={{ borderColor: C.border }} onClick={() => setSelectedSchedule(selectedSchedule === String(s.id) ? null : String(s.id))}>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        {s.status === 'live' && <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />}
+                        <div>
+                          <p className="text-[12px] font-semibold text-white">{s.homeTeam} vs {s.awayTeam}</p>
+                          <p className="text-[10px]" style={{ color: C.textDim }}>{s.title}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-medium" style={{ background: `${C.info}12`, color: C.info }}>{s.league}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div>
+                        <p className="text-[11px] text-white">{s.date}</p>
+                        <p className="text-[10px]" style={{ color: C.textTer }}>{s.time}</p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-[11px]" style={{ color: C.textSec }}>{s.sport}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge text={s.status} color={s.status === 'live' ? C.accent : s.status === 'upcoming' ? C.warning : s.status === 'completed' ? C.success : C.textDim} />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => handleToggleStatus(s.id)} className="rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]" title="Toggle status" style={{ color: C.textTer }}><RefreshCw className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => setEditingSchedule(s)} className="rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]" title="Edit" style={{ color: C.textTer }}><Pencil className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => handleDelete(s.id)} className="rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]" title="Delete" style={{ color: C.accent }}><Trash2 className="h-3.5 w-3.5" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {filtered.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16">
+              <Calendar className="h-10 w-10 mb-2" style={{ color: C.textDim }} />
+              <p className="text-sm" style={{ color: C.textTer }}>No schedules found</p>
+            </div>
+          )}
+          <div className="flex items-center justify-between px-4 py-3 border-t" style={{ borderColor: C.border }}>
+            <span className="text-[11px]" style={{ color: C.textTer }}>Showing {filtered.length} of {schedules.length} matches</span>
+          </div>
+        </Card>
+      ) : (
+        /* Card View */
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
+          {filtered.map(s => (
+            <Card key={s.id} className="!cursor-pointer hover:border-white/12" onClick={() => setSelectedSchedule(selectedSchedule === String(s.id) ? null : String(s.id))}>
+              {/* Top row */}
+              <div className="flex items-center justify-between mb-3">
+                <StatusBadge text={s.status} color={s.status === 'live' ? C.accent : s.status === 'upcoming' ? C.warning : s.status === 'completed' ? C.success : C.textDim} />
+                <span className="text-[10px]" style={{ color: C.textDim }}>{s.league}</span>
+              </div>
+              {/* Teams */}
+              <div className="flex items-center justify-between rounded-xl p-3 mb-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                <div className="text-center flex-1">
+                  <p className="text-xs font-bold text-white truncate">{s.homeTeam}</p>
+                </div>
+                <div className="px-3 text-center">
+                  {s.status === 'completed' ? (
+                    <p className="text-lg font-black text-white">{s.homeScore} <span style={{ color: C.textDim }}>-</span> {s.awayScore}</p>
+                  ) : (
+                    <span className="text-[10px] font-bold" style={{ color: C.accent }}>VS</span>
+                  )}
+                </div>
+                <div className="text-center flex-1">
+                  <p className="text-xs font-bold text-white truncate">{s.awayTeam}</p>
+                </div>
+              </div>
+              {/* Info row */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" style={{ color: C.textDim }} />
+                  <span className="text-[11px]" style={{ color: C.textTer }}>{s.date} · {s.time}</span>
+                </div>
+                <span className="text-[10px] rounded-full px-2 py-0.5" style={{ background: 'rgba(255,255,255,0.05)', color: C.textDim }}>{s.sport}</span>
+              </div>
+              {/* Actions */}
+              <div className="flex items-center gap-1.5 mt-3 pt-3 border-t" style={{ borderColor: C.border }} onClick={e => e.stopPropagation()}>
+                <button onClick={() => handleToggleStatus(s.id)} className="flex-1 flex items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] font-medium border transition-all hover:bg-white/[0.04]" style={{ borderColor: C.border, color: C.textSec }}>
+                  <RefreshCw className="h-3 w-3" /> Toggle
+                </button>
+                <button onClick={() => setEditingSchedule(s)} className="flex-1 flex items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] font-medium border transition-all hover:bg-white/[0.04]" style={{ borderColor: C.border, color: C.textSec }}>
+                  <Pencil className="h-3 w-3" /> Edit
+                </button>
+                <button onClick={() => handleDelete(s.id)} className="flex-1 flex items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] font-medium transition-all hover:opacity-80" style={{ background: `${C.accent}15`, color: C.accent }}>
+                  <Trash2 className="h-3 w-3" /> Delete
+                </button>
+              </div>
+            </Card>
+          ))}
+          {filtered.length === 0 && (
+            <div className="col-span-full flex flex-col items-center justify-center py-16">
+              <Calendar className="h-10 w-10 mb-2" style={{ color: C.textDim }} />
+              <p className="text-sm" style={{ color: C.textTer }}>No schedules found</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Selected Schedule Detail Panel */}
+      {selectedSchedule && (
+        <Card className="fade-in-up">
+          {(() => {
+            const s = schedules.find(x => String(x.id) === selectedSchedule)
+            if (!s) return null
+            return (
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: `${C.info}15` }}>
+                    <Eye className="h-5 w-5" style={{ color: C.info }} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">{s.homeTeam} vs {s.awayTeam}</p>
+                    <p className="text-[11px]" style={{ color: C.textTer }}>{s.league} · {s.sport} · {s.date} at {s.time}</p>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedSchedule(null)} className="rounded-lg p-1.5 hover:bg-white/[0.05]" style={{ color: C.textDim }}><X className="h-4 w-4" /></button>
+              </div>
+            )
+          })()}
+        </Card>
+      )}
+
+      {/* Add/Edit Modal */}
+      {(showAddModal || editingSchedule) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => { setShowAddModal(false); setEditingSchedule(null) }}>
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div className="relative w-full max-w-lg rounded-2xl border p-5 fade-in-up" style={{ background: C.card, borderColor: C.border }} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-base font-bold text-white">{editingSchedule ? 'Edit Match' : 'Add New Match'}</h3>
+              <button onClick={() => { setShowAddModal(false); setEditingSchedule(null) }} className="rounded-lg p-1.5 hover:bg-white/[0.05]" style={{ color: C.textDim }}><X className="h-4 w-4" /></button>
+            </div>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: C.textDim }}>Home Team</label>
+                  <input type="text" placeholder="e.g. India" className="w-full rounded-xl border px-3 py-2 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-[#0071eb]/40" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.03)' }} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: C.textDim }}>Away Team</label>
+                  <input type="text" placeholder="e.g. Australia" className="w-full rounded-xl border px-3 py-2 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-[#0071eb]/40" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.03)' }} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: C.textDim }}>League</label>
+                  <input type="text" placeholder="e.g. IPL, EPL" className="w-full rounded-xl border px-3 py-2 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-[#0071eb]/40" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.03)' }} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: C.textDim }}>Sport</label>
+                  <select className="w-full rounded-xl border px-3 py-2 text-sm text-white focus:outline-none" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.03)' }}>
+                    {sportOptions.filter(x => x !== 'all').map(s => <option key={s} value={s} style={{ background: C.card }}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: C.textDim }}>Date</label>
+                  <input type="date" className="w-full rounded-xl border px-3 py-2 text-sm text-white focus:outline-none focus:border-[#0071eb]/40" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.03)' }} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: C.textDim }}>Time</label>
+                  <input type="time" className="w-full rounded-xl border px-3 py-2 text-sm text-white focus:outline-none focus:border-[#0071eb]/40" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.03)' }} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: C.textDim }}>Status</label>
+                  <select className="w-full rounded-xl border px-3 py-2 text-sm text-white focus:outline-none" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.03)' }}>
+                    {(['upcoming', 'live', 'completed', 'cancelled'] as const).map(s => <option key={s} value={s} style={{ background: C.card }}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: C.textDim }}>Venue</label>
+                  <input type="text" placeholder="e.g. Wankhede Stadium" className="w-full rounded-xl border px-3 py-2 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-[#0071eb]/40" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.03)' }} />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button onClick={() => { setShowAddModal(false); setEditingSchedule(null) }} className="flex-1 rounded-xl border py-2.5 text-[12px] font-medium transition-all hover:bg-white/[0.04]" style={{ borderColor: C.border, color: C.textSec }}>
+                  Cancel
+                </button>
+                <button onClick={() => { setShowAddModal(false); setEditingSchedule(null) }} className="flex-1 rounded-xl py-2.5 text-[12px] font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]" style={{ background: C.info }}>
+                  {editingSchedule ? 'Update Match' : 'Add Match'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════
    PAGE ROUTER
    ═══════════════════════════════════════════════════ */
 
@@ -4986,7 +5319,7 @@ function renderPage(page: AdminPage): React.ReactNode {
   if (page === 'highlights') return <VideoUploadPage />
   if (page === 'reports') return <ReportsPage />
   if (page === 'categories') return <CategoriesPage />
-  if (page === 'schedules') return <GenericPage title="Schedules" subtitle="Match schedules" icon={<CalendarClock className="h-5 w-5" style={{ color: C.info }} />} accent={C.info} />
+  if (page === 'schedules') return <SchedulesPage />
   if (page === 'comments') return <GenericPage title="Comments" subtitle="User comments" icon={<MessageSquare className="h-5 w-5" style={{ color: C.success }} />} accent={C.success} />
   if (page === 'banners') return <BannerAnalyticsPage />
   if (page === 'activity-logs') return <GenericPage title="Activity Logs" subtitle="System activity" icon={<ClipboardList className="h-5 w-5" style={{ color: C.textSec }} />} accent={C.textSec} />
