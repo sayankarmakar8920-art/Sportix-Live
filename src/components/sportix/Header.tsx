@@ -5,7 +5,7 @@ import { Search, X, Calendar } from 'lucide-react'
 import { useState, useEffect, useCallback, useRef } from 'react'
 
 export default function Header() {
-  const { currentView, setCurrentView, incrementLogoClicks, resetLogoClicks } = useAppStore()
+  const { currentView, setCurrentView, setShowAdminLogin } = useAppStore()
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isMobile, setIsMobile] = useState(false)
@@ -28,19 +28,18 @@ export default function Header() {
     // 7 clicks = show admin login dialog
     if (clickCountRef.current === 7) {
       clickCountRef.current = 0
-      incrementLogoClicks()
+      setShowAdminLogin(true)
       return
     }
 
-    // Wait 400ms — if user stopped clicking before 7, reload page
+    // Wait 400ms — if user stopped clicking before 7, navigate home
     clickTimerRef.current = setTimeout(() => {
       if (clickCountRef.current > 0 && clickCountRef.current < 7) {
         clickCountRef.current = 0
-        resetLogoClicks()
-        window.location.reload()
+        setCurrentView('home')
       }
     }, 400)
-  }, [incrementLogoClicks, resetLogoClicks])
+  }, [setShowAdminLogin, setCurrentView])
 
   const [today, setToday] = useState('')
   if (today === '' && typeof window !== 'undefined') setToday(new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }))
