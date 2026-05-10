@@ -90,8 +90,9 @@ import OnlineUsersPage from './OnlineUsersPage'
 import DashboardPage from './DashboardPage'
 import MatchSchedule from './MatchSchedule'
 import CategoriesPage from './CategoriesPage'
-import { supabase } from '@/lib/supabase'
 import { lazy, Suspense } from 'react'
+import AdminAnalytics from './AdminAnalytics'
+import VideoUploadUI from './VideoUploadUI'
 
 const AdsManagerUI = lazy(() => import('./AdsManagerUI').catch(() => {
   return { default: () => <AdsManagerFallback /> }
@@ -4269,14 +4270,14 @@ function SchedulesPage() {
 function renderPage(page: AdminPage): React.ReactNode {
   if (page === 'dashboard') return <DashboardPage />
   if (page === 'live-monitor') return <LiveMonitorPage />
-  if (page === 'analytics') return <AnalyticsPage />
-  if (page === 'engagement') return <EngagementPage />
-  if (page === 'revenue') return <RevenuePage />
+  if (page === 'analytics') return <AdminAnalytics />
+  if (page === 'engagement') return <AdminAnalytics />
+  if (page === 'revenue') return <AdminAnalytics />
   if (page === 'settings') return <SettingsPage />
   if (page === 'users') return <OnlineUsersPage /> /* imported */
   if (page === 'live-control') return <LiveControlPage />
   if (page === 'videos') return <VideosPage />
-  if (page === 'highlights') return <VideoUploadPage />
+  if (page === 'highlights') return <VideoUploadUI onClose={() => {}} />
   if (page === 'reports') return <ReportsPage />
   if (page === 'categories') return <CategoriesPage />
   if (page === 'schedules') return <MatchSchedule />

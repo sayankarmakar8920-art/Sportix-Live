@@ -9,46 +9,46 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  name          String
-  email         String   @unique
-  password      String
-  image         String?
-  role          String   @default("user")
-  isOnline      Boolean  @default(false)
-  lastSeen      DateTime @default(now())
-  loginCount    Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         String   @id @default(cuid())
+  name       String
+  email      String   @unique
+  password   String
+  image      String?
+  role       String   @default("user")
+  isOnline   Boolean  @default(false)
+  lastSeen   DateTime @default(now())
+  loginCount Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Stream {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  thumbnail   String?
-  category    String   @default("football")
-  status      String   @default("offline")
-  rtmpUrl     String?
-  streamKey   String?
-  viewerCount Int      @default(0)
-  peakViewers Int      @default(0)
-  fps         Float?
-  bitrate     Float?
-  isFeatured  Boolean  @default(false)
-  homeTeam    String
-  awayTeam    String
-  homeScore   Int      @default(0)
-  awayScore   Int      @default(0)
-  matchTime   String?
-  startTime   DateTime?
-  endedAt     DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  chatMessages ChatMessage[]
-  videos      Video[]
-  recordings  Recording[]
-  reactions   Reaction[]
+  id             String          @id @default(cuid())
+  title          String
+  description    String?
+  thumbnail      String?
+  category       String          @default("football")
+  status         String          @default("offline")
+  rtmpUrl        String?
+  streamKey      String?
+  viewerCount    Int             @default(0)
+  peakViewers    Int             @default(0)
+  fps            Float?
+  bitrate        Float?
+  isFeatured     Boolean         @default(false)
+  homeTeam       String
+  awayTeam       String
+  homeScore      Int             @default(0)
+  awayScore      Int             @default(0)
+  matchTime      String?
+  startTime      DateTime?
+  endedAt        DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  chatMessages   ChatMessage[]
+  reactions      Reaction[]
+  recordings     Recording[]
+  videos         Video[]
   viewerSessions ViewerSession[]
 }
 
@@ -63,20 +63,20 @@ model Video {
   videoUrl    String?
   isFeatured  Boolean  @default(false)
   streamId    String?
-  stream      Stream?  @relation(fields: [streamId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  stream      Stream?  @relation(fields: [streamId], references: [id])
 }
 
 model ChatMessage {
-  id           String   @id @default(cuid())
-  streamId     String
-  stream       Stream   @relation(fields: [streamId], references: [id])
-  username     String
-  message      String
-  isHighlighted Boolean @default(false)
-  isAdmin      Boolean  @default(false)
-  createdAt    DateTime @default(now())
+  id            String   @id @default(cuid())
+  streamId      String
+  username      String
+  message       String
+  isHighlighted Boolean  @default(false)
+  isAdmin       Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  stream        Stream   @relation(fields: [streamId], references: [id])
 }
 
 model ContinueWatching {
@@ -90,87 +90,84 @@ model ContinueWatching {
 }
 
 model Ad {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   title         String
   description   String?
-  type          String   @default("banner")  // "pre-roll", "mid-roll", "post-roll", "overlay", "banner", "hero"
-  mediaUrl      String                        // image or video URL (R2 or local)
-  targetUrl     String?                       // click-through URL
-  category      String?                       // target sport: "football", "basketball", etc
-  duration      Int?                          // video ad duration in seconds
-  position      String?                       // "hero", "footer", "top", "bottom", "sidebar"
-  placement     String?                       // "homepage", "video-page", "player-overlay", "mid-roll-slot"
-  deviceTarget  String?                       // "mobile", "tablet", "desktop", "all"
-  countryTarget String?                       // comma-separated country codes
-  cpm           Float?                        // cost per mille
-  cpc           Float?                        // cost per click
-  priority      Int      @default(0)
-  isActive      Boolean  @default(true)
-  impressions   Int      @default(0)
-  clicks        Int      @default(0)
-  skipAfter     Int      @default(5)          // seconds before skip allowed
-  scheduleStart DateTime?                     // ad start date
-  scheduleEnd   DateTime?                     // ad end date
-  abTestGroup   String?                       // "A", "B", "control"
-  midRollTimes  String?                       // JSON array of timestamps in seconds e.g. "[900,1920,3000]"
-  autoSchedule  Boolean  @default(true)       // auto-calculate mid-roll times
-  adFrequency   String?                       // "low", "medium", "high"
+  type          String    @default("banner")
+  mediaUrl      String
+  targetUrl     String?
+  category      String?
+  duration      Int?
+  position      String?
+  placement     String?
+  deviceTarget  String?
+  countryTarget String?
+  cpm           Float?
+  cpc           Float?
+  priority      Int       @default(0)
+  isActive      Boolean   @default(true)
+  impressions   Int       @default(0)
+  clicks        Int       @default(0)
+  skipAfter     Int       @default(5)
+  scheduleStart DateTime?
+  scheduleEnd   DateTime?
+  abTestGroup   String?
+  midRollTimes  String?
+  autoSchedule  Boolean   @default(true)
+  adFrequency   String?
   createdBy     String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 model AdEvent {
   id        String   @id @default(cuid())
   adId      String
-  event     String                        // "impression", "click", "close", "complete"
+  event     String
   userId    String?
   streamId  String?
   sessionId String?
-  metadata  String?                       // JSON string for extra data
+  metadata  String?
   createdAt DateTime @default(now())
 }
 
 model Recording {
-  id          String   @id @default(cuid())
-  streamId    String
-  title       String
-  description String?
-  thumbnail   String?
-  videoUrl    String                        // R2 or local path
-  duration    Int?
-  fileSize    Int?
-  views       Int      @default(0)
-  status      String   @default("processing") // "processing", "ready", "failed", "uploading"
-  uploadedToR2 Boolean @default(false)
-  r2Url       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  stream      Stream   @relation(fields: [streamId], references: [id])
+  id           String   @id @default(cuid())
+  streamId     String
+  title        String
+  description  String?
+  thumbnail    String?
+  videoUrl     String
+  duration     Int?
+  fileSize     Int?
+  views        Int      @default(0)
+  status       String   @default("processing")
+  uploadedToR2 Boolean  @default(false)
+  r2Url        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  stream       Stream   @relation(fields: [streamId], references: [id])
 }
 
 model Reaction {
-  id          String   @id @default(cuid())
-  streamId    String
-  type        String                        // "like", "love", "fire", "clap", "wow", "laugh"
-  count       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  stream      Stream   @relation(fields: [streamId], references: [id])
+  id        String   @id @default(cuid())
+  streamId  String
+  type      String
+  count     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  stream    Stream   @relation(fields: [streamId], references: [id])
 }
 
 model ViewerSession {
-  id          String   @id @default(cuid())
-  streamId    String
-  userId      String?
-  sessionId   String
-  joinedAt    DateTime @default(now())
-  leftAt      DateTime?
-  isLive      Boolean  @default(true)
-
-  stream      Stream   @relation(fields: [streamId], references: [id])
+  id        String    @id @default(cuid())
+  streamId  String
+  userId    String?
+  sessionId String
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+  isLive    Boolean   @default(true)
+  stream    Stream    @relation(fields: [streamId], references: [id])
 }
 
 model Category {
@@ -184,20 +181,20 @@ model Category {
 }
 
 model AdMedia {
-  id            String   @id @default(cuid())
-  originalName  String
-  fileName      String
-  fileType      String
-  mimeType      String
-  fileSize      Int
-  width         Int?
-  height        Int?
-  duration      Float?
-  thumbnailUrl  String?
-  hlsReady      Boolean  @default(false)
-  status        String   @default("uploading")
-  uploadChunks  Int      @default(0)
-  totalChunks   Int      @default(1)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  originalName String
+  fileName     String
+  fileType     String
+  mimeType     String
+  fileSize     Int
+  width        Int?
+  height       Int?
+  duration     Float?
+  thumbnailUrl String?
+  hlsReady     Boolean  @default(false)
+  status       String   @default("uploading")
+  uploadChunks Int      @default(0)
+  totalChunks  Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
