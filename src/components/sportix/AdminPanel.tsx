@@ -5373,7 +5373,7 @@ export default function AdminPanel() {
           </div>
           <div>
             <h1 className="text-sm font-bold tracking-tight text-white">
-              XTUBE<span style={{ color: C.accent }}> LIVE</span>
+              SPORTIX<span style={{ color: C.accent }}> LIVE</span>
             </h1>
             <p className="text-[9px] font-semibold uppercase tracking-[0.2em]" style={{ color: C.textDim }}>Admin Panel</p>
           </div>
@@ -5456,7 +5456,7 @@ export default function AdminPanel() {
               <Activity className="h-3.5 w-3.5 text-white" />
             </div>
             <h1 className="text-sm font-bold tracking-tight text-white">
-              XTUBE<span style={{ color: C.accent }}> LIVE</span>
+              SPORTIX<span style={{ color: C.accent }}> LIVE</span>
             </h1>
           </div>
           {/* Hamburger (mobile only) */}

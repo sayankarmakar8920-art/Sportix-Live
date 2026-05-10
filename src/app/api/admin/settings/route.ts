@@ -37,9 +37,9 @@ interface SiteSettings {
 
 // ── Default settings ──────────────────────────────────────────────
 const defaultSettings: SiteSettings = {
-  siteName: 'Xtube Live',
+  siteName: 'Sportix Live',
   siteDescription: 'Premium live sports streaming platform',
-  logoUrl: '/xtube-logo.png',
+  logoUrl: '/sportix-logo.png',
   primaryColor: '#E50914',
   accentColor: '#b20710',
   maxConcurrentStreams: 5,
@@ -58,15 +58,15 @@ const defaultSettings: SiteSettings = {
   enableDvr: true,
   dvrWindowMinutes: 120,
   maintenanceMode: false,
-  maintenanceMessage: 'Xtube Live is undergoing scheduled maintenance. We will be back shortly!',
+  maintenanceMessage: 'Sportix Live is undergoing scheduled maintenance. We will be back shortly!',
   analyticsEnabled: true,
   autoStartStreams: false,
   defaultThumbnailUrl: '/thumbnails/default.jpg',
   socialLinks: {
-    twitter: 'https://twitter.com/xtubelive',
-    instagram: 'https://instagram.com/xtubelive',
-    youtube: 'https://youtube.com/@xtubelive',
-    discord: 'https://discord.gg/xtubelive',
+    twitter: 'https://twitter.com/sportixlive',
+    instagram: 'https://instagram.com/sportixlive',
+    youtube: 'https://youtube.com/@sportixlive',
+    discord: 'https://discord.gg/sportixlive',
   },
 }
 

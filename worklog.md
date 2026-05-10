@@ -433,3 +433,32 @@ Stage Summary:
 - SchedulesPage added in src/components/sportix/AdminPanel.tsx (before renderPage function)
 - 14 mock schedule entries covering 6 sports
 - Zero compilation errors
+
+---
+Task ID: 7
+Agent: Main Agent
+Task: Restore website name from "Xtube" back to "Sportix Live" (pahala jaisa kar do)
+
+Work Log:
+- Searched all source files for "Xtube", "xtube", "XTUBE" references
+- Found 40+ occurrences across 10 files
+- Fixed Header.tsx: Logo "X" → "S", text "Xtube Live" → "Sportix Live"
+- Fixed page.tsx: Popular page title, settings user/email, version, footer text, avatar initial
+- Fixed layout.tsx: Page title metadata
+- Fixed settings/route.ts: siteName, logoUrl, maintenance message, social media URLs
+- Fixed AdminApp.tsx: siteName, admin panel title
+- Fixed HeroBannerAds.tsx: Logo text and "X" initial
+- Fixed SignupPage.tsx & LoginPage.tsx: Logo text and "X" initial
+- Fixed AdminPanel.tsx: "XTUBE LIVE" → "SPORTIX LIVE" (2 occurrences)
+- Fixed LiveControlRoom.tsx: Title and admin email
+- Fixed seed/route.ts: All ad titles, descriptions, media URLs, target URLs (20+ replacements)
+- Verified: 0 lint errors, 0 "Xtube" references remaining
+- Dev server compiles successfully, GET / returns 200
+
+Stage Summary:
+- Website fully restored to "Sportix Live" branding
+- Logo icon: "S" in red gradient box
+- Brand text: "Sportix Live" everywhere
+- URLs: sportix.io domain
+- Admin panel: "SPORTIX LIVE"
+- Zero compilation errors

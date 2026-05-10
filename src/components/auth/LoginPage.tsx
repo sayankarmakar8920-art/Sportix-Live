@@ -97,11 +97,11 @@ export default function LoginPage({ onSwitchToSignup }: LoginPageProps) {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-1 mb-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#E50914] to-[#b20710] shadow-lg" style={{ boxShadow: '0 0 30px rgba(229, 9, 20, 0.3)' }}>
-              <span className="text-white text-lg font-black">X</span>
+              <span className="text-white text-lg font-black">S</span>
             </div>
           </div>
           <h1 className="text-2xl font-bold text-white">
-            Xtube <span style={{ color: '#E50914' }}>LIVE</span>
+            Sportix <span style={{ color: '#E50914' }}>LIVE</span>
           </h1>
         </div>
 

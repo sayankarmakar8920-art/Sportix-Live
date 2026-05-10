@@ -242,7 +242,7 @@ function PopularPage({ videos }: { videos: VideoData[] }) {
 
   return (
     <div className="space-y-6 fade-in-up p-4 lg:p-5">
-      <PageHeader title="Xtube - Popular" subtitle="Trending content right now" icon={<Sparkles className="h-5 w-5" />} />
+      <PageHeader title="Sportix Live - Popular" subtitle="Trending content right now" icon={<Sparkles className="h-5 w-5" />} />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         {popular.map((video, i) => (
@@ -626,11 +626,11 @@ function SettingsPage() {
       <div className="glass-card p-4">
         <div className="flex items-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#E50914] to-[#b20710] text-lg font-bold text-white">
-            {session?.user?.name?.charAt(0)?.toUpperCase() || 'X'}
+            {session?.user?.name?.charAt(0)?.toUpperCase() || 'S'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white">{session?.user?.name || 'Xtube User'}</p>
-            <p className="text-xs text-white/40">{session?.user?.email || 'user@xtube.io'}</p>
+            <p className="text-sm font-bold text-white">{session?.user?.name || 'Sportix User'}</p>
+            <p className="text-xs text-white/40">{session?.user?.email || 'user@sportix.io'}</p>
           </div>
           <button className="rounded-xl bg-white/5 px-3 py-2 text-xs font-medium text-white/50 hover:bg-white/[0.08] transition-colors">
             Edit
@@ -698,7 +698,7 @@ function SettingsPage() {
       {/* About */}
       <div className="glass-card p-4">
         <div className="flex items-center justify-between text-xs text-white/30">
-          <span>Xtube Live v2.0</span>
+          <span>Sportix Live v2.0</span>
           <span className="flex items-center gap-1"><Wifi className="h-3 w-3 text-[#E50914]" /> Connected</span>
         </div>
       </div>
@@ -1210,13 +1210,13 @@ export default function Home() {
           <div className="flex items-center justify-between px-6">
             <div className="flex items-center gap-2">
               <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-[#E50914] to-[#b20710]">
-                <span className="text-white text-[10px] font-black">X</span>
+                <span className="text-white text-[10px] font-black">S</span>
               </div>
               <span className="text-xs font-semibold text-white/30">
-                X<span className="text-[#E50914]/30">tube</span> Live
+                Sportix <span className="text-[#E50914]/30">Live</span>
               </span>
             </div>
-            <p className="text-[10px] text-white/15">© 2025 Xtube Live. All rights reserved.</p>
+            <p className="text-[10px] text-white/15">© 2025 Sportix Live. All rights reserved.</p>
           </div>
         </footer>
 
