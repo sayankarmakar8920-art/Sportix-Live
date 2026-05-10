@@ -2,9 +2,14 @@
 
 import { useAppStore } from '@/lib/store'
 import { Search, X, Calendar } from 'lucide-react'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react'
+
+function getTodayDate() {
+  return new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+}
 
 export default function Header() {
+  const today = useSyncExternalStore(() => () => {}, getTodayDate, () => '')
   const { currentView, setCurrentView, setShowAdminLogin } = useAppStore()
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -40,9 +45,6 @@ export default function Header() {
       }
     }, 400)
   }, [setShowAdminLogin, setCurrentView])
-
-  const [today, setToday] = useState('')
-  if (today === '' && typeof window !== 'undefined') setToday(new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }))
 
   if (currentView === 'admin' || currentView === 'live-control-room') return null
 

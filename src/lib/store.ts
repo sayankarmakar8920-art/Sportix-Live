@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type PageView = 'home' | 'player' | 'admin' | 'live' | 'sports' | 'schedule' | 'leagues' | 'highlights' | 'favorites' | 'mylist' | 'settings' | 'popular' | 'live-control-room' | 'replay'
+export type PageView = 'home' | 'player' | 'admin' | 'live' | 'sports' | 'schedule' | 'leagues' | 'highlights' | 'favorites' | 'mylist' | 'settings' | 'popular' | 'live-control-room' | 'replay' | 'dashboard'
 
 interface StreamData {
   id: string

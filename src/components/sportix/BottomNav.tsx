@@ -7,6 +7,7 @@ import { useState } from 'react'
 
 const NAV_ITEMS: { id: PageView; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'home', label: 'Home', icon: Home },
+  { id: 'dashboard', label: 'Dashboard', icon: Tv },
   { id: 'live', label: 'Live', icon: Tv },
   { id: 'sports', label: 'Sports', icon: Trophy },
   { id: 'highlights', label: 'Highlights', icon: Flame },
@@ -61,7 +62,7 @@ export default function BottomNav() {
       <div className="flex items-center justify-around py-1.5 px-2">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon
-          const isActive = currentView === item.id || (item.id === 'more' && !['home', 'live', 'sports', 'highlights'].includes(currentView))
+          const isActive = currentView === item.id || (item.id === 'more' && !['home', 'dashboard', 'live', 'sports', 'highlights'].includes(currentView))
           return (
             <button
               key={item.id}

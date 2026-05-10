@@ -28,6 +28,7 @@ const HLSPlayer = lazy(() => import('@/components/sportix/HLSPlayer'))
 const ReplaySection = lazy(() => import('@/components/sportix/ReplaySection'))
 const LiveReactions = lazy(() => import('@/components/sportix/LiveReactions'))
 const AdBanner = lazy(() => import('@/components/sportix/AdBanner'))
+const UserDashboard = lazy(() => import('@/components/sportix/UserDashboard'))
 
 /* ──────────────────────── Types ──────────────────────── */
 
@@ -861,13 +862,17 @@ export default function Home() {
   const loadData = useCallback(async () => {
     try {
       const [streamsRes, videosRes] = await Promise.all([
-        fetch('/api/streams'),
-        fetch('/api/videos'),
+        fetch('/api/streams').catch(() => null),
+        fetch('/api/videos').catch(() => null),
       ])
-      const streamsData = await streamsRes.json()
-      const videosData = await videosRes.json()
-      setStreams(streamsData)
-      setVideos(videosData)
+      if (streamsRes && streamsRes.ok) {
+        const streamsData = await streamsRes.json()
+        if (Array.isArray(streamsData)) setStreams(streamsData)
+      }
+      if (videosRes && videosRes.ok) {
+        const videosData = await videosRes.json()
+        if (Array.isArray(videosData)) setVideos(videosData)
+      }
 
       const saved = localStorage.getItem('sportix-continue')
       if (saved) {
@@ -998,6 +1003,11 @@ export default function Home() {
   const renderMainContent = () => {
     if (currentView === 'live') return <LiveMatchPage streams={streams} videos={videos} />
     if (currentView === 'popular') return <PopularPage videos={videos} />
+    if (currentView === 'dashboard') return (
+      <Suspense fallback={<div className="flex items-center justify-center py-32"><div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E50914]/20 border-t-[#E50914]" /></div>}>
+        <UserDashboard />
+      </Suspense>
+    )
     if (currentView === 'sports') return <SportsPage streams={streams} videos={videos} />
     if (currentView === 'schedule') return <SchedulePage streams={streams} />
     if (currentView === 'leagues') return <LeaguesPage />
