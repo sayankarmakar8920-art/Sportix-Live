@@ -251,7 +251,7 @@ function Sidebar({ activePage, onNavigate, collapsed, onToggle, onBack }: {
         </div>
         {!collapsed && (
           <div className="overflow-hidden">
-            <h1 className="text-[15px] font-bold text-white tracking-tight">Sportix Live</h1>
+            <h1 className="text-[15px] font-bold text-white tracking-tight">Xtube Live</h1>
             <p className="text-[10px] text-white/25 font-medium">Control Panel</p>
           </div>
         )}
@@ -427,7 +427,7 @@ function TopHeader({ sidebarCollapsed }: { sidebarCollapsed: boolean }) {
             </div>
             <div className="hidden md:block text-left">
               <p className="text-[12px] font-medium text-white/70 leading-tight">Super Admin</p>
-              <p className="text-[10px] text-white/25">admin@sportix.io</p>
+              <p className="text-[10px] text-white/25">admin@xtube.io</p>
             </div>
             <ChevronDown className="h-3 w-3 text-white/20 hidden md:block" />
           </button>
@@ -435,7 +435,7 @@ function TopHeader({ sidebarCollapsed }: { sidebarCollapsed: boolean }) {
             <div className="absolute right-0 top-full mt-2 w-52 overflow-hidden rounded-xl border shadow-2xl" style={{ background: '#0E141B', borderColor: COLORS.border }}>
               <div className="border-b px-3 py-3" style={{ borderColor: COLORS.border }}>
                 <p className="text-[13px] font-semibold text-white">Super Admin</p>
-                <p className="text-[11px] text-white/30">admin@sportix.io</p>
+                <p className="text-[11px] text-white/30">admin@xtube.io</p>
               </div>
               {['Profile Settings', 'Security', 'Help Center', 'Sign Out'].map((item) => (
                 <button

@@ -1228,7 +1228,7 @@ function RevenuePage() {
 
 function SettingsPage() {
   const [settings, setSettings] = useState({
-    siteName: 'Sportix Live',
+    siteName: 'Xtube Live',
     maintenanceMode: false,
     autoRecord: true,
     enableChat: true,
@@ -1579,7 +1579,7 @@ export default function AdminApp() {
             <Radio className="h-4 w-4 text-white" />
           </div>
           {!sidebarCollapsed && (
-            <span className="text-sm font-bold text-white tracking-tight">Sportix Admin</span>
+            <span className="text-sm font-bold text-white tracking-tight">Xtube Admin</span>
           )}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}

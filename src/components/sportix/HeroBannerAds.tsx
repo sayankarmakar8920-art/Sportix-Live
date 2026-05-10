@@ -79,13 +79,13 @@ function FallbackBanner() {
 
       {/* Content */}
       <div className="relative h-full flex flex-col justify-end p-4 sm:p-6 md:p-8">
-        {/* Sportix Live Logo */}
+        {/* Xtube Live Logo */}
         <div className="absolute top-4 sm:top-6 left-4 sm:left-6 flex items-center gap-2">
           <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-[#E50914] flex items-center justify-center">
-            <span className="text-sm sm:text-base font-black text-white">S</span>
+            <span className="text-sm sm:text-base font-black text-white">X</span>
           </div>
           <span className="text-sm sm:text-base font-bold text-white">
-            Sportix <span className="text-[#E50914]">Live</span>
+            Xtube <span className="text-[#E50914]">Live</span>
           </span>
         </div>
 

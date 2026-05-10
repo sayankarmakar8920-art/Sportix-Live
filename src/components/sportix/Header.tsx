@@ -60,10 +60,10 @@ export default function Header() {
             className="flex items-center gap-2.5 transition-all duration-200 hover:opacity-80 active:scale-[0.97] touch-active"
           >
             <div className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-[#E50914] to-[#b20710] shadow-lg shadow-[#E50914]/20">
-              <span className="text-white text-sm font-black">S</span>
+              <span className="text-white text-sm font-black">X</span>
             </div>
             <span className="text-base font-bold tracking-tight text-white">
-              Sport<span className="text-[#E50914]">ix</span>{' '}
+              X<span className="text-[#E50914]">tube</span>{' '}
               <span className="text-white/40 font-normal text-xs">Live</span>
             </span>
           </button>
