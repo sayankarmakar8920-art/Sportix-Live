@@ -39,6 +39,8 @@ const C = {
 
 const CHART_COLORS = ['#3b82f6', '#22c55e', '#eab308', '#ec4899', '#a855f7']
 
+import { supabase } from '@/lib/supabase'
+
 /* ═══════════════════════════════════════════════════════════════
    TYPES
    ═══════════════════════════════════════════════════════════════ */
@@ -72,47 +74,6 @@ interface UploadEntry {
   xhr?: XMLHttpRequest | null
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   MOCK DATA
-   ═══════════════════════════════════════════════════════════════ */
-const MOCK_ADS: AdItem[] = [
-  { id: '1', name: 'Nike 4K Video Ad', type: 'Video', placement: 'Mid-roll', duration: '00:30', status: 'Active', impressions: 248500, clicks: 14200, revenue: 4250.75, ctr: 5.72, thumbnail: '' },
-  { id: '2', name: 'Coca-Cola Banner', type: 'Image', placement: 'Overlay', duration: '00:05', status: 'Active', impressions: 182300, clicks: 8940, revenue: 2890.50, ctr: 4.9, thumbnail: '' },
-  { id: '3', name: 'Adidas Pre-Roll', type: 'Video', placement: 'Pre-roll', duration: '00:15', status: 'Active', impressions: 312000, clicks: 18720, revenue: 5616.00, ctr: 6.0, thumbnail: '' },
-  { id: '4', name: 'Samsung 4K Showcase', type: 'Video', placement: 'Mid-roll', duration: '00:45', status: 'Paused', impressions: 156200, clicks: 6248, revenue: 1874.40, ctr: 4.0, thumbnail: '' },
-  { id: '5', name: 'Red Bull Extreme', type: 'Video', placement: 'Post-roll', duration: '00:20', status: 'Active', impressions: 98700, clicks: 5922, revenue: 1184.40, ctr: 6.0, thumbnail: '' },
-  { id: '6', name: 'Puma Banner Ad', type: 'Image', placement: 'Banner', duration: '00:10', status: 'Active', impressions: 421000, clicks: 14735, revenue: 3683.75, ctr: 3.5, thumbnail: '' },
-  { id: '7', name: 'BMW M Series', type: 'Video', placement: 'Pre-roll', duration: '00:30', status: 'Draft', impressions: 0, clicks: 0, revenue: 0, ctr: 0, thumbnail: '' },
-  { id: '8', name: 'Uber Eats Promo', type: 'Image', placement: 'Overlay', duration: '00:05', status: 'Active', impressions: 267800, clicks: 16068, revenue: 4017.00, ctr: 6.0, thumbnail: '' },
-  { id: '9', name: 'Netflix Series Ad', type: 'Video', placement: 'Mid-roll', duration: '00:15', status: 'Processing', impressions: 54200, clicks: 3252, revenue: 813.00, ctr: 6.0, thumbnail: '' },
-  { id: '10', name: 'Spotify Music', type: 'Image', placement: 'Banner', duration: '00:08', status: 'Active', impressions: 189400, clicks: 9470, revenue: 2367.50, ctr: 5.0, thumbnail: '' },
-]
-
-const PERFORMANCE_DATA = Array.from({ length: 30 }, (_, i) => {
-  const d = new Date('2025-05-10')
-  d.setDate(d.getDate() + i)
-  return {
-    date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    impressions: Math.floor(Math.random() * 80000 + 60000),
-    clicks: Math.floor(Math.random() * 5000 + 2000),
-    revenue: Math.floor(Math.random() * 3000 + 1000),
-  }
-})
-
-const AD_FORMAT_DATA = [
-  { name: 'Video Ads', value: 72, color: CHART_COLORS[0] },
-  { name: 'Image Ads', value: 44, color: CHART_COLORS[1] },
-  { name: 'Overlay Ads', value: 8, color: CHART_COLORS[2] },
-  { name: 'Banner Ads', value: 4, color: CHART_COLORS[3] },
-]
-
-const AD_TYPE_DATA = [
-  { name: 'Pre-Roll', count: 32, pct: '25%', color: CHART_COLORS[0] },
-  { name: 'Mid-Roll', count: 68, pct: '53%', color: CHART_COLORS[1] },
-  { name: 'Post-Roll', count: 12, pct: '9%', color: CHART_COLORS[2] },
-  { name: 'Overlay', count: 8, pct: '6%', color: CHART_COLORS[3] },
-  { name: 'Banner', count: 8, pct: '6%', color: CHART_COLORS[4] },
-]
 
 /* ═══════════════════════════════════════════════════════════════
    HELPERS
@@ -583,7 +544,8 @@ export default function VideoAdsManager() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
-  const [ads, setAds] = useState<AdItem[]>(MOCK_ADS)
+  const [ads, setAds] = useState<AdItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [uploads, setUploads] = useState<UploadEntry[]>([])
   const [uploadTab, setUploadTab] = useState<'video' | 'image'>('video')
   const [uploadQuality, setUploadQuality] = useState('auto')
@@ -596,11 +558,120 @@ export default function VideoAdsManager() {
   const [minGap, setMinGap] = useState('10min')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
+  const [performanceData, setPerformanceData] = useState<any[]>([])
+  
+  const [form, setForm] = useState({
+    title: '',
+    type: 'video',
+    placement: 'mid-roll',
+    mediaUrl: '',
+    duration: 15,
+  })
+  const [saving, setSaving] = useState(false)
+
+  const handleCreateAd = async () => {
+    if (!form.title) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/ads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
+          isActive: true
+        })
+      })
+      if (res.ok) {
+        setShowCreateModal(false)
+        fetchAds()
+        setForm({ title: '', type: 'video', placement: 'mid-roll', mediaUrl: '', duration: 15 })
+      }
+    } catch (err) {
+      console.error('Error creating ad:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dragRef = useRef<HTMLDivElement>(null)
   const xhrRefs = useRef<Map<string, XMLHttpRequest>>(new Map())
 
+  const fetchAds = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('Ad')
+        .select('*')
+        .order('createdAt', { ascending: false })
+
+      if (error) throw error
+
+      const mapped: AdItem[] = (data || []).map(ad => ({
+        id: ad.id,
+        name: ad.title,
+        type: (ad.type === 'video' ? 'Video' : ad.type === 'banner' ? 'Banner' : 'Image') as any,
+        placement: (ad.placement || 'Mid-roll') as any,
+        duration: ad.duration ? `00:${String(ad.duration).padStart(2, '0')}` : '00:15',
+        status: ad.isActive ? 'Active' : 'Paused',
+        impressions: ad.impressions || 0,
+        clicks: ad.clicks || 0,
+        revenue: (ad.clicks * (ad.cpc || 0)) + ((ad.impressions / 1000) * (ad.cpm || 0)),
+        ctr: ad.impressions > 0 ? (ad.clicks / ad.impressions) * 100 : 0,
+        thumbnail: ad.mediaUrl
+      }))
+      setAds(mapped)
+    } catch (err) {
+      console.error('Error fetching ads:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchAds()
+    const channel = supabase
+      .channel('video_ads_updates')
+      .on('postgres_changes' as any, { event: '*', table: 'Ad' }, () => fetchAds())
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [fetchAds])
+
+  const adFormatData = useMemo(() => {
+    const counts = ads.reduce((acc, ad) => {
+      acc[ad.type] = (acc[ad.type] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+    return Object.entries(counts).map(([name, value], i) => ({
+      name: name + ' Ads',
+      value,
+      color: CHART_COLORS[i % CHART_COLORS.length]
+    }))
+  }, [ads])
+
+  const adTypeData = useMemo(() => {
+    const counts = ads.reduce((acc, ad) => {
+      acc[ad.placement] = (acc[ad.placement] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+    return Object.entries(counts).map(([name, count], i) => ({
+      name,
+      count,
+      color: CHART_COLORS[i % CHART_COLORS.length]
+    }))
+  }, [ads])
   const perPage = 8
+
+  const filteredAds = useMemo(() => {
+    return ads.filter(ad => {
+      const matchSearch = ad.name.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchType = filterType === 'all' || ad.type.toLowerCase() === filterType.toLowerCase()
+      const matchStatus = filterStatus === 'all' || ad.status.toLowerCase() === filterStatus.toLowerCase()
+      return matchSearch && matchType && matchStatus
+    })
+  }, [ads, searchQuery, filterType, filterStatus])
+
+  const totalPages = Math.ceil(filteredAds.length / perPage)
+  const pagedAds = filteredAds.slice((currentPage - 1) * perPage, currentPage * perPage)
 
   /* ═══════ CHUNK SIZE for large files ═══════ */
   const CHUNK_UPLOAD_SIZE = 50 * 1024 * 1024 // 50MB per chunk for large files
@@ -882,18 +953,6 @@ export default function VideoAdsManager() {
     e.target.value = ''
   }, [realUpload])
 
-  /* Filtered ads */
-  const filteredAds = useMemo(() => {
-    return ads.filter(ad => {
-      if (filterType !== 'all' && ad.type.toLowerCase() !== filterType) return false
-      if (filterStatus !== 'all' && ad.status.toLowerCase() !== filterStatus) return false
-      if (searchQuery && !ad.name.toLowerCase().includes(searchQuery.toLowerCase())) return false
-      return true
-    })
-  }, [ads, filterType, filterStatus, searchQuery])
-
-  const totalPages = Math.ceil(filteredAds.length / perPage)
-  const pagedAds = filteredAds.slice((currentPage - 1) * perPage, currentPage * perPage)
 
   /* KPI computation */
   const totalAds = ads.length
@@ -1034,7 +1093,7 @@ export default function VideoAdsManager() {
                 </div>
                 <div className="px-3 pb-4">
                   <SvgAreaChart
-                    data={PERFORMANCE_DATA}
+                    data={performanceData.length > 0 ? performanceData : [{ date: 'May 10', impressions: 0, clicks: 0, revenue: 0 }]}
                     seriesKeys={['impressions', 'clicks', 'revenue']}
                     seriesColors={['#3b82f6', '#22c55e', '#eab308']}
                     seriesNames={['Impressions', 'Clicks', 'Revenue']}
@@ -1056,10 +1115,10 @@ export default function VideoAdsManager() {
               <GlassCard>
                 <h3 className="text-sm font-semibold text-white mb-2">Ad Format Distribution</h3>
                 <div className="flex justify-center">
-                  <SvgDonutChart data={AD_FORMAT_DATA} size={180} innerR={55} outerR={80} />
+                  <SvgDonutChart data={adFormatData} size={180} innerR={55} outerR={80} />
                 </div>
                 <div className="space-y-2.5 mt-4">
-                  {AD_FORMAT_DATA.map(d => (
+                  {adFormatData.map(d => (
                     <div key={d.name} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="h-2.5 w-2.5 rounded-full" style={{ background: d.color }} />
@@ -1076,7 +1135,7 @@ export default function VideoAdsManager() {
             <GlassCard>
               <h3 className="text-sm font-semibold text-white mb-2">Ad Type Distribution</h3>
               <SvgBarChart
-                data={AD_TYPE_DATA}
+                data={adTypeData}
                 dataKey="count"
                 nameKey="name"
                 colorKey="color"
@@ -1818,64 +1877,90 @@ export default function VideoAdsManager() {
           ════════════════════════════════════════════════════ */}
       {showCreateModal && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-200"
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 transition-all duration-200"
             onClick={() => setShowCreateModal(false)}
           >
-            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-md" />
             <div
-              className="relative w-full max-w-lg rounded-2xl p-4 space-y-3 transition-all duration-200"
+              className="relative w-full max-w-lg rounded-2xl p-6 space-y-4 shadow-2xl"
               style={{
-                background: '#181818',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: '#1a1a1a',
+                border: '1px solid rgba(255,255,255,0.1)',
               }}
               onClick={e => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-white">Create New Ad</h3>
+              <div className="flex items-center justify-between border-b pb-4" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                <h3 className="text-lg font-bold text-white">Create New Ad</h3>
                 <button onClick={() => setShowCreateModal(false)} className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-white/[0.06]" style={{ color: C.textSec }}>
-                  <X className="h-4 w-4" />
+                  <X className="h-5 w-5" />
                 </button>
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: C.textTer }}>Ad Name</label>
-                  <input className="w-full rounded-xl border px-3.5 py-2.5 text-sm text-white placeholder:text-white/15 focus:outline-none focus:ring-1 focus:ring-red-500/50" style={{ background: 'rgba(255,255,255,0.03)', borderColor: C.border }} placeholder="Enter ad name..." />
+                  <label className="text-[11px] font-bold uppercase tracking-wider block mb-2" style={{ color: C.textTer }}>Ad Title</label>
+                  <input 
+                    value={form.title}
+                    onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                    className="w-full rounded-xl border px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-red-500/50" 
+                    style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.1)' }} 
+                    placeholder="Enter ad title..." 
+                  />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: C.textTer }}>Ad Type</label>
-                    <select className="w-full rounded-xl border px-3.5 py-2.5 text-sm text-white focus:outline-none" style={{ background: 'rgba(255,255,255,0.03)', borderColor: C.border }}>
-                      <option>Video</option>
-                      <option>Image</option>
-                      <option>Overlay</option>
-                      <option>Banner</option>
+                    <label className="text-[11px] font-bold uppercase tracking-wider block mb-2" style={{ color: C.textTer }}>Ad Type</label>
+                    <select 
+                      value={form.type}
+                      onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+                      className="w-full rounded-xl border px-4 py-3 text-sm text-white focus:outline-none" 
+                      style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.1)' }}
+                    >
+                      <option value="video">Video</option>
+                      <option value="banner">Banner</option>
+                      <option value="image">Image</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: C.textTer }}>Placement</label>
-                    <select className="w-full rounded-xl border px-3.5 py-2.5 text-sm text-white focus:outline-none" style={{ background: 'rgba(255,255,255,0.03)', borderColor: C.border }}>
-                      <option>Pre-Roll</option>
-                      <option>Mid-Roll</option>
-                      <option>Post-Roll</option>
-                      <option>Overlay</option>
+                    <label className="text-[11px] font-bold uppercase tracking-wider block mb-2" style={{ color: C.textTer }}>Placement</label>
+                    <select 
+                      value={form.placement}
+                      onChange={e => setForm(f => ({ ...f, placement: e.target.value }))}
+                      className="w-full rounded-xl border px-4 py-3 text-sm text-white focus:outline-none" 
+                      style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.1)' }}
+                    >
+                      <option value="pre-roll">Pre-Roll</option>
+                      <option value="mid-roll">Mid-Roll</option>
+                      <option value="post-roll">Post-Roll</option>
+                      <option value="overlay">Overlay</option>
                     </select>
                   </div>
                 </div>
                 <div>
-                  <label className="text-[11px] font-semibold uppercase tracking-wider block mb-1.5" style={{ color: C.textTer }}>Ad File</label>
-                  <div className="border-2 border-dashed rounded-xl p-4 flex flex-col items-center gap-2 cursor-pointer transition-colors hover:border-red-500/40" style={{ borderColor: C.borderLight }}>
-                    <CloudUpload className="h-6 w-6" style={{ color: C.accent }} />
-                    <p className="text-xs" style={{ color: C.textTer }}>Click to upload or drag & drop</p>
-                    <p className="text-[10px]" style={{ color: C.textDim }}>MP4, MOV, WebM, AVI, MKV, JPG, PNG, WebP, GIF (max 5GB)</p>
-                  </div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider block mb-2" style={{ color: C.textTer }}>Media URL</label>
+                  <input 
+                    value={form.mediaUrl}
+                    onChange={e => setForm(f => ({ ...f, mediaUrl: e.target.value }))}
+                    className="w-full rounded-xl border px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-red-500/50" 
+                    style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.1)' }} 
+                    placeholder="Enter direct URL or upload below..." 
+                  />
                 </div>
               </div>
-              <div className="flex items-center gap-3 justify-end pt-2">
-                <button onClick={() => setShowCreateModal(false)} className="rounded-xl px-4 py-2.5 text-xs font-medium transition-all hover:bg-white/[0.04]" style={{ color: C.textSec, border: `1px solid ${C.border}` }}>
+              <div className="flex items-center gap-4 justify-end pt-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                <button 
+                  onClick={() => setShowCreateModal(false)} 
+                  className="px-6 py-2.5 text-xs font-semibold rounded-xl border transition-all hover:bg-white/5" 
+                  style={{ color: C.textSec, borderColor: 'rgba(255,255,255,0.1)' }}
+                >
                   Cancel
                 </button>
-                <button className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-semibold text-white transition-all hover:brightness-110" style={{ background: C.accent }}>
-                  <Plus className="h-4 w-4" /> Create Ad
+                <button 
+                  onClick={handleCreateAd}
+                  disabled={saving || !form.title}
+                  className="px-8 py-2.5 text-xs font-bold rounded-xl text-white transition-all hover:brightness-110 disabled:opacity-50" 
+                  style={{ background: C.accent, boxShadow: '0 4px 15px rgba(229,9,20,0.3)' }}
+                >
+                  {saving ? 'Creating...' : 'Create Ad'}
                 </button>
               </div>
             </div>

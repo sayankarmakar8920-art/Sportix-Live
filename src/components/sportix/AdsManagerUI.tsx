@@ -28,8 +28,10 @@ const C = {
   textDim: '#52525b',
 }
 
+import { supabase } from '@/lib/supabase'
+
 /* ═══════════════════════════════════════════════════
-   TYPES & MOCK DATA
+   TYPES
    ═══════════════════════════════════════════════════ */
 interface BannerAd {
   id: string
@@ -46,18 +48,8 @@ interface BannerAd {
   scheduleStart: string
   scheduleEnd: string
   targetUrl: string
+  mediaUrl?: string
 }
-
-const MOCK_ADS: BannerAd[] = [
-  { id: '1', title: 'Nike Summer Campaign', type: 'banner', position: 'hero', deviceTarget: 'all', status: 'active', impressions: 342500, clicks: 18920, ctr: 5.52, cpm: 3.80, revenue: 1301.50, scheduleStart: '2025-05-01', scheduleEnd: '2025-06-30', targetUrl: 'https://nike.com/summer' },
-  { id: '2', title: 'Coca-Cola Overlay', type: 'overlay', position: 'bottom', deviceTarget: 'mobile', status: 'active', impressions: 218400, clicks: 9828, ctr: 4.5, cpm: 2.50, revenue: 546.00, scheduleStart: '2025-04-15', scheduleEnd: '2025-07-15', targetUrl: 'https://cocacola.com' },
-  { id: '3', title: 'Samsung Banner Ad', type: 'banner', position: 'sidebar', deviceTarget: 'desktop', status: 'active', impressions: 156700, clicks: 5485, ctr: 3.5, cpm: 4.20, revenue: 658.14, scheduleStart: '2025-05-10', scheduleEnd: '2025-08-10', targetUrl: 'https://samsung.com' },
-  { id: '4', title: 'Red Bull Popup', type: 'popup', position: 'top', deviceTarget: 'all', status: 'paused', impressions: 89200, clicks: 6244, ctr: 7.0, cpm: 5.00, revenue: 446.00, scheduleStart: '2025-03-01', scheduleEnd: '2025-05-01', targetUrl: 'https://redbull.com' },
-  { id: '5', title: 'Adidas Footer Banner', type: 'banner', position: 'footer', deviceTarget: 'all', status: 'active', impressions: 267800, clicks: 10712, ctr: 4.0, cpm: 3.20, revenue: 856.96, scheduleStart: '2025-05-01', scheduleEnd: '2025-07-01', targetUrl: 'https://adidas.com' },
-  { id: '6', title: 'BMW Hero Banner', type: 'hero', position: 'hero', deviceTarget: 'desktop', status: 'draft', impressions: 0, clicks: 0, ctr: 0, cpm: 0, revenue: 0, scheduleStart: '2025-06-01', scheduleEnd: '2025-08-31', targetUrl: 'https://bmw.com' },
-  { id: '7', title: 'Uber Eats Mobile', type: 'overlay', position: 'bottom', deviceTarget: 'mobile', status: 'active', impressions: 421000, clicks: 18945, ctr: 4.5, cpm: 2.80, revenue: 1178.80, scheduleStart: '2025-04-01', scheduleEnd: '2025-06-30', targetUrl: 'https://ubereats.com' },
-  { id: '8', title: 'Spotify Sidebar', type: 'banner', position: 'sidebar', deviceTarget: 'desktop', status: 'expired', impressions: 198400, clicks: 7142, ctr: 3.6, cpm: 3.50, revenue: 694.40, scheduleStart: '2025-01-01', scheduleEnd: '2025-04-01', targetUrl: 'https://spotify.com' },
-]
 
 /* ═══════════════════════════════════════════════════
    HELPERS
@@ -69,7 +61,7 @@ function fmtNum(n: number): string {
 }
 
 function fmtCurrency(n: number): string {
-  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 function StatusBadge({ status }: { status: BannerAd['status'] }) {
@@ -91,31 +83,60 @@ function StatusBadge({ status }: { status: BannerAd['status'] }) {
    MAIN COMPONENT
    ═══════════════════════════════════════════════════ */
 export default function AdsManagerUI() {
-  const [ads, setAds] = useState<BannerAd[]>(MOCK_ADS)
+  const [ads, setAds] = useState<BannerAd[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all')
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'paused' | 'draft' | 'expired'>('all')
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Simulated realtime updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAds(prev => prev.map(ad => {
-        if (ad.status !== 'active') return ad
-        const impInc = Math.floor(Math.random() * 50 + 10)
-        const clickInc = Math.floor(Math.random() * 5)
-        const newImp = ad.impressions + impInc
-        const newClicks = ad.clicks + clickInc
-        return {
-          ...ad,
-          impressions: newImp,
-          clicks: newClicks,
-          ctr: newImp > 0 ? (newClicks / newImp) * 100 : 0,
-        }
+  const fetchAds = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('Ad')
+        .select('*')
+        .order('createdAt', { ascending: false })
+
+      if (error) throw error
+
+      const mappedAds: BannerAd[] = (data || []).map(ad => ({
+        id: ad.id,
+        title: ad.title,
+        type: ad.type as any,
+        position: ad.position as any,
+        deviceTarget: ad.deviceTarget as any || 'all',
+        status: ad.isActive ? 'active' : 'paused', // Simplified mapping
+        impressions: ad.impressions || 0,
+        clicks: ad.clicks || 0,
+        ctr: ad.impressions > 0 ? (ad.clicks / ad.impressions) * 100 : 0,
+        cpm: ad.cpm || 0,
+        revenue: (ad.clicks * (ad.cpc || 0)) + ((ad.impressions / 1000) * (ad.cpm || 0)),
+        scheduleStart: ad.scheduleStart ? new Date(ad.scheduleStart).toLocaleDateString() : 'N/A',
+        scheduleEnd: ad.scheduleEnd ? new Date(ad.scheduleEnd).toLocaleDateString() : 'N/A',
+        targetUrl: ad.targetUrl || '#',
+        mediaUrl: ad.mediaUrl
       }))
-    }, 5000)
-    return () => clearInterval(interval)
+      setAds(mappedAds)
+    } catch (err) {
+      console.error('Error fetching ads:', err)
+    } finally {
+      setIsLoading(false)
+    }
   }, [])
+
+  useEffect(() => {
+    fetchAds()
+    
+    const channel = supabase
+      .channel('ads_updates')
+      .on('postgres_changes' as any, { event: '*', table: 'Ad' }, () => fetchAds())
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [fetchAds])
+
 
   // Computed stats
   const totalImpressions = ads.filter(a => a.status === 'active').reduce((s, a) => s + a.impressions, 0)

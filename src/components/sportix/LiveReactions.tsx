@@ -114,7 +114,7 @@ function FloatingEmojis({ emojis }: { emojis: FloatingEmoji[] }) {
             initial={{ opacity: 1, scale: 1, y: 0 }}
             animate={{ opacity: 0, scale: 1.5, y: -200 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: FLOAT_DURATION / 1000, ease: 'easeOut' }}
+            transition={{ duration: FLOAT_DURATION / 1000, ease: 'easeOut' as any }}
           >
             {item.emoji}
           </motion.div>

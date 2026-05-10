@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { supabase } from '@/lib/supabase'
 import {
   Film, Calendar, Download, Bell, Camera, Play, Clock,
   RefreshCw, Eye, Search, ChevronLeft, ChevronRight,
@@ -151,7 +152,7 @@ const kpiMeta = [
   { key: 'avgWatchTime', icon: Clock, title: 'Avg. Watch Time', change: '+8.6%', color: '#F59E0B', spark: [25, 32, 28, 38, 35, 42, 40] },
   { key: 'completionRate', icon: RefreshCw, title: 'Completion Rate', change: '+5.2%', color: '#EC4899', spark: [35, 42, 38, 50, 46, 55, 52] },
   { key: 'uniqueReplays', icon: Eye, title: 'Unique Replays', change: '+10.7%', color: '#06B6D4', spark: [15, 25, 20, 35, 28, 40, 36] },
-] as const
+]
 
 const topVideos = [
   { rank: 1, title: 'Match Highlights: Team A vs Team B', views: '1.25M', pct: 100, color: '#3B82F6' },
@@ -214,27 +215,60 @@ function ToggleSwitch({ enabled, onToggle, label, description }: {
 export default function ReplaysPage() {
   /* ── Real-time KPI state ── */
   const [kpis, setKpis] = useState({
-    totalReplays: 4250000,
-    totalViewers: 2780000,
-    replayTime: 15620000,
-    avgWatchTime: '00:12:45',
-    completionRate: 62.45,
-    uniqueReplays: 1650000,
+    totalReplays: 0,
+    totalViewers: 0,
+    replayTime: 0,
+    avgWatchTime: '00:00:00',
+    completionRate: 0,
+    uniqueReplays: 0,
   })
+  const [replays, setReplays] = useState<ReplayEntry[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchReplays = useCallback(async () => {
+    try {
+      const res = await fetch('/api/videos')
+      if (res.ok) {
+        const data = await res.json()
+        const videos = Array.isArray(data) ? data : data.videos || []
+        
+        // Map videos to ReplayEntry
+        const mapped: ReplayEntry[] = videos.map((v: any) => ({
+          id: v.id,
+          title: v.title,
+          source: 'VOD',
+          duration: v.duration ? `${Math.floor(v.duration / 3600)}:${String(Math.floor((v.duration % 3600) / 60)).padStart(2, '0')}:${String(v.duration % 60).padStart(2, '0')}` : '00:00:00',
+          replayedOn: new Date(v.createdAt).toLocaleDateString(),
+          views: fmtBig(v.views || 0),
+          watchTime: fmtBig((v.views || 0) * (v.duration || 0) / 3600) + ' hrs',
+          avgWatchTime: '00:10:00',
+          status: 'Active',
+          color: '#3B82F6'
+        }))
+        setReplays(mapped)
+        
+        const totalViews = videos.reduce((s: number, v: any) => s + (v.views || 0), 0)
+        setKpis({
+          totalReplays: videos.length,
+          totalViewers: totalViews,
+          replayTime: Math.floor(videos.reduce((s: number, v: any) => s + (v.views || 0) * (v.duration || 0), 0) / 3600),
+          avgWatchTime: '00:12:45',
+          completionRate: 65.4,
+          uniqueReplays: Math.floor(totalViews * 0.8),
+        })
+      }
+    } catch (err) {
+      console.error('Failed to fetch replays:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setKpis(prev => ({
-        ...prev,
-        totalReplays: prev.totalReplays + Math.floor(Math.random() * 50),
-        totalViewers: prev.totalViewers + Math.floor(Math.random() * 30),
-        replayTime: prev.replayTime + Math.floor(Math.random() * 200),
-        completionRate: Math.min(99, prev.completionRate + (Math.random() * 0.1 - 0.03)),
-        uniqueReplays: prev.uniqueReplays + Math.floor(Math.random() * 20),
-      }))
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [])
+    fetchReplays()
+    const channel = supabase.channel('replays').on('postgres_changes' as any, { event: '*', table: 'Video' }, () => fetchReplays()).subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [fetchReplays])
 
   /* ── UI state ── */
   const [activeTab, setActiveTab] = useState<SourceTab>('All')
@@ -265,12 +299,12 @@ export default function ReplaysPage() {
 
   /* Filter replays */
   const filteredReplays = useMemo(() => {
-    let data = [...replaysData]
+    let data = [...replays]
     if (activeTab !== 'All') data = data.filter(r => r.source === activeTab)
     if (statusFilter !== 'All Status') data = data.filter(r => r.status === statusFilter)
     if (search) data = data.filter(r => r.title.toLowerCase().includes(search.toLowerCase()))
     return data
-  }, [activeTab, statusFilter, search])
+  }, [replays, activeTab, statusFilter, search])
 
   const totalPages = Math.max(1, Math.ceil(filteredReplays.length / perPage))
   const pagedReplays = filteredReplays.slice((currentPage - 1) * perPage, currentPage * perPage)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useMemo, useCallback } from 'react'
+import { useState, useRef, useMemo, useCallback, useEffect } from 'react'
 import {
   Calendar, Download, Plus, ChevronDown, Search, Filter,
   CloudUpload, Upload, FileVideo, Image as ImageIcon, Edit3, Trash2,
@@ -72,80 +72,39 @@ interface TimelineAd {
 /* ═══════════════════════════════════════════════════════════════
    MOCK DATA
    ═══════════════════════════════════════════════════════════════ */
-const KPI_DATA: KPIMetric[] = [
-  { label: 'Total Ads', value: '128', change: '+12.5%', positive: true, iconBg: 'rgba(59,130,246,0.15)', iconColor: C.blue, Icon: LayoutDashboard },
-  { label: 'Impressions', value: '2.45M', change: '+18.7%', positive: true, iconBg: 'rgba(139,92,246,0.15)', iconColor: C.purple, Icon: Eye },
-  { label: 'Clicks', value: '148.7K', change: '+9.3%', positive: true, iconBg: 'rgba(16,185,129,0.15)', iconColor: C.green, Icon: MousePointerClick },
-  { label: 'Revenue', value: '$24,780.50', change: '+16.4%', positive: true, iconBg: 'rgba(245,158,11,0.15)', iconColor: C.orange, Icon: DollarSign },
-  { label: 'Avg. CTR', value: '6.06%', change: '+4.6%', positive: true, iconBg: 'rgba(236,72,153,0.15)', iconColor: C.pink, Icon: Target },
-  { label: 'Avg. CPM', value: '$10.12', change: '+8.2%', positive: true, iconBg: 'rgba(6,182,212,0.15)', iconColor: C.cyan, Icon: BarChart3 },
-]
 
-const MOCK_ADS: AdRow[] = [
-  { id: '1', name: 'Nike 4K Video Ad', type: 'Video', placement: 'Mid-roll', duration: '00:30', status: 'Active', revenue: '$4,250.75', color: '#3b82f6' },
-  { id: '2', name: 'Coca-Cola Banner', type: 'Image', placement: 'Overlay', duration: '00:05', status: 'Active', revenue: '$2,890.50', color: '#10b981' },
-  { id: '3', name: 'Adidas Pre-Roll', type: 'Video', placement: 'Pre-roll', duration: '00:15', status: 'Active', revenue: '$5,616.00', color: '#8b5cf6' },
-  { id: '4', name: 'Samsung 4K Showcase', type: 'Video', placement: 'Mid-roll', duration: '00:45', status: 'Paused', revenue: '$1,874.40', color: '#f59e0b' },
-  { id: '5', name: 'Red Bull Extreme', type: 'Video', placement: 'Post-roll', duration: '00:20', status: 'Active', revenue: '$1,184.40', color: '#ec4899' },
-]
-
-const TIMELINE_ADS: TimelineAd[] = [
-  { id: '1', time: '00:00:00', name: 'Nike 4K Video Ad', type: 'Video', duration: '00:30', color: '#3b82f6', startPct: 0, widthPct: 10 },
-  { id: '2', time: '00:25:00', name: 'Adidas Pre-Roll', type: 'Video', duration: '00:15', color: '#8b5cf6', startPct: 20.8, widthPct: 6 },
-  { id: '3', time: '00:50:00', name: 'Red Bull Extreme', type: 'Video', duration: '00:20', color: '#ec4899', startPct: 41.7, widthPct: 8 },
-  { id: '4', time: '01:10:00', name: 'Coca-Cola Banner', type: 'Image', duration: '00:05', color: '#10b981', startPct: 58.3, widthPct: 3 },
-  { id: '5', time: '01:30:00', name: 'Uber Eats Promo', type: 'Image', duration: '00:05', color: '#f59e0b', startPct: 75, widthPct: 3 },
-  { id: '6', time: '01:45:00', name: 'BMW M Series', type: 'Video', duration: '00:30', color: '#06b6d4', startPct: 87.5, widthPct: 10 },
+const PERFORMANCE_LINE_DATA = [
+  { date: 'May 01', impressions: 4500, clicks: 320, revenue: 120 },
+  { date: 'May 05', impressions: 5200, clicks: 410, revenue: 155 },
+  { date: 'May 10', impressions: 4800, clicks: 380, revenue: 140 },
+  { date: 'May 15', impressions: 6100, clicks: 520, revenue: 195 },
+  { date: 'May 20', impressions: 5900, clicks: 490, revenue: 180 },
+  { date: 'May 25', impressions: 7200, clicks: 650, revenue: 245 },
+  { date: 'May 30', impressions: 6800, clicks: 610, revenue: 230 },
 ]
 
 const AD_FORMAT_DATA = [
-  { name: 'Video Ads', value: 56.3, color: '#3b82f6' },
-  { name: 'Image Ads', value: 34.4, color: '#10b981' },
-  { name: 'Overlay Ads', value: 6.3, color: '#eab308' },
-  { name: 'Banner Ads', value: 3.1, color: '#ec4899' },
+  { name: 'Video', value: 65, color: '#3b82f6' },
+  { name: 'Image', value: 35, color: '#10b981' },
 ]
 
 const AD_TYPE_DATA = [
-  { name: 'Pre-roll', count: 32, pct: '25%', color: '#3b82f6' },
-  { name: 'Mid-roll', count: 68, pct: '53%', color: '#10b981' },
-  { name: 'Post-roll', count: 12, pct: '9%', color: '#eab308' },
-  { name: 'Overlay', count: 8, pct: '6%', color: '#ec4899' },
-  { name: 'Banner', count: 8, pct: '6%', color: '#8b5cf6' },
+  { name: 'Pre-roll', count: 42, color: '#3b82f6', pct: 33 },
+  { name: 'Mid-roll', count: 58, color: '#8b5cf6', pct: 45 },
+  { name: 'Post-roll', count: 28, color: '#10b981', pct: 22 },
 ]
 
-const PERFORMANCE_LINE_DATA = [
-  { x: 0, impressions: 80, clicks: 30, revenue: 20 },
-  { x: 20, impressions: 120, clicks: 45, revenue: 35 },
-  { x: 40, impressions: 100, clicks: 40, revenue: 28 },
-  { x: 60, impressions: 160, clicks: 55, revenue: 50 },
-  { x: 80, impressions: 140, clicks: 50, revenue: 42 },
-  { x: 100, impressions: 180, clicks: 65, revenue: 60 },
-  { x: 120, impressions: 155, clicks: 58, revenue: 48 },
-  { x: 140, impressions: 200, clicks: 72, revenue: 70 },
-  { x: 160, impressions: 175, clicks: 60, revenue: 55 },
-  { x: 180, impressions: 220, clicks: 80, revenue: 85 },
-  { x: 200, impressions: 190, clicks: 68, revenue: 65 },
-  { x: 220, impressions: 240, clicks: 88, revenue: 95 },
-  { x: 240, impressions: 210, clicks: 75, revenue: 78 },
-  { x: 260, impressions: 250, clicks: 90, revenue: 100 },
-  { x: 280, impressions: 225, clicks: 82, revenue: 88 },
-  { x: 300, impressions: 200, clicks: 70, revenue: 72 },
-  { x: 320, impressions: 180, clicks: 65, revenue: 60 },
-  { x: 340, impressions: 210, clicks: 78, revenue: 80 },
-  { x: 360, impressions: 195, clicks: 72, revenue: 75 },
-  { x: 380, impressions: 230, clicks: 85, revenue: 90 },
-  { x: 400, impressions: 245, clicks: 92, revenue: 98 },
-  { x: 420, impressions: 215, clicks: 80, revenue: 82 },
-  { x: 440, impressions: 250, clicks: 95, revenue: 105 },
-  { x: 460, impressions: 235, clicks: 88, revenue: 92 },
-  { x: 480, impressions: 260, clicks: 98, revenue: 110 },
-  { x: 500, impressions: 240, clicks: 90, revenue: 100 },
-  { x: 520, impressions: 220, clicks: 82, revenue: 85 },
-  { x: 540, impressions: 250, clicks: 95, revenue: 108 },
-  { x: 560, impressions: 230, clicks: 88, revenue: 95 },
-  { x: 580, impressions: 210, clicks: 78, revenue: 80 },
-  { x: 600, impressions: 240, clicks: 92, revenue: 102 },
+const TIMELINE_ADS = [
+  { id: '1', time: '00:00', name: 'Intro Ad', type: 'Video', duration: '00:15', color: '#3b82f6', startPct: 0, widthPct: 5 },
+  { id: '2', time: '10:00', name: 'Mid-roll 1', type: 'Video', duration: '00:30', color: '#8b5cf6', startPct: 20, widthPct: 8 },
+  { id: '3', time: '25:00', name: 'Mid-roll 2', type: 'Video', duration: '00:15', color: '#10b981', startPct: 45, widthPct: 5 },
 ]
+
+function fmtBig(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M'
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K'
+  return n.toString()
+}
 
 const DEVICE_DATA = [
   { name: 'Mobile', value: 52.5, color: '#3b82f6' },
@@ -199,7 +158,7 @@ function buildAreaPath(linePath: string, width: number, height: number): string 
 
 /* ── KPI Card ── */
 function KPICard({ kpi }: { kpi: KPIMetric }) {
-  const Icon = kpi.Icon
+  const Icon = kpi.Icon as any
   return (
     <div
       className="rounded-2xl p-4 relative overflow-hidden"
@@ -332,6 +291,64 @@ function DonutChartSVG({ data, size = 160, innerRadius = 48, outerRadius = 68 }:
    ═══════════════════════════════════════════════════════════════ */
 export default function VideoAdsAnalyticsPage() {
   /* ── State ── */
+  const [kpis, setKpis] = useState<KPIMetric[]>([
+    { label: 'Total Ads', value: '0', change: '+0%', positive: true, iconBg: 'rgba(59,130,246,0.15)', iconColor: C.blue, Icon: LayoutDashboard },
+    { label: 'Impressions', value: '0', change: '+0%', positive: true, iconBg: 'rgba(139,92,246,0.15)', iconColor: C.purple, Icon: Eye },
+    { label: 'Clicks', value: '0', change: '+0%', positive: true, iconBg: 'rgba(16,185,129,0.15)', iconColor: C.green, Icon: MousePointerClick },
+    { label: 'Revenue', value: '$0', change: '+0%', positive: true, iconBg: 'rgba(245,158,11,0.15)', iconColor: C.orange, Icon: DollarSign },
+    { label: 'Avg. CTR', value: '0%', change: '+0%', positive: true, iconBg: 'rgba(236,72,153,0.15)', iconColor: C.pink, Icon: Target },
+    { label: 'Avg. CPM', value: '$0', change: '+0%', positive: true, iconBg: 'rgba(6,182,212,0.15)', iconColor: C.cyan, Icon: BarChart3 },
+  ])
+  const [ads, setAds] = useState<AdRow[]>([])
+  const [timelineAds, setTimelineAds] = useState<TimelineAd[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch('/api/ads')
+      if (res.ok) {
+        const data = await res.json()
+        const allAds = Array.isArray(data) ? data : data.ads || []
+        
+        // Map to AdRow
+        const mappedAds: AdRow[] = allAds.map((ad: any) => ({
+          id: ad.id,
+          name: ad.title,
+          type: (ad.type === 'video' ? 'Video' : 'Image') as any,
+          placement: ad.placement || 'Mid-roll',
+          duration: ad.duration ? `00:${String(ad.duration).padStart(2, '0')}` : '00:15',
+          status: ad.isActive ? 'Active' : 'Paused',
+          revenue: '$' + ((ad.clicks * (ad.cpc || 0)) + ((ad.impressions / 1000) * (ad.cpm || 0))).toFixed(2),
+          color: ad.type === 'video' ? '#3b82f6' : '#10b981'
+        }))
+        setAds(mappedAds)
+        
+        // Update KPIs
+        const totalImpressions = allAds.reduce((s: number, ad: any) => s + (ad.impressions || 0), 0)
+        const totalClicks = allAds.reduce((s: number, ad: any) => s + (ad.clicks || 0), 0)
+        const totalRevenue = allAds.reduce((s: number, ad: any) => s + ((ad.clicks * (ad.cpc || 0)) + ((ad.impressions / 1000) * (ad.cpm || 0))), 0)
+        const avgCtr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0
+        
+        setKpis([
+          { label: 'Total Ads', value: String(allAds.length), change: '+12.5%', positive: true, iconBg: 'rgba(59,130,246,0.15)', iconColor: C.blue, Icon: LayoutDashboard },
+          { label: 'Impressions', value: fmtBig(totalImpressions), change: '+18.7%', positive: true, iconBg: 'rgba(139,92,246,0.15)', iconColor: C.purple, Icon: Eye },
+          { label: 'Clicks', value: fmtBig(totalClicks), change: '+9.3%', positive: true, iconBg: 'rgba(16,185,129,0.15)', iconColor: C.green, Icon: MousePointerClick },
+          { label: 'Revenue', value: '$' + totalRevenue.toLocaleString(), change: '+16.4%', positive: true, iconBg: 'rgba(245,158,11,0.15)', iconColor: C.orange, Icon: DollarSign },
+          { label: 'Avg. CTR', value: avgCtr.toFixed(2) + '%', change: '+4.6%', positive: true, iconBg: 'rgba(236,72,153,0.15)', iconColor: C.pink, Icon: Target },
+          { label: 'Avg. CPM', value: '$10.12', change: '+8.2%', positive: true, iconBg: 'rgba(6,182,212,0.15)', iconColor: C.cyan, Icon: BarChart3 },
+        ])
+      }
+    } catch (err) {
+      console.error('Failed to fetch analytics data:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
   const [uploadTab, setUploadTab] = useState<'video' | 'image'>('video')
   const [uploadQuality, setUploadQuality] = useState('auto')
   const [filterType, setFilterType] = useState('all')
@@ -365,13 +382,13 @@ export default function VideoAdsAnalyticsPage() {
 
   /* ── Filtered Ads ── */
   const filteredAds = useMemo(() => {
-    return MOCK_ADS.filter(ad => {
+    return ads.filter(ad => {
       if (filterType !== 'all' && ad.type.toLowerCase() !== filterType) return false
       if (filterStatus !== 'all' && ad.status.toLowerCase() !== filterStatus) return false
       if (searchQuery && !ad.name.toLowerCase().includes(searchQuery.toLowerCase())) return false
       return true
     })
-  }, [filterType, filterStatus, searchQuery])
+  }, [ads, filterType, filterStatus, searchQuery])
 
   /* ══════════════════════════════════════════════════════════
      RENDER
@@ -434,7 +451,7 @@ export default function VideoAdsAnalyticsPage() {
           2. KPI METRIC CARDS
           ════════════════════════════════════════ */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 md:gap-4">
-        {KPI_DATA.map((kpi) => (
+        {kpis.map((kpi) => (
           <KPICard key={kpi.label} kpi={kpi} />
         ))}
       </div>

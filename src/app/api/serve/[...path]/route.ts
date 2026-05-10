@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stat, createReadStream } from 'fs'
+import { createReadStream } from 'fs'
+import { stat } from 'fs/promises'
 import { existsSync } from 'fs'
 import { join, basename } from 'path'
 import { Readable } from 'stream'
@@ -103,7 +104,6 @@ export async function GET(
       })
     }
 
-    // Full file response
     const stream = createReadStream(resolvedPath)
     const readableStream = Readable.toWeb(stream) as ReadableStream
 

@@ -38,8 +38,8 @@ async function trackAdEvent(adId: string, eventType: 'impression' | 'click' | 'c
 
 const fadeVariants = {
   initial: { opacity: 0 },
-  animate: { opacity: 1, transition: { duration: 0.6, ease: 'easeInOut' } },
-  exit: { opacity: 0, transition: { duration: 0.4, ease: 'easeInOut' } },
+  animate: { opacity: 1, transition: { duration: 0.6, ease: 'easeInOut' as any } },
+  exit: { opacity: 0, transition: { duration: 0.4, ease: 'easeInOut' as any } },
 }
 
 // ─── Skeleton Component ─────────────────────────────────────────────────────

@@ -857,11 +857,11 @@ function StreamStatusCard({ isLive }: { isLive: boolean }) {
 
 function StreamHealthCard({ isLive }: { isLive: boolean }) {
   const metrics = [
-    { label: 'Video Resolution', value: isLive ? '1920x1080' : 'N/A', status: isLive ? 'good' : 'bad' as const, icon: <Monitor className="h-3.5 w-3.5" /> },
-    { label: 'Bitrate', value: isLive ? '4,500 kbps' : 'N/A', status: isLive ? 'good' : 'bad' as const, icon: <Signal className="h-3.5 w-3.5" /> },
-    { label: 'Audio Bitrate', value: isLive ? '128 kbps' : 'N/A', status: isLive ? 'good' : 'bad' as const, icon: <Volume2 className="h-3.5 w-3.5" /> },
-    { label: 'FPS', value: isLive ? '60' : 'N/A', status: isLive ? 'good' : 'bad' as const, icon: <Activity className="h-3.5 w-3.5" /> },
-    { label: 'Dropped Frames', value: isLive ? '3 (0.05%)' : 'N/A', status: isLive ? 'good' : 'bad' as const, icon: <AlertTriangle className="h-3.5 w-3.5" /> },
+    { label: 'Video Resolution', value: isLive ? '1920x1080' : 'N/A', status: (isLive ? 'good' : 'bad') as any, icon: <Monitor className="h-3.5 w-3.5" /> },
+    { label: 'Bitrate', value: isLive ? '4,500 kbps' : 'N/A', status: (isLive ? 'good' : 'bad') as any, icon: <Signal className="h-3.5 w-3.5" /> },
+    { label: 'Audio Bitrate', value: isLive ? '128 kbps' : 'N/A', status: (isLive ? 'good' : 'bad') as any, icon: <Volume2 className="h-3.5 w-3.5" /> },
+    { label: 'FPS', value: isLive ? '60' : 'N/A', status: (isLive ? 'good' : 'bad') as any, icon: <Activity className="h-3.5 w-3.5" /> },
+    { label: 'Dropped Frames', value: isLive ? '3 (0.05%)' : 'N/A', status: (isLive ? 'good' : 'bad') as any, icon: <AlertTriangle className="h-3.5 w-3.5" /> },
   ]
 
   return (
@@ -987,12 +987,12 @@ function RecentStreamsCard() {
 
 function StreamingChecklist({ isLive }: { isLive: boolean }) {
   const checklistItems = [
-    { label: 'Encoder Connected', status: isLive ? 'online' as const : 'online' as const, icon: <Cpu className="h-4 w-4" /> },
-    { label: 'Stream Key Valid', status: 'online', icon: <Lock className="h-4 w-4" /> },
-    { label: 'Video Input', status: isLive ? 'online' as const : 'warning' as const, icon: <Monitor className="h-4 w-4" /> },
-    { label: 'Audio Input', status: isLive ? 'online' as const : 'online' as const, icon: <Volume2 className="h-4 w-4" /> },
-    { label: 'Internet Status', status: 'online', icon: <Wifi className="h-4 w-4" /> },
-    { label: 'Server Connection', status: isLive ? 'online' as const : 'online' as const, icon: <Shield className="h-4 w-4" /> },
+    { label: 'Encoder Connected', status: (isLive ? 'online' : 'online') as any, icon: <Cpu className="h-4 w-4" /> },
+    { label: 'Stream Key Valid', status: 'online' as any, icon: <Lock className="h-4 w-4" /> },
+    { label: 'Video Input', status: (isLive ? 'online' : 'warning') as any, icon: <Monitor className="h-4 w-4" /> },
+    { label: 'Audio Input', status: (isLive ? 'online' : 'online') as any, icon: <Volume2 className="h-4 w-4" /> },
+    { label: 'Internet Status', status: 'online' as any, icon: <Wifi className="h-4 w-4" /> },
+    { label: 'Server Connection', status: (isLive ? 'online' : 'online') as any, icon: <Shield className="h-4 w-4" /> },
   ]
 
   const completedCount = checklistItems.filter((i) => i.status === 'online').length

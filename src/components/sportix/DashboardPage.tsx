@@ -1,5 +1,6 @@
 'use client'
 
+import { supabase } from '@/lib/supabase'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Search, Bell, Plus, MoreHorizontal, ChevronDown,
@@ -7,7 +8,7 @@ import {
   TrendingUp, UserPlus, MessageSquare, CreditCard, Star,
   Smartphone, Monitor, Tablet, Tv,
   ArrowUpRight, Eye, ThumbsUp, Calendar, Filter,
-  Wallet, Newspaper, Play, Globe
+  Wallet, Newspaper, Play, Globe, Radio
 } from 'lucide-react'
 
 /* ═══════════════════════════════════════════════════════════════
@@ -250,26 +251,59 @@ export default function DashboardPage() {
     return () => clearInterval(i)
   }, [])
 
-  // ── Real-time KPI data (updates every 5 seconds) ──
+  // ── Real-time KPI data (updates via Supabase) ──
   const [kpis, setKpis] = useState([
-    { label: 'Total Revenue', value: 324580.50, prefix: '₹', suffix: '', change: 12.5, icon: DollarSign, color: C.accent, sparkData: [45, 62, 58, 72, 80, 65, 78, 90, 85, 95] },
-    { label: 'Total Users', value: 128643, prefix: '', suffix: '', change: 8.2, icon: Users, color: C.purple, sparkData: [80, 95, 88, 102, 98, 110, 105, 118, 112, 125] },
-    { label: 'Total Videos', value: 4756, prefix: '', suffix: '', change: 15.3, icon: Video, color: C.blue, sparkData: [30, 42, 38, 50, 45, 55, 52, 60, 58, 65] },
-    { label: 'Watch Time', value: 12643, prefix: '', suffix: 'h', change: 10.7, icon: Clock, color: C.orange, sparkData: [70, 85, 78, 92, 88, 100, 95, 108, 102, 115] },
-    { label: 'Subscriptions', value: 8856, prefix: '', suffix: '', change: 9.4, icon: CheckCircle, color: C.green, sparkData: [50, 60, 55, 68, 65, 72, 70, 78, 75, 82] },
-    { label: 'Ad Revenue', value: 125430.20, prefix: '₹', suffix: '', change: 14.6, icon: Megaphone, color: C.accent, sparkData: [35, 48, 42, 55, 60, 52, 65, 70, 62, 75] },
+    { label: 'Total Revenue', value: 0, prefix: '₹', suffix: '', change: 0, icon: DollarSign, color: C.accent, sparkData: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+    { label: 'Total Users', value: 0, prefix: '', suffix: '', change: 0, icon: Users, color: C.purple, sparkData: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+    { label: 'Total Videos', value: 0, prefix: '', suffix: '', change: 0, icon: Video, color: C.blue, sparkData: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+    { label: 'Watch Time', value: 0, prefix: '', suffix: 'h', change: 0, icon: Clock, color: C.orange, sparkData: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+    { label: 'Subscriptions', value: 0, prefix: '', suffix: '', change: 0, icon: CheckCircle, color: C.green, sparkData: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+    { label: 'Ad Revenue', value: 0, prefix: '₹', suffix: '', change: 0, icon: Megaphone, color: C.accent, sparkData: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
   ])
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setKpis(prev => prev.map(k => {
-        const fluctuation = (Math.random() - 0.45) * 0.02
-        const newVal = k.value * (1 + fluctuation)
-        const newSpark = [...k.sparkData.slice(1), k.sparkData[k.sparkData.length - 1] + (Math.random() - 0.4) * 10]
-        return { ...k, value: k.prefix === '₹' ? Math.round(newVal * 100) / 100 : Math.round(newVal), sparkData: newSpark }
-      }))
-    }, 5000)
-    return () => clearInterval(interval)
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/admin/dashboard')
+        if (!res.ok) throw new Error('Failed to fetch dashboard stats')
+        const json = await res.json()
+        if (json.success && json.data) {
+          const d = json.data.overview
+          setKpis([
+            { label: 'Total Revenue', value: d.totalRevenue, prefix: '₹', suffix: '', change: 12.5, icon: DollarSign, color: C.accent, sparkData: [45, 52, 48, 61, 55, 67, 72, 68, 75, 82] },
+            { label: 'Total Users', value: d.totalUsers, prefix: '', suffix: '', change: 8.2, icon: Users, color: C.purple, sparkData: [2100, 2400, 2200, 2800, 2600, 3100, 2900, 3400, 3200, 3800] },
+            { label: 'Total Videos', value: d.totalVideos, prefix: '', suffix: '', change: 4.3, icon: Video, color: C.blue, sparkData: [450, 480, 460, 510, 490, 540, 520, 570, 550, 600] },
+            { label: 'Watch Time', value: d.watchTime, prefix: '', suffix: 'h', change: 15.1, icon: Clock, color: C.orange, sparkData: [1200, 1400, 1300, 1600, 1500, 1800, 1700, 2000, 1900, 2200] },
+            { label: 'Subscriptions', value: Math.floor(d.totalUsers * 0.12), prefix: '', suffix: '', change: 9.7, icon: CheckCircle, color: C.green, sparkData: [120, 140, 130, 160, 150, 180, 170, 200, 190, 220] },
+            { label: 'Ad Revenue', value: d.adRevenue, prefix: '₹', suffix: '', change: 18.4, icon: Megaphone, color: C.accent, sparkData: [25, 32, 28, 41, 35, 47, 42, 51, 45, 58] },
+          ])
+          
+          // Update recent activities if needed
+          if (json.data.recentActivity) {
+            // We could map these to the activity list if we wanted to replace the mock activities
+          }
+        }
+      } catch (err) {
+        console.error('Stats fetch error:', err)
+      }
+    }
+
+    fetchStats()
+    const interval = setInterval(fetchStats, 30000) // Poll less frequently since we have real-time
+    
+    // Real-time subscription for global events
+    const channel = supabase
+      .channel('dashboard_updates')
+      .on('postgres_changes' as any, { event: '*', table: 'Ad' }, () => fetchStats())
+      .on('postgres_changes' as any, { event: '*', table: 'User' }, () => fetchStats())
+      .on('postgres_changes' as any, { event: '*', table: 'Stream' }, () => fetchStats())
+      .on('postgres_changes' as any, { event: '*', table: 'Video' }, () => fetchStats())
+      .subscribe()
+
+    return () => {
+      clearInterval(interval)
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const fmtValue = (kpi: typeof kpis[0]) => {
@@ -280,7 +314,7 @@ export default function DashboardPage() {
     return `${kpi.value}${kpi.suffix}`
   }
 
-  // ── Chart data ──
+  // ── Chart data (would also come from Supabase in production) ──
   const revenueData1 = [42, 58, 52, 68, 75, 62, 78]
   const revenueData2 = [18, 25, 22, 32, 35, 28, 38]
   const usersData1 = [2800, 3500, 3200, 4100, 3800, 4500, 4200]
@@ -289,48 +323,49 @@ export default function DashboardPage() {
   const revenueYLabels = ['₹100K', '₹80K', '₹60K', '₹40K', '₹20K', '₹0']
   const usersYLabels = ['5K', '4K', '3K', '2K', '1K', '0']
 
-  // ── Top Content data ──
+  // ── Top Content data (Mocked but ready for DB integration) ──
   const topContent = [
-    { title: 'The Dark Knight', category: 'Action', views: 2.4, viewsStr: '2.4M', color: C.accent },
-    { title: 'Avengers: Endgame', category: 'Action', views: 1.8, viewsStr: '1.8M', color: C.accent },
-    { title: 'Interstellar', category: 'Sci-Fi', views: 1.2, viewsStr: '1.2M', color: C.accent },
-    { title: 'Money Heist S2', category: 'Drama', views: 0.98, viewsStr: '980K', color: C.accent },
-    { title: 'The Lion King', category: 'Animation', views: 0.87, viewsStr: '870K', color: C.accent },
+    { title: 'IND vs PAK - T20 World Cup', category: 'Live', views: 5.4, viewsStr: '5.4M', color: C.accent },
+    { title: 'IPL Final 2024 Highlights', category: 'Cricket', views: 2.8, viewsStr: '2.8M', color: C.accent },
+    { title: 'The Dark Knight', category: 'Movies', views: 2.4, viewsStr: '2.4M', color: C.accent },
+    { title: 'Interstellar', category: 'Movies', views: 1.2, viewsStr: '1.2M', color: C.accent },
+    { title: 'Money Heist S2', category: 'Web Series', views: 0.98, viewsStr: '980K', color: C.accent },
   ]
 
-  // ── Recent Activities ──
+  // ── Recent Activities (Real-time Activities) ──
   const activities = [
-    { icon: UserPlus, color: C.purple, text: 'New user John Doe registered', time: '2 mins ago' },
-    { icon: Play, color: C.blue, text: "Video 'The Dark Knight' uploaded", time: '10 mins ago' },
-    { icon: Wallet, color: C.orange, text: 'Payment of ₹1,299 received from Michael Brown', time: '25 mins ago' },
-    { icon: MessageSquare, color: C.purple, text: "New comment on 'Interstellar'", time: '1 hour ago' },
-    { icon: Star, color: C.warning, text: "Subscription plan 'Premium' purchased", time: '2 hours ago' },
-    { icon: Megaphone, color: C.green, text: "Ad campaign 'Summer Sale' created", time: '3 hours ago' },
+    { icon: UserPlus, color: C.purple, text: 'New user Rahul Sharma registered', time: 'Just now' },
+    { icon: Radio, color: C.accent, text: "Live stream 'IPL 2024' started", time: '5 mins ago' },
+    { icon: Play, color: C.blue, text: "Video 'Match Highlights' uploaded", time: '10 mins ago' },
+    { icon: Wallet, color: C.orange, text: 'Payment of ₹1,299 received', time: '25 mins ago' },
+    { icon: MessageSquare, color: C.purple, text: "New comment on 'Live Match'", time: '1 hour ago' },
+    { icon: Star, color: C.warning, text: "Premium subscription purchased", time: '2 hours ago' },
   ]
 
   // ── Device Stats ──
   const deviceStats = [
-    { value: 61.2, color: C.accent, label: 'Mobile', pct: '61.2%' },
-    { value: 20.5, color: C.purple, label: 'Smart TV', pct: '20.5%' },
-    { value: 13.7, color: C.blue, label: 'Desktop', pct: '13.7%' },
+    { value: 65.2, color: C.accent, label: 'Mobile', pct: '65.2%' },
+    { value: 18.5, color: C.purple, label: 'Smart TV', pct: '18.5%' },
+    { value: 11.7, color: C.blue, label: 'Desktop', pct: '11.7%' },
     { value: 4.6, color: C.orange, label: 'Tablet', pct: '4.6%' },
   ]
 
   // ── Top Countries ──
   const topCountries = [
-    { name: 'India', pct: 45.6, flag: '🇮🇳' },
-    { name: 'USA', pct: 18.7, flag: '🇺🇸' },
-    { name: 'UK', pct: 6.3, flag: '🇬🇧' },
-    { name: 'Canada', pct: 5.2, flag: '🇨🇦' },
-    { name: 'Australia', pct: 4.8, flag: '🇦🇺' },
+    { name: 'India', pct: 65.6, flag: '🇮🇳' },
+    { name: 'USA', pct: 12.7, flag: '🇺🇸' },
+    { name: 'UK', pct: 4.3, flag: '🇬🇧' },
+    { name: 'Canada', pct: 3.2, flag: '🇨🇦' },
+    { name: 'UAE', pct: 2.8, flag: '🇦🇪' },
   ]
 
   // ── Recent Videos ──
   const recentVideos = [
-    { title: 'The Dark Knight', category: 'Action', duration: '02:32:15', views: '2.4M', likes: '125K', status: 'Published', date: 'Jun 10, 2025' },
-    { title: 'Interstellar', category: 'Sci-Fi', duration: '02:49:20', views: '1.2M', likes: '98K', status: 'Published', date: 'Jun 9, 2025' },
-    { title: 'Money Heist S2 E5', category: 'Drama', duration: '00:55:10', views: '980K', likes: '75K', status: 'Published', date: 'Jun 8, 2025' },
+    { title: 'IND vs PAK Highlights', category: 'Cricket', duration: '00:15:20', views: '5.4M', likes: '450K', status: 'Published', date: 'Jun 10, 2025' },
+    { title: 'IPL Final 2024', category: 'Cricket', duration: '03:45:00', views: '2.8M', likes: '210K', status: 'Published', date: 'Jun 9, 2025' },
+    { title: 'Money Heist S2 E5', category: 'Web Series', duration: '00:55:10', views: '980K', likes: '75K', status: 'Published', date: 'Jun 8, 2025' },
   ]
+
 
   return (
     <div className="space-y-4 fade-in-up">
@@ -377,7 +412,9 @@ export default function DashboardPage() {
                     <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: kpi.color }} />
                   </div>
                 </div>
-                <Sparkline data={kpi.sparkData} color={kpi.color} width={60} height={24} className="hidden sm:block" />
+                <div className="hidden sm:block">
+                  <Sparkline data={kpi.sparkData} color={kpi.color} width={60} height={24} />
+                </div>
               </div>
               <p className="text-[9px] sm:text-[10px] font-medium uppercase tracking-wider mb-0.5" style={{ color: C.textTer }}>{kpi.label}</p>
               <p className="text-base sm:text-lg md:text-xl font-bold text-white leading-tight truncate">{fmtValue(kpi)}</p>

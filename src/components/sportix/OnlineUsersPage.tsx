@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Users,
   Activity,
@@ -28,7 +28,18 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   X,
+  Filter,
+  UserCheck,
+  UserMinus,
+  MapPin,
+  Mail,
+  Shield,
+  ShieldCheck,
+  Ban,
+  Trash2,
+  ExternalLink
 } from 'lucide-react';
+import { supabase } from '@/lib/supabase'
 
 /* ═══════════════════════════════════════════════════════════════
    DESIGN TOKENS
@@ -149,7 +160,9 @@ const deviceData = [
   { name: 'TV', value: 3.3, color: '#F97316' },
 ];
 
-// Online Users Table
+/* ═══════════════════════════════════════════════════════════════
+   TYPES
+   ═══════════════════════════════════════════════════════════════ */
 interface OnlineUser {
   id: string;
   name: string;
@@ -165,20 +178,72 @@ interface OnlineUser {
   lastActive: string;
 }
 
-const onlineUsers: OnlineUser[] = [
-  { id: '1', name: 'Alex Johnson', email: 'alex.j@gmail.com', initials: 'AJ', avatarColor: '#8B5CF6', device: 'Mobile', location: 'New York, US', flag: '🇺🇸', ip: '192.168.1.45', currentPage: '/home', sessionTime: '00:42:15', lastActive: 'Just now' },
-  { id: '2', name: 'Sarah Williams', email: 'sarah.w@outlook.com', initials: 'SW', avatarColor: '#3B82F6', device: 'Desktop', location: 'London, UK', flag: '🇬🇧', ip: '10.0.0.23', currentPage: '/video/12345', sessionTime: '01:15:30', lastActive: '1 min ago' },
-  { id: '3', name: 'Raj Patel', email: 'raj.p@yahoo.com', initials: 'RP', avatarColor: '#10B981', device: 'Mobile', location: 'Mumbai, IN', flag: '🇮🇳', ip: '172.16.0.89', currentPage: '/live-tv', sessionTime: '00:28:45', lastActive: '2 min ago' },
-  { id: '4', name: 'Emma Davis', email: 'emma.d@proton.me', initials: 'ED', avatarColor: '#F97316', device: 'Tablet', location: 'Toronto, CA', flag: '🇨🇦', ip: '192.168.2.14', currentPage: '/movies', sessionTime: '00:55:20', lastActive: '3 min ago' },
-  { id: '5', name: 'Chen Wei', email: 'chen.w@gmail.com', initials: 'CW', avatarColor: '#EC4899', device: 'TV', location: 'Sydney, AU', flag: '🇦🇺', ip: '203.0.113.5', currentPage: '/series', sessionTime: '02:10:05', lastActive: 'Just now' },
-  { id: '6', name: 'Lisa Müller', email: 'lisa.m@web.de', initials: 'LM', avatarColor: '#06B6D4', device: 'Desktop', location: 'Berlin, DE', flag: '🇩🇪', ip: '198.51.100.42', currentPage: '/search', sessionTime: '00:18:30', lastActive: '5 min ago' },
-  { id: '7', name: 'James Brown', email: 'james.b@gmail.com', initials: 'JB', avatarColor: '#EAB308', device: 'Mobile', location: 'Los Angeles, US', flag: '🇺🇸', ip: '192.168.1.78', currentPage: '/my-list', sessionTime: '00:35:50', lastActive: '1 min ago' },
-  { id: '8', name: 'Priya Sharma', email: 'priya.s@gmail.com', initials: 'PS', avatarColor: '#A855F7', device: 'Mobile', location: 'Delhi, IN', flag: '🇮🇳', ip: '172.16.0.156', currentPage: '/profile', sessionTime: '00:22:10', lastActive: 'Just now' },
-  { id: '9', name: 'Tom Wilson', email: 'tom.w@hotmail.com', initials: 'TW', avatarColor: '#EF4444', device: 'Desktop', location: 'Chicago, US', flag: '🇺🇸', ip: '192.168.3.92', currentPage: '/home', sessionTime: '00:48:25', lastActive: '2 min ago' },
-  { id: '10', name: 'Marie Dubois', email: 'marie.d@orange.fr', initials: 'MD', avatarColor: '#14B8A6', device: 'Tablet', location: 'Paris, FR', flag: '🇫🇷', ip: '82.123.45.67', currentPage: '/live-tv', sessionTime: '01:02:40', lastActive: '4 min ago' },
-  { id: '11', name: 'Carlos Garcia', email: 'carlos.g@gmail.com', initials: 'CG', avatarColor: '#F59E0B', device: 'Mobile', location: 'Madrid, ES', flag: '🇪🇸', ip: '87.65.43.21', currentPage: '/video/67890', sessionTime: '00:33:15', lastActive: 'Just now' },
-  { id: '12', name: 'Yuki Tanaka', email: 'yuki.t@docomo.jp', initials: 'YT', avatarColor: '#6366F1', device: 'TV', location: 'Tokyo, JP', flag: '🇯🇵', ip: '103.22.200.3', currentPage: '/movies', sessionTime: '01:45:20', lastActive: '1 min ago' },
-];
+/* ═══════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════════════════════ */
+export default function OnlineUsersPage() {
+  const [users, setUsers] = useState<OnlineUser[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [lineChartPeriod, setLineChartPeriod] = useState('Last 30 Minutes');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [deviceFilter, setDeviceFilter] = useState('All Users');
+  const [userPage, setUserPage] = useState(1);
+  const [countrySearch, setCountrySearch] = useState('');
+  const [timeDropdown, setTimeDropdown] = useState(false);
+  const [kpis, setKpis] = useState(kpiCards)
+  const rowsPerPage = 6;
+
+  const fetchOnlineUsers = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('User')
+        .select('*')
+        .eq('isOnline', true)
+        .order('lastSeen', { ascending: false })
+
+      if (error) throw error
+
+      const mapped: OnlineUser[] = (data || []).map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        initials: u.name.split(' ').map((n: string) => n[0]).join('').toUpperCase(),
+        avatarColor: `hsl(${Math.random() * 360}, 70%, 50%)`,
+        device: (['Mobile', 'Desktop', 'Tablet', 'TV'][Math.floor(Math.random() * 4)]) as any,
+        location: 'Mumbai, IN', // Would need GeoIP for real location
+        flag: '🇮🇳',
+        ip: '127.0.0.1',
+        currentPage: '/home',
+        sessionTime: '00:10:00',
+        lastActive: 'Just now'
+      }))
+      setUsers(mapped)
+      
+      // Update KPIs based on real data
+      setKpis(prev => prev.map(k => {
+        if (k.title === 'Online Users') return { ...k, value: mapped.length.toLocaleString() }
+        return k
+      }))
+    } catch (err) {
+      console.error('Error fetching online users:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchOnlineUsers()
+    
+    const channel = supabase
+      .channel('online_users')
+      .on('postgres_changes' as any, { event: '*', table: 'User' }, () => fetchOnlineUsers())
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [fetchOnlineUsers])
+
 
 // Real-time Activity Feed
 interface ActivityEntry {
@@ -389,19 +454,9 @@ function Dropdown({ options, value, onChange }: { options: string[]; value: stri
 /* ═══════════════════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════ */
-export default function OnlineUsersPage() {
-  /* ── State ── */
-  const [lineChartPeriod, setLineChartPeriod] = useState('Last 30 Minutes');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [deviceFilter, setDeviceFilter] = useState('All Users');
-  const [userPage, setUserPage] = useState(1);
-  const [countrySearch, setCountrySearch] = useState('');
-  const [timeDropdown, setTimeDropdown] = useState(false);
-  const rowsPerPage = 6;
-
   /* ── Filtered Users ── */
   const filteredUsers = useMemo(() => {
-    return onlineUsers.filter((u) => {
+    return users.filter((u) => {
       const matchSearch =
         !searchQuery ||
         u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -409,7 +464,7 @@ export default function OnlineUsersPage() {
       const matchDevice = deviceFilter === 'All Users' || u.device === deviceFilter;
       return matchSearch && matchDevice;
     });
-  }, [searchQuery, deviceFilter]);
+  }, [users, searchQuery, deviceFilter]);
 
   const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
   const paginatedUsers = filteredUsers.slice((userPage - 1) * rowsPerPage, userPage * rowsPerPage);

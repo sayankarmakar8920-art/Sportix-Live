@@ -27,7 +27,8 @@
       "@/*": [
         "./src/*"
       ]
-    }
+    },
+    "types": ["node", "react", "react-dom", "next"]
   },
   "include": [
     "next-env.d.ts",
@@ -37,6 +38,8 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "examples",
+    "mini-services"
   ]
 }

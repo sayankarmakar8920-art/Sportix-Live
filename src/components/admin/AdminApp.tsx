@@ -270,7 +270,7 @@ function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void 
     <button
       onClick={onToggle}
       className="relative h-6 w-11 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-      style={{ background: enabled ? C.success : 'rgba(255,255,255,0.1)', focusVisibleRingColor: C.success }}
+      style={{ background: enabled ? C.success : 'rgba(255,255,255,0.1)' } as any}
     >
       <span
         className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200"

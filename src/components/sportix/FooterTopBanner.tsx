@@ -43,12 +43,11 @@ const bannerVariants = {
   animate: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: 'easeOut' },
+    transition: { duration: 0.4, ease: 'easeOut' as any },
   },
   exit: {
-    opacity: 0,
-    y: -3,
-    transition: { duration: 0.25, ease: 'easeIn' },
+    y: 100,
+    transition: { duration: 0.25, ease: 'easeIn' as any },
   },
 }
 

@@ -35,15 +35,14 @@ const adTransitionVariants = {
     scale: 1,
     transition: {
       duration: 0.5,
-      ease: 'easeOut',
+      ease: 'easeOut' as any,
     },
   },
   exit: {
     opacity: 0,
-    scale: 0.98,
     transition: {
-      duration: 0.4,
-      ease: 'easeIn',
+      duration: 0.3,
+      ease: 'easeIn' as any,
     },
   },
 }

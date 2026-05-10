@@ -36,7 +36,10 @@ interface StreamData {
   id: string; title: string; description?: string; thumbnail?: string
   category: string; status: string; viewerCount: number; peakViewers: number
   homeTeam: string; awayTeam: string; homeScore: number; awayScore: number
-  matchTime?: string; isFeatured: boolean
+  matchTime?: string
+  isFeatured: boolean
+  fps?: number
+  bitrate?: number
 }
 
 interface VideoData {
@@ -170,7 +173,7 @@ function LiveMatchPage({ streams, videos }: { streams: StreamData[]; videos: Vid
           {liveStreams.map((stream) => (
             <button
               key={stream.id}
-              onClick={() => openLiveStream(stream, store)}
+              onClick={() => openLiveStream(stream, useAppStore)}
               className="glass-card glass-card-hover p-4 text-left transition-all active:scale-[0.98] touch-active"
             >
               <div className="flex items-start justify-between mb-3">
@@ -253,7 +256,7 @@ function PopularPage({ videos }: { videos: VideoData[] }) {
                 {i + 1}
               </div>
             )}
-            <VideoCard video={video} onSelect={(v) => openVideo(v, store)} />
+            <VideoCard video={video} onSelect={(v) => openVideo(v, useAppStore)} />
           </div>
         ))}
       </div>
@@ -311,7 +314,7 @@ function SportsPage({ streams, videos }: { streams: StreamData[]; videos: VideoD
           <h2 className="text-[15px] font-bold text-white mb-3">🔴 Live Match Popular</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {filteredStreams.filter(s => s.status === 'live').map((stream) => (
-              <button key={stream.id} onClick={() => openLiveStream(stream, store)} className="glass-card glass-card-hover p-4 text-left transition-all active:scale-[0.98] touch-active">
+              <button key={stream.id} onClick={() => openLiveStream(stream, useAppStore)} className="glass-card glass-card-hover p-4 text-left transition-all active:scale-[0.98] touch-active">
                 <div className="flex items-center justify-between mb-2">
                   <span className="flex items-center gap-1.5 rounded-md bg-[#ff3b3b]/15 px-2 py-0.5 text-[10px] font-bold text-[#ff3b3b]"><span className="h-1.5 w-1.5 rounded-full bg-[#ff3b3b] animate-pulse" /> LIVE</span>
                   <span className="text-[11px] text-white/40">{formatNumber(stream.viewerCount)} viewers</span>
@@ -328,7 +331,7 @@ function SportsPage({ streams, videos }: { streams: StreamData[]; videos: VideoD
       {filteredVideos.length > 0 && (
         <ContentSection title={activeSport ? `${activeSport.charAt(0).toUpperCase() + activeSport.slice(1)} Videos` : 'All Videos'} icon={<Trophy className="h-4 w-4 text-[#E50914]" />} viewAll>
           {filteredVideos.slice(0, 10).map((video) => (
-            <VideoCard key={video.id} video={video} onSelect={(v) => openVideo(v, store)} />
+            <VideoCard key={video.id} video={video} onSelect={(v) => openVideo(v, useAppStore)} />
           ))}
         </ContentSection>
       )}
@@ -375,7 +378,7 @@ function SchedulePage({ streams }: { streams: StreamData[] }) {
             onClick={() => {
               const liveStream = streams.find(s => s.status === 'live' && s.homeTeam === item.home)
               if (liveStream) {
-                openLiveStream(liveStream, store)
+                openLiveStream(liveStream, useAppStore)
               }
             }}
             className="glass-card glass-card-hover w-full flex items-center justify-between p-4 text-left transition-all active:scale-[0.98] touch-active"
@@ -491,7 +494,7 @@ function HighlightsPage({ videos }: { videos: VideoData[] }) {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         {highlightVideos.map((video) => (
-          <VideoCard key={video.id} video={video} onSelect={(v) => openVideo(v, store)} />
+          <VideoCard key={video.id} video={video} onSelect={(v) => openVideo(v, useAppStore)} />
         ))}
       </div>
 
@@ -526,7 +529,7 @@ function FavoritesPage({ videos }: { videos: VideoData[] }) {
               >
                 <Heart className="h-3.5 w-3.5 fill-[#ff3b3b]" />
               </button>
-              <VideoCard video={video} onSelect={(v) => openVideo(v, store)} />
+              <VideoCard video={video} onSelect={(v) => openVideo(v, useAppStore)} />
             </div>
           ))}
         </div>
@@ -536,7 +539,7 @@ function FavoritesPage({ videos }: { videos: VideoData[] }) {
           <p className="text-sm font-medium text-white/30">No favorites yet</p>
           <p className="mt-1 text-xs text-white/20">Tap the heart icon on any video to save it here</p>
           <button
-            onClick={() => store.setState(s => ({ currentView: 'highlights' }))}
+            onClick={() => useAppStore.setState({ currentView: 'highlights' })}
             className="mt-4 rounded-xl bg-[#E50914]/10 px-4 py-2 text-xs font-medium text-[#E50914] ring-1 ring-[#E50914]/20"
           >
             Browse Highlights
@@ -568,7 +571,7 @@ function MyListPage({ videos }: { videos: VideoData[] }) {
               >
                 <ListVideo className="h-3.5 w-3.5" />
               </button>
-              <VideoCard video={video} onSelect={(v) => openVideo(v, store)} />
+              <VideoCard video={video} onSelect={(v) => openVideo(v, useAppStore)} />
             </div>
           ))}
         </div>
@@ -578,7 +581,7 @@ function MyListPage({ videos }: { videos: VideoData[] }) {
           <p className="text-sm font-medium text-white/30">Your list is empty</p>
           <p className="mt-1 text-xs text-white/20">Add videos to your watchlist to watch them later</p>
           <button
-            onClick={() => store.setState(s => ({ currentView: 'highlights' }))}
+            onClick={() => useAppStore.setState({ currentView: 'highlights' })}
             className="mt-4 rounded-xl bg-[#E50914]/10 px-4 py-2 text-xs font-medium text-[#E50914] ring-1 ring-[#E50914]/20"
           >
             Browse Highlights
@@ -593,7 +596,7 @@ function MyListPage({ videos }: { videos: VideoData[] }) {
 
 function SettingsPage() {
   const { settings, updateSettings } = useAppStore()
-  const session = null // No session required after auth removal
+  const session: any = null // No session required after auth removal
 
   const settingGroups = [
     {

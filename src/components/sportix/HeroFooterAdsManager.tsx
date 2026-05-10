@@ -1,5 +1,6 @@
 'use client'
 
+import { supabase } from '@/lib/supabase'
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { uploadFile, getUploadStatusMessage, type UploadProgress } from '@/lib/upload-utils'
 import {
@@ -345,7 +346,9 @@ function SvgDonutChart({ data, size = 170, innerR = 50, outerR = 75, id = 'donut
     const largeArc = angle > 180 ? 1 : 0
     const path = `M${x1.toFixed(2)},${y1.toFixed(2)} A${outerR},${outerR} 0 ${largeArc} 1 ${x2.toFixed(2)},${y2.toFixed(2)} L${x3.toFixed(2)},${y3.toFixed(2)} A${innerR},${innerR} 0 ${largeArc} 0 ${x4.toFixed(2)},${y4.toFixed(2)} Z`
 
-    return { ...d, pathD: path, startAngle, endAngle, startRad, endRad, pct: total > 0 ? ((d.value / total) * 100).toFixed(1) : '0' }
+    const res = { ...d, pathD: path, startAngle, endAngle, startRad, endRad, pct: total > 0 ? ((d.value / total) * 100).toFixed(1) : '0' }
+    acc.push(res)
+    return acc
   }, [])
 
   return (
@@ -374,7 +377,8 @@ function SvgDonutChart({ data, size = 170, innerR = 50, outerR = 75, id = 'donut
    ═══════════════════════════════════════════════════════════════ */
 export default function HeroFooterAdsManager() {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
-  const [ads, setAds] = useState<HeroAdItem[]>(MOCK_ADS)
+  const [ads, setAds] = useState<HeroAdItem[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
@@ -404,6 +408,52 @@ export default function HeroFooterAdsManager() {
   const [startDate, setStartDate] = useState('2025-05-10')
   const [endDate, setEndDate] = useState('2025-06-10')
 
+  const fetchAds = useCallback(async () => {
+    try {
+      const res = await fetch('/api/ads?type=banner')
+      if (res.ok) {
+        const data = await res.json()
+        const rawAds = Array.isArray(data.ads) ? data.ads : []
+        const mappedAds: HeroAdItem[] = rawAds
+          .filter((a: any) => a.position === 'hero' || a.position === 'footer')
+          .map((a: any) => ({
+            id: a.id,
+            name: a.title,
+            placement: a.position === 'hero' ? 'Hero Banner' : 'Footer Banner',
+            size: a.position === 'hero' ? '1920×600' : '1200×200',
+            status: a.isActive ? 'Active' : 'Paused',
+            impressions: a.impressions || 0,
+            clicks: a.clicks || 0,
+            ctr: a.impressions > 0 ? (a.clicks / a.impressions) * 100 : 0,
+            revenue: (a.impressions * (a.cpm || 0)) / 1000,
+            mediaUrl: a.mediaUrl,
+            targetUrl: a.targetUrl || '',
+            deviceTarget: a.deviceTarget || 'all',
+            openIn: 'New Tab',
+            isFeatured: a.priority > 0,
+          }))
+        setAds(mappedAds)
+      }
+    } catch (err) {
+      console.error('Failed to fetch ads:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchAds()
+
+    const channel = supabase
+      .channel('hero_footer_ads')
+      .on('postgres_changes' as any, { event: '*', table: 'Ad' }, () => fetchAds())
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [fetchAds])
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -427,26 +477,34 @@ export default function HeroFooterAdsManager() {
       const result = await promise
       if (result.success) {
         setUploadedMediaUrl(result.url)
-        // Create the ad entry locally
-        const newAd: HeroAdItem = {
-          id: String(Date.now()),
-          name: uploadedFile.name.replace(/\.[^.]+$/, ''),
-          placement: createTab === 'hero' ? 'Hero Banner' : 'Footer Banner',
-          size: createTab === 'hero' ? '1920×600' : '1200×200',
-          status: 'Draft',
-          impressions: 0, clicks: 0, ctr: 0, revenue: 0,
-          mediaUrl: result.url,
-          targetUrl: adLink,
-          deviceTarget: 'all',
-          openIn: openIn as 'New Tab' | 'Same Tab',
-          isFeatured: false,
+        
+        const res = await fetch('/api/ads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: uploadedFile.name.replace(/\.[^.]+$/, ''),
+            type: 'banner',
+            mediaUrl: result.url,
+            targetUrl: adLink,
+            position: createTab === 'hero' ? 'hero' : 'footer',
+            isActive: adEnabled,
+            deviceTarget: 'all',
+            priority: 0,
+          }),
+        })
+
+        if (res.ok) {
+          setShowCreateModal(false)
+          setUploadedFile(null)
+          setUploadPreview(null)
+          setActiveTab('ads-list')
         }
-        setAds(prev => [newAd, ...prev])
-        setActiveTab('ads-list')
       }
-    } catch { /* ignore */ }
+    } catch (err) {
+       console.error('Upload failed:', err)
+    }
     finally { setUploading(false); uploadCancelRef.current = null }
-  }, [uploadedFile, createTab, adLink, openIn])
+  }, [uploadedFile, createTab, adLink, adEnabled])
 
   const isVideoFile = uploadedFile?.type.startsWith('video/')
   const perPage = 8

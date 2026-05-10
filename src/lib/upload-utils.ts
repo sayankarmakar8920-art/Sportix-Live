@@ -4,7 +4,7 @@
  * Files > 50MB use chunked upload with progress tracking.
  */
 
-const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB per chunk
+const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB per chunk (standard for R2/S3 multipart)
 
 export interface UploadProgress {
   /** 0-100 percentage */
@@ -244,10 +244,12 @@ async function uploadChunked(
   isCancelled: () => boolean,
   options?: { type?: string },
 ): Promise<UploadResult> {
-  const fileId = `chunk_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
   const totalChunks = Math.ceil(file.size / CHUNK_SIZE)
   let totalBytesUploaded = 0
   const startTime = Date.now()
+  let uploadId: string | undefined
+  let r2Key: string | undefined
+  const parts: { ETag: string; PartNumber: number }[] = []
 
   for (let i = 0; i < totalChunks; i++) {
     if (isCancelled()) {
@@ -257,8 +259,19 @@ async function uploadChunked(
     const start = i * CHUNK_SIZE
     const end = Math.min(start + CHUNK_SIZE, file.size)
     const chunk = file.slice(start, end)
+    const partNumber = i + 1
 
-    const chunkResult = await new Promise<{ success: boolean; url?: string; fileUrl?: string; fileName?: string; originalName?: string; fileSize?: number; mimeType?: string }>((resolve, reject) => {
+    const chunkResult = await new Promise<{ 
+      success: boolean; 
+      uploadId?: string; 
+      etag?: string; 
+      url?: string; 
+      fileUrl?: string; 
+      fileName?: string; 
+      originalName?: string; 
+      fileSize?: number; 
+      mimeType?: string 
+    }>((resolve, reject) => {
       const xhr = new XMLHttpRequest()
 
       xhr.upload.addEventListener('progress', (e) => {
@@ -308,19 +321,37 @@ async function uploadChunked(
 
       xhr.open('POST', '/api/upload')
       xhr.setRequestHeader('x-upload-type', 'chunk')
-      xhr.setRequestHeader('x-file-id', fileId)
       xhr.setRequestHeader('x-chunk-index', String(i))
       xhr.setRequestHeader('x-total-chunks', String(totalChunks))
       xhr.setRequestHeader('x-file-name', file.name)
       xhr.setRequestHeader('x-file-size', String(file.size))
       xhr.setRequestHeader('x-file-mime', file.type || 'application/octet-stream')
       if (options?.type) xhr.setRequestHeader('x-file-type', options.type)
+      
+      // Send uploadId and etags if we have them
+      if (uploadId) xhr.setRequestHeader('x-upload-id', uploadId)
+      if (r2Key) xhr.setRequestHeader('x-r2-key', r2Key)
+      
+      if (i === totalChunks - 1) {
+        xhr.setRequestHeader('x-is-final', 'true')
+        xhr.setRequestHeader('x-parts', JSON.stringify(parts))
+      }
+
       xhr.send(chunk)
     })
 
+    if (chunkResult.uploadId && !uploadId) {
+      uploadId = chunkResult.uploadId
+      r2Key = chunkResult.fileName
+    }
+    
+    if (chunkResult.etag) {
+      parts.push({ ETag: chunkResult.etag, PartNumber: partNumber })
+    }
+
     totalBytesUploaded = end
 
-    // If this was the last chunk and the server assembled the file, we get the final result
+    // Final chunk returns the full result
     if (chunkResult.url) {
       return {
         success: true,
@@ -334,7 +365,5 @@ async function uploadChunked(
     }
   }
 
-  // Fallback: if the last chunk didn't return a url, query for the status
-  // This shouldn't happen normally since the server assembles on the last chunk
   throw new Error('Upload completed but server did not return file URL')
 }

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type PageView = 'home' | 'player' | 'admin' | 'live' | 'sports' | 'schedule' | 'leagues' | 'highlights' | 'favorites' | 'mylist' | 'settings' | 'popular' | 'live-control-room' | 'replay' | 'dashboard'
+export type PageView = 'home' | 'player' | 'admin' | 'live' | 'sports' | 'schedule' | 'leagues' | 'highlights' | 'favorites' | 'mylist' | 'settings' | 'popular' | 'live-control-room' | 'replay' | 'dashboard' | 'more'
 
 interface StreamData {
   id: string
@@ -17,6 +17,8 @@ interface StreamData {
   awayScore: number
   matchTime?: string
   isFeatured: boolean
+  fps?: number
+  bitrate?: number
 }
 
 interface VideoData {

@@ -5,8 +5,10 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Search, CloudUpload, Play, Pencil, Trash2, MoreHorizontal, Grid3X3,
   List, ChevronLeft, ChevronRight, Filter, Calendar, Clock, Eye, HardDrive,
-  Video, FolderOpen, Plus, X, Check, AlertTriangle,
+  Video, FolderOpen, Plus, X, Check, AlertTriangle, Loader2,
 } from 'lucide-react'
+import { uploadFile, type UploadProgress } from '@/lib/upload-utils'
+import { captureVideoThumbnail, getVideoDuration } from '@/lib/video-utils'
 
 /* ═══════════════════════════════════════════════════════════════
    DESIGN TOKENS (matches AdminPanel)
@@ -310,6 +312,173 @@ function DeleteModal({ video, onConfirm, onCancel }: { video: VideoItem; onConfi
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   UPLOAD MODAL
+   ═══════════════════════════════════════════════════════════════ */
+function UploadModal({ file, onComplete, onCancel }: {
+  file: File; onComplete: () => void; onCancel: () => void
+}) {
+  const [title, setTitle] = useState(file.name.split('.').slice(0, -1).join('.'))
+  const [description, setDescription] = useState('')
+  const [category, setCategory] = useState('highlights')
+  const [isFeatured, setIsFeatured] = useState(false)
+  const [status, setStatus] = useState<UploadProgress['status']>('idle')
+  const [progress, setProgress] = useState<UploadProgress | null>(null)
+  const [error, setError] = useState('')
+
+  const handleStartUpload = async () => {
+    try {
+      setStatus('uploading')
+      setError('')
+
+      // 1. Capture Thumbnail and Duration
+      const thumbBlob = await captureVideoThumbnail(file)
+      const duration = await getVideoDuration(file)
+      const thumbFile = new File([thumbBlob], 'thumb.jpg', { type: 'image/jpeg' })
+
+      // 2. Upload Thumbnail
+      const thumbUpload = uploadFile(thumbFile, () => {}, { type: 'thumbnail' })
+      const thumbResult = await thumbUpload.promise
+
+      // 3. Upload Video
+      const videoUpload = uploadFile(file, (p) => {
+        setProgress(p)
+      }, { type: 'video' })
+      const videoResult = await videoUpload.promise
+
+      // 4. Save to Database
+      const res = await fetch('/api/videos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          description,
+          category,
+          thumbnail: thumbResult.url,
+          videoUrl: videoResult.url,
+          duration: Math.round(duration),
+          isFeatured,
+        })
+      })
+
+      if (!res.ok) throw new Error('Failed to save video metadata')
+
+      setStatus('done')
+      setTimeout(() => onComplete(), 1000)
+    } catch (err: any) {
+      setError(err.message || 'Upload failed')
+      setStatus('error')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" />
+      <GlassCard className="relative w-full max-w-lg p-6 space-y-5">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold text-white">Upload New Video</h3>
+          <button onClick={onCancel} className="text-white/40 hover:text-white"><X className="h-5 w-5" /></button>
+        </div>
+
+        {status === 'idle' ? (
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-bold text-white/40 uppercase block mb-1.5">Video Title</label>
+              <input
+                type="text"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-[#E50914]/40 outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-white/40 uppercase block mb-1.5">Description</label>
+              <textarea
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                rows={3}
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-[#E50914]/40 outline-none resize-none"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-white/40 uppercase block mb-1.5">Category</label>
+                <select
+                  value={category}
+                  onChange={e => setCategory(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none"
+                >
+                  <option value="highlights">Highlights</option>
+                  <option value="football">Football</option>
+                  <option value="basketball">Basketball</option>
+                  <option value="racing">Racing</option>
+                  <option value="tennis">Tennis</option>
+                </select>
+              </div>
+              <div className="flex flex-col justify-end">
+                <button
+                  onClick={() => setIsFeatured(!isFeatured)}
+                  className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-semibold transition-all ${isFeatured ? 'bg-[#E50914]/10 border-[#E50914]/40 text-[#E50914]' : 'border-white/10 text-white/40 hover:bg-white/5'}`}
+                >
+                  {isFeatured ? '★ Featured Video' : 'Mark as Featured'}
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-4 flex gap-3">
+              <button onClick={onCancel} className="flex-1 rounded-xl py-3 text-sm font-bold text-white/40 hover:bg-white/5">Cancel</button>
+              <button onClick={handleStartUpload} className="flex-1 rounded-xl bg-[#E50914] py-3 text-sm font-bold text-white shadow-lg shadow-[#E50914]/20">Start Upload</button>
+            </div>
+          </div>
+        ) : (
+          <div className="py-8 flex flex-col items-center text-center">
+            {status === 'uploading' && (
+              <>
+                <div className="h-16 w-16 mb-6 relative flex items-center justify-center">
+                  <div className="absolute inset-0 border-4 border-white/5 rounded-full" />
+                  <div className="absolute inset-0 border-4 border-[#E50914] rounded-full border-t-transparent animate-spin" />
+                  <CloudUpload className="h-6 w-6 text-[#E50914]" />
+                </div>
+                <h4 className="text-base font-bold text-white mb-1">Uploading Video...</h4>
+                <p className="text-xs text-white/40 mb-6">{Math.round(progress?.percent || 0)}% completed</p>
+                
+                <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden mb-2">
+                  <div className="h-full bg-[#E50914] transition-all duration-300" style={{ width: `${progress?.percent || 0}%` }} />
+                </div>
+                <div className="flex items-center justify-between w-full text-[10px] text-white/30">
+                  <span>{fmtBytes(progress?.loaded || 0)} / {fmtBytes(progress?.total || 0)}</span>
+                  <span>{fmtBytes(progress?.speed || 0)}/s</span>
+                </div>
+              </>
+            )}
+
+            {status === 'done' && (
+              <>
+                <div className="h-16 w-16 mb-6 rounded-full bg-green-500/10 flex items-center justify-center">
+                  <Check className="h-8 w-8 text-green-500" />
+                </div>
+                <h4 className="text-base font-bold text-white mb-1">Upload Complete!</h4>
+                <p className="text-xs text-white/40">The video has been saved and is now live.</p>
+              </>
+            )}
+
+            {status === 'error' && (
+              <>
+                <div className="h-16 w-16 mb-6 rounded-full bg-red-500/10 flex items-center justify-center">
+                  <AlertTriangle className="h-8 w-8 text-red-500" />
+                </div>
+                <h4 className="text-base font-bold text-white mb-1">Upload Failed</h4>
+                <p className="text-xs text-red-500 mb-6">{error}</p>
+                <button onClick={handleStartUpload} className="rounded-xl bg-white/5 px-6 py-2.5 text-xs font-bold text-white">Retry Upload</button>
+              </>
+            )}
+          </div>
+        )}
+      </GlassCard>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
    MAIN PAGE
    ═══════════════════════════════════════════════════════════════ */
 export default function VideosPage() {
@@ -322,6 +491,7 @@ export default function VideosPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [deleteTarget, setDeleteTarget] = useState<VideoItem | null>(null)
   const [perPage, setPerPage] = useState(12)
+  const [uploadFileTarget, setUploadFileTarget] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   /* Fetch videos from API */
@@ -409,7 +579,8 @@ export default function VideosPage() {
       e.target.value = ''
       return
     }
-    alert(`Uploading: ${file.name} (${fmtBytes(file.size)})`)
+    setUploadFileTarget(file)
+    e.target.value = ''
   }, [])
 
   /* Loading state */
@@ -661,6 +832,18 @@ export default function VideosPage() {
           video={deleteTarget}
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {/* ═══ Upload Modal ═══ */}
+      {uploadFileTarget && (
+        <UploadModal
+          file={uploadFileTarget}
+          onComplete={() => {
+            setUploadFileTarget(null)
+            fetchVideos()
+          }}
+          onCancel={() => setUploadFileTarget(null)}
         />
       )}
     </div>

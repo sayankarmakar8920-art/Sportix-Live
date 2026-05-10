@@ -218,7 +218,7 @@ function BarChart({ data, height = 200 }: {
               onMouseLeave={() => setHovered(null)}
               style={{ cursor: 'pointer' }}
             >
-              <rect x={x} y={y} width={barW} height={barH} rx={4} fill={hovered === i ? d.color : `${d.color}88`} transition="fill 0.15s" />
+              <rect x={x} y={y} width={barW} height={barH} rx={4} fill={hovered === i ? d.color : `${d.color}88`} style={{ transition: 'fill 0.15s' }} />
               <text x={x + barW / 2} y={height - 6} textAnchor="middle" fill={C.textDim} fontSize="9" fontFamily="sans-serif">{d.label}</text>
             </g>
           )
@@ -548,7 +548,9 @@ export default function UserDashboard() {
                     <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#ff3b3b] live-pulse" />
                   )}
                 </div>
-                <Sparkline data={kpi.sparkData} color={kpi.color} width={60} height={24} className="hidden sm:block" />
+                <div className="hidden sm:block">
+                  <Sparkline data={kpi.sparkData} color={kpi.color} width={60} height={24} />
+                </div>
               </div>
               <p className="text-[9px] sm:text-[10px] font-medium uppercase tracking-wider mb-0.5" style={{ color: C.textTer }}>{kpi.label}</p>
               <p className="text-base sm:text-lg md:text-xl font-bold text-white leading-tight truncate">

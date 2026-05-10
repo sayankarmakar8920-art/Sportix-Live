@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir, rename, unlink, readdir, stat, readFile } from 'fs/promises'
+import { writeFile, mkdir, unlink, readFile, readdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import crypto from 'crypto'
+import { S3Client, CreateMultipartUploadCommand, UploadPartCommand, CompleteMultipartUploadCommand, PutObjectCommand } from '@aws-sdk/client-s3'
+
+// Cloudflare R2 Client
+const s3Client = new S3Client({
+  region: 'auto',
+  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+  },
+})
+
+const BUCKET_NAME = process.env.R2_BUCKET_NAME!
+const PUBLIC_URL = process.env.R2_PUBLIC_URL!
 
 const UPLOAD_DIR = join(process.cwd(), 'uploads')
 const TEMP_DIR = join(UPLOAD_DIR, 'temp')
@@ -20,7 +34,7 @@ function safeFilename(originalName: string): string {
   return `${name}_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.${ext}`
 }
 
-// GET: Check upload status (for resumable uploads)
+// GET: Check upload status
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
@@ -57,181 +71,142 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST: Handle file upload (single or chunked)
+// POST: Handle file upload (R2 Direct Multipart)
 export async function POST(req: NextRequest) {
   try {
-    await ensureDirs()
-
-    const contentType = req.headers.get('content-type') || ''
     const uploadType = req.headers.get('x-upload-type') || 'single'
-    const fileId = req.headers.get('x-file-id')
-    const chunkIndex = req.headers.get('x-chunk-index')
-    const totalChunks = req.headers.get('x-total-chunks')
     const fileName = req.headers.get('x-file-name') || 'upload'
+    const contentType = req.headers.get('x-file-mime') || 'application/octet-stream'
 
-    // ─── CHUNKED UPLOAD ───
-    if (uploadType === 'chunk' && fileId && chunkIndex !== null && totalChunks) {
-      const chunkIdx = parseInt(chunkIndex, 10)
-      const total = parseInt(totalChunks, 10)
-
-      if (isNaN(chunkIdx) || isNaN(total) || chunkIdx < 0 || total <= 0 || chunkIdx >= total) {
-        return NextResponse.json({ error: 'Invalid chunk parameters' }, { status: 400 })
-      }
-
-      const tempDir = join(TEMP_DIR, fileId)
-      if (!existsSync(tempDir)) await mkdir(tempDir, { recursive: true })
-
-      const chunkPath = join(tempDir, `chunk_${chunkIdx}`)
-
-      // Read body and write chunk
+    // ─── CHUNKED UPLOAD (R2 MULTIPART) ───
+    if (uploadType === 'chunk') {
+      const chunkIndex = parseInt(req.headers.get('x-chunk-index') || '0', 10)
+      const totalChunks = parseInt(req.headers.get('x-total-chunks') || '1', 10)
+      let uploadId: any = req.headers.get('x-upload-id')
+      const isFinal = req.headers.get('x-is-final') === 'true'
+      
       const buffer = Buffer.from(await req.arrayBuffer())
-      await writeFile(chunkPath, buffer)
+      const partNumber = chunkIndex + 1
 
-      // Write/update meta file on first chunk
-      const metaPath = join(tempDir, 'meta.json')
-      const fileSize = parseInt(req.headers.get('x-file-size') || '0', 10)
-
-      if (chunkIdx === 0) {
-        await writeFile(metaPath, JSON.stringify({
-          originalName: fileName,
-          fileSize,
-          totalChunks: total,
-          mimeType: contentType.includes('multipart') ? 'application/octet-stream' : req.headers.get('x-file-mime') || 'application/octet-stream',
-          uploadType: req.headers.get('x-file-type') || 'video',
-          createdAt: new Date().toISOString(),
-        }))
-      }
-
-      // Check if all chunks received
-      const files = await readdir(tempDir)
-      const receivedChunks = files.filter(f => f.startsWith('chunk_')).length
-
-      if (receivedChunks >= total) {
-        // All chunks received - assemble file
-        const meta = JSON.parse(await readFile(metaPath, 'utf-8'))
-        const finalName = safeFilename(meta.originalName)
-        const finalPath = join(UPLOAD_DIR, finalName)
-
-        // Merge chunks in order
-        for (let i = 0; i < total; i++) {
-          const chunkPath = join(tempDir, `chunk_${i}`)
-          const chunkData = await readFile(chunkPath)
-          await writeFile(finalPath, chunkData, i === 0 ? 'w' : 'a')
-          await unlink(chunkPath).catch(() => {})
-        }
-
-        // Cleanup meta
-        await unlink(metaPath).catch(() => {})
-
-        const fileUrl = `/api/serve/${finalName}`
-        const fileSizeStat = await stat(finalPath)
-
-        return NextResponse.json({
-          success: true,
-          message: 'Upload complete',
-          url: fileUrl,
-          fileUrl,
-          fileName: finalName,
-          originalName: meta.originalName,
-          fileSize: fileSizeStat.size,
-          mimeType: meta.mimeType,
+      // 1. Initial Chunk: Start Multipart Upload
+      if (chunkIndex === 0 && !uploadId) {
+        const finalName = safeFilename(fileName)
+        const command = new CreateMultipartUploadCommand({
+          Bucket: BUCKET_NAME,
+          Key: finalName,
+          ContentType: contentType,
+          Metadata: {
+            'original-name': fileName,
+          }
+        })
+        const response = await s3Client.send(command)
+        uploadId = response.UploadId || undefined
+        
+        // Return uploadId to client for next chunks
+        // Also upload the first part
+        const partCommand = new UploadPartCommand({
+          Bucket: BUCKET_NAME,
+          Key: finalName,
+          UploadId: uploadId,
+          PartNumber: partNumber,
+          Body: buffer,
+        })
+        const partResponse = await s3Client.send(partCommand)
+        
+        return NextResponse.json({ 
+          success: true, 
+          uploadId, 
+          etag: partResponse.ETag,
+          fileName: finalName 
         })
       }
 
-      // Chunk received, more to go
-      return NextResponse.json({
-        success: true,
-        message: `Chunk ${chunkIdx + 1}/${total} uploaded`,
-        chunkIndex: chunkIdx,
-        receivedChunks,
-        totalChunks: total,
-        progress: Math.round((receivedChunks / total) * 100),
-      })
+      // 2. Middle/Final Chunk: Upload Part
+      if (uploadId) {
+        const currentFileName = req.headers.get('x-file-name-r2') || fileName // We might need to pass the generated key back
+        // Wait, the client doesn't know the generated finalName yet. 
+        // We should return the finalName (Key) in the first chunk and client should send it back.
+        // I'll update the client header to send x-r2-key.
+        const r2Key = req.headers.get('x-r2-key') || fileName 
+
+        const partCommand = new UploadPartCommand({
+          Bucket: BUCKET_NAME,
+          Key: r2Key,
+          UploadId: uploadId,
+          PartNumber: partNumber,
+          Body: buffer,
+        })
+        const partResponse = await s3Client.send(partCommand)
+
+        // 3. Final Chunk: Complete Multipart Upload
+        if (isFinal) {
+          const partsStr = req.headers.get('x-parts')
+          if (!partsStr) throw new Error('Missing parts information for completion')
+          
+          const parts = JSON.parse(partsStr)
+          // Add the current final part
+          parts.push({ ETag: partResponse.ETag, PartNumber: partNumber })
+          
+          const completeCommand = new CompleteMultipartUploadCommand({
+            Bucket: BUCKET_NAME,
+            Key: r2Key,
+            UploadId: uploadId,
+            MultipartUpload: {
+              Parts: parts.sort((a: any, b: any) => a.PartNumber - b.PartNumber),
+            },
+          })
+          await s3Client.send(completeCommand)
+
+          const r2Url = `${PUBLIC_URL}/${r2Key}`
+          return NextResponse.json({
+            success: true,
+            url: r2Url,
+            fileUrl: r2Url,
+            fileName: r2Key,
+            originalName: fileName,
+            fileSize: parseInt(req.headers.get('x-file-size') || '0', 10),
+          })
+        }
+
+        return NextResponse.json({ 
+          success: true, 
+          uploadId, 
+          etag: partResponse.ETag 
+        })
+      }
     }
 
-    // ─── SINGLE UPLOAD (FormData) ───
-    if (contentType.includes('multipart/form-data')) {
+    // ─── SINGLE UPLOAD ───
+    const contentTypeHeader = req.headers.get('content-type') || ''
+    if (contentTypeHeader.includes('multipart/form-data')) {
       const formData = await req.formData()
       const file = formData.get('file') as File | null
-      const type = (formData.get('type') as string) || 'video'
-
-      if (!file) {
-        return NextResponse.json({ error: 'No file provided' }, { status: 400 })
-      }
-
-      // Check file size (5GB max)
-      if (file.size > 5 * 1024 * 1024 * 1024) {
-        return NextResponse.json({
-          error: 'File too large. Maximum size is 5GB.',
-          code: 'FILE_TOO_LARGE',
-        }, { status: 413 })
-      }
+      if (!file) return NextResponse.json({ error: 'No file' }, { status: 400 })
 
       const finalName = safeFilename(file.name)
-      const finalPath = join(UPLOAD_DIR, finalName)
-
-      // Stream file to disk
       const buffer = Buffer.from(await file.arrayBuffer())
-      await writeFile(finalPath, buffer)
 
-      const fileUrl = `/api/serve/${finalName}`
+      await s3Client.send(new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: finalName,
+        Body: buffer,
+        ContentType: file.type || 'application/octet-stream',
+      }))
 
+      const r2Url = `${PUBLIC_URL}/${finalName}`
       return NextResponse.json({
         success: true,
-        message: 'Upload complete',
-        url: fileUrl,
-        fileUrl,
+        url: r2Url,
+        fileUrl: r2Url,
         fileName: finalName,
         originalName: file.name,
         fileSize: file.size,
-        mimeType: file.type || 'application/octet-stream',
-        type,
       })
     }
 
-    // ─── RAW BINARY UPLOAD ───
-    const rawBuffer = Buffer.from(await req.arrayBuffer())
-    const finalName = safeFilename(fileName)
-    const finalPath = join(UPLOAD_DIR, finalName)
-    await writeFile(finalPath, rawBuffer)
-
-    return NextResponse.json({
-      success: true,
-      message: 'Upload complete',
-      url: `/api/serve/${finalName}`,
-      fileUrl: `/api/serve/${finalName}`,
-      fileName: finalName,
-      originalName: fileName,
-      fileSize: rawBuffer.length,
-    })
+    return NextResponse.json({ error: 'Invalid upload request' }, { status: 400 })
   } catch (error) {
-    console.error('Upload error:', error)
+    console.error('R2 Upload error:', error)
     return NextResponse.json({ error: 'Upload failed', details: String(error) }, { status: 500 })
-  }
-}
-
-// DELETE: Remove uploaded file
-export async function DELETE(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url)
-    const fileName = searchParams.get('file')
-
-    if (!fileName) {
-      return NextResponse.json({ error: 'file parameter is required' }, { status: 400 })
-    }
-
-    // Security: prevent directory traversal
-    const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_')
-    const filePath = join(UPLOAD_DIR, safeName)
-
-    if (!existsSync(filePath)) {
-      return NextResponse.json({ error: 'File not found' }, { status: 404 })
-    }
-
-    await unlink(filePath)
-    return NextResponse.json({ success: true, message: 'File deleted' })
-  } catch (error) {
-    console.error('Delete upload error:', error)
-    return NextResponse.json({ error: 'Failed to delete file' }, { status: 500 })
   }
 }

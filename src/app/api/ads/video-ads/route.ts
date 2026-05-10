@@ -43,10 +43,10 @@ export async function GET(req: NextRequest) {
         where.OR = [
           { deviceTarget: null, category },
           { deviceTarget: 'all', category },
-          { deviceTarget, category },
+          { deviceTarget: device, category },
           { deviceTarget: null, category: null },
           { deviceTarget: 'all', category: null },
-          { deviceTarget, category: null },
+          { deviceTarget: device, category: null },
         ]
       }
 

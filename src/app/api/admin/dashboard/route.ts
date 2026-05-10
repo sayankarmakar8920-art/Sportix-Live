@@ -12,10 +12,16 @@ export async function GET() {
     const videos = await db.video.findMany({
       orderBy: { createdAt: 'desc' },
     })
+    const userCount = await db.user.count()
+    const ads = await db.ad.findMany()
 
     const liveStreams = streams.filter((s) => s.status === 'live')
     const totalViewers = streams.reduce((acc, s) => acc + s.viewerCount, 0)
     const peakViewers = Math.max(...streams.map((s) => s.peakViewers), 0)
+
+    // Calculate revenue from ads
+    const adRevenue = ads.reduce((acc, ad) => acc + (ad.impressions * (ad.cpm || 0) / 1000), 0)
+    const totalRevenue = adRevenue * 1.15 // Adding some simulated non-ad revenue
 
     // ── System health (simulated) ─────────────────────────────
     const cpuBase = 30 + liveStreams.length * 12
@@ -51,7 +57,7 @@ export async function GET() {
       {
         id: 'act-4',
         type: 'user',
-        message: 'New user registration spike: +47 users in last hour',
+        message: `Total users: ${userCount.toLocaleString()}`,
         timestamp: new Date(now.getTime() - 45 * 60 * 1000).toISOString(),
       },
       {
@@ -109,6 +115,10 @@ export async function GET() {
       totalVideos: videos.length,
       totalViewers,
       peakViewers,
+      totalUsers: userCount,
+      adRevenue,
+      totalRevenue,
+      watchTime: totalViewers * 0.45, // Simulated watch time factor
     }
 
     // ── Format streams for response ───────────────────────────
@@ -117,7 +127,7 @@ export async function GET() {
       title: s.title,
       category: s.category,
       status: s.status,
-      viewerCount: s.viewerCount + (s.status === 'live' ? Math.round(Math.random() * 200 - 100) : 0),
+      viewerCount: s.viewerCount,
       peakViewers: s.peakViewers,
       homeTeam: s.homeTeam,
       awayTeam: s.awayTeam,
@@ -137,6 +147,7 @@ export async function GET() {
       category: v.category,
       views: v.views,
       duration: v.duration,
+      thumbnail: v.thumbnail,
       isFeatured: v.isFeatured,
       createdAt: v.createdAt.toISOString(),
     }))
