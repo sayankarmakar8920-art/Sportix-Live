@@ -82,12 +82,16 @@ import {
 import VideoAdsManager from './VideoAdsManager'
 import VideosPage from './VideosPage'
 import HeroFooterAdsManager from './HeroFooterAdsManager'
-import AdsManagerUI from './AdsManagerUI'
 import VideoAdsAnalyticsPage from './VideoAdsAnalyticsPage'
 import ReplaysPage from './ReplaysPage'
 import ReportsPage from './ReportsPage'
 import OnlineUsersPage from './OnlineUsersPage'
 import DashboardPage from './DashboardPage'
+import { lazy, Suspense } from 'react'
+
+const AdsManagerUI = lazy(() => import('./AdsManagerUI').catch(() => {
+  return { default: () => <AdsManagerFallback /> }
+}))
 
 /* ═══════════════════════════════════════════════════════════════
    DESIGN SYSTEM
@@ -256,11 +260,25 @@ function StatusBadge({ text, color }: { text: string; color: string }) {
   )
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   1. DASHBOARD PAGE — imported from DashboardPage.tsx
-   ═══════════════════════════════════════════════════════════════ */
-
 /* DashboardPage component is in ./DashboardPage.tsx */
+
+/* ── Ads Manager Fallback (lazy load with error recovery) ── */
+function AdsManagerFallback() {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 fade-in-up">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#E50914]/20 border-t-[#E50914]" />
+      <p className="text-xs mt-3" style={{ color: C.textTer }}>Loading Ads Manager...</p>
+    </div>
+  )
+}
+
+function AdsManagerWrapper() {
+  return (
+    <Suspense fallback={<AdsManagerFallback />}>
+      <AdsManagerUI />
+    </Suspense>
+  )
+}
 
 /* ═══════════════════════════════════════════════════════════════
    GENERIC PAGE (for all other menu items)
@@ -5031,7 +5049,7 @@ function renderPage(page: AdminPage): React.ReactNode {
   if (page === 'notifications') return <GenericPage title="Notifications" subtitle="Notification management" icon={<Bell className="h-5 w-5" style={{ color: C.warning }} />} accent={C.warning} />
   if (page === 'admins') return <GenericPage title="Admins" subtitle="Admin team management" icon={<ShieldCheck className="h-5 w-5" style={{ color: C.info }} />} accent={C.info} />
   if (page === 'replays') return <ReplaysPage />
-  if (page === 'ads-manager') return <AdsManagerUI />
+  if (page === 'ads-manager') return <AdsManagerWrapper />
   if (page === 'create-ad') return <CreateNewAdSection />
   if (page === 'hero-ads') return <HeroFooterAdsManager />
   if (page === 'video-ads') return <VideoAdsManager />

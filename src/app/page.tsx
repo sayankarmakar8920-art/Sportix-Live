@@ -862,30 +862,45 @@ export default function Home() {
   const loadData = useCallback(async () => {
     try {
       const [streamsRes, videosRes] = await Promise.all([
-        fetch('/api/streams').catch(() => null),
-        fetch('/api/videos').catch(() => null),
+        fetch('/api/streams', { signal: AbortSignal.timeout(5000) }).catch(() => null),
+        fetch('/api/videos', { signal: AbortSignal.timeout(5000) }).catch(() => null),
       ])
+      // Safely parse streams — skip if response is not valid JSON
       if (streamsRes && streamsRes.ok) {
-        const streamsData = await streamsRes.json()
-        if (Array.isArray(streamsData)) setStreams(streamsData)
+        try {
+          const ct = streamsRes.headers.get('content-type') || ''
+          if (ct.includes('application/json')) {
+            const streamsData = await streamsRes.json()
+            if (Array.isArray(streamsData)) setStreams(streamsData)
+          }
+        } catch { /* skip bad response */ }
       }
+      // Safely parse videos
       if (videosRes && videosRes.ok) {
-        const videosData = await videosRes.json()
-        if (Array.isArray(videosData)) setVideos(videosData)
+        try {
+          const ct = videosRes.headers.get('content-type') || ''
+          if (ct.includes('application/json')) {
+            const videosData = await videosRes.json()
+            if (Array.isArray(videosData)) setVideos(videosData)
+          }
+        } catch { /* skip bad response */ }
       }
 
-      const saved = localStorage.getItem('sportix-continue')
-      if (saved) {
-        setContinueWatching(JSON.parse(saved))
-      } else {
-        setContinueWatching([
-          { id: 'cw1', videoId: 'cw1', title: 'Man City Road to UCL Final', thumbnail: '/thumbnails/ucl-semi.png', duration: 1200, progress: 0.65, watchedAt: new Date().toISOString() },
-          { id: 'cw2', videoId: 'cw2', title: 'NBA Playoffs Game 3 Highlights', thumbnail: '/thumbnails/nba-playoffs.png', duration: 900, progress: 0.32, watchedAt: new Date().toISOString() },
-          { id: 'cw3', videoId: 'cw3', title: 'Premier League Review Show', thumbnail: '/thumbnails/epl-goals.png', duration: 2700, progress: 0.88, watchedAt: new Date().toISOString() },
-        ])
-      }
-    } catch (e) {
-      console.error('Failed to load data:', e)
+      // Load continue watching from localStorage (client-only)
+      try {
+        const saved = localStorage.getItem('sportix-continue')
+        if (saved) {
+          setContinueWatching(JSON.parse(saved))
+        } else {
+          setContinueWatching([
+            { id: 'cw1', videoId: 'cw1', title: 'Man City Road to UCL Final', thumbnail: '/thumbnails/ucl-semi.png', duration: 1200, progress: 0.65, watchedAt: new Date().toISOString() },
+            { id: 'cw2', videoId: 'cw2', title: 'NBA Playoffs Game 3 Highlights', thumbnail: '/thumbnails/nba-playoffs.png', duration: 900, progress: 0.32, watchedAt: new Date().toISOString() },
+            { id: 'cw3', videoId: 'cw3', title: 'Premier League Review Show', thumbnail: '/thumbnails/epl-goals.png', duration: 2700, progress: 0.88, watchedAt: new Date().toISOString() },
+          ])
+        }
+      } catch { /* localStorage not available */ }
+    } catch {
+      // Silent fail — data will remain empty, UI shows empty states
     } finally {
       setLoading(false)
     }

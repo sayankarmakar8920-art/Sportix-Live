@@ -4,12 +4,17 @@ import { useAppStore } from '@/lib/store'
 import { Search, X, Calendar } from 'lucide-react'
 import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react'
 
-function getTodayDate() {
-  return new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-}
+// Safe client-only detection using useSyncExternalStore (no hydration mismatch)
+const emptySubscribe = () => () => {}
+const noop = () => true
+const serverNoop = () => false
 
 export default function Header() {
-  const today = useSyncExternalStore(() => () => {}, getTodayDate, () => '')
+  const isClient = useSyncExternalStore(emptySubscribe, noop, serverNoop)
+  const today = isClient
+    ? new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    : ''
+
   const { currentView, setCurrentView, setShowAdminLogin } = useAppStore()
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -53,7 +58,7 @@ export default function Header() {
       <div className="mx-auto flex h-14 items-center justify-between gap-4 px-4 lg:px-6">
         {/* Left: Date + Logo */}
         <div className="flex items-center gap-4">
-          <span suppressHydrationWarning className="hidden text-xs font-medium text-white/40 lg:flex items-center gap-1.5">
+          <span className="hidden text-xs font-medium text-white/40 lg:flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5" />
             {today}
           </span>
