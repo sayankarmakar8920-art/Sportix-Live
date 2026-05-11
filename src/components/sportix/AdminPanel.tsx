@@ -4274,7 +4274,7 @@ function renderPage(page: AdminPage): React.ReactNode {
   if (page === 'users') return <OnlineUsersPage /> /* imported */
   if (page === 'live-control') return <LiveControlPage />
   if (page === 'videos') return <VideosPage />
-  if (page === 'highlights') return <VideoUploadUI onClose={() => {}} />
+  if (page === 'highlights') return <VideoUploadUI onClose={() => setActivePage('dashboard')} />
   if (page === 'reports') return <ReportsPage />
   if (page === 'categories') return <CategoriesPage />
   if (page === 'schedules') return <MatchSchedule />

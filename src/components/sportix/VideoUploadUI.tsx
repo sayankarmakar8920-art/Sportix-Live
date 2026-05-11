@@ -384,10 +384,17 @@ const VideoUploadUI = React.memo(function VideoUploadUI({ onClose }: VideoUpload
                       className="w-full p-3 pr-10 rounded-xl border text-sm text-white focus:outline-none appearance-none"
                       style={{ background: C.inputBg, borderColor: C.border }}
                     >
+                      <option>Football Highlights</option>
+                      <option>Cricket Specials</option>
+                      <option>NBA / Basketball</option>
+                      <option>Tennis Highlights</option>
+                      <option>Motorsports / F1</option>
                       <option>Travel & Nature</option>
-                      <option>Sports</option>
-                      <option>Gaming</option>
+                      <option>Sports News</option>
+                      <option>Gaming / eSports</option>
                       <option>Entertainment</option>
+                      <option>Full Match Replays</option>
+                      <option>Interviews</option>
                     </select>
                     <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: C.textDim }} />
                   </div>
@@ -401,9 +408,13 @@ const VideoUploadUI = React.memo(function VideoUploadUI({ onClose }: VideoUpload
                       className="w-full p-3 pr-10 rounded-xl border text-sm text-white focus:outline-none appearance-none"
                       style={{ background: C.inputBg, borderColor: C.border }}
                     >
-                      <option>1080p</option>
-                      <option>4K</option>
-                      <option>720p</option>
+                      <option>8K (Ultra HD)</option>
+                      <option>4K (UHD)</option>
+                      <option>1440p (QHD)</option>
+                      <option>1080p (FHD)</option>
+                      <option>720p (HD)</option>
+                      <option>480p (SD)</option>
+                      <option>360p (SD)</option>
                     </select>
                     <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: C.textDim }} />
                   </div>
