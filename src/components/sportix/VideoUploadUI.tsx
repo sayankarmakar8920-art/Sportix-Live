@@ -154,58 +154,6 @@ const VideoUploadUI = React.memo(function VideoUploadUI({ onClose }: VideoUpload
     setPreviewUrl(null)
   }
 
-  /* ──────────────────────── Custom Dropdown Component ──────────────────────── */
-  function CustomDropdown({ value, options, onChange, label }: { value: string; options: string[]; onChange: (v: string) => void; label: string }) {
-    const [isOpen, setIsOpen] = useState(false)
-    const dropdownRef = useRef<HTMLDivElement>(null)
-
-    useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) setIsOpen(false)
-      }
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [])
-
-    return (
-      <div className="space-y-1.5 relative" ref={dropdownRef}>
-        <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: C.textSec }}>{label}</label>
-        <button 
-          onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between p-3 rounded-xl border text-sm text-white transition-all hover:bg-white/[0.02]"
-          style={{ background: C.inputBg, borderColor: C.border }}
-        >
-          <span className="truncate">{value}</span>
-          <ChevronDown size={14} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} style={{ color: C.textDim }} />
-        </button>
-
-        {isOpen && (
-          <div 
-            className="absolute z-[110] left-0 right-0 mt-2 rounded-2xl border shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200"
-            style={{ background: '#111111', borderColor: C.border, backdropFilter: 'blur(10px)' }}
-          >
-            <div className="max-h-[240px] overflow-y-auto custom-scrollbar">
-              {options.map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => {
-                    onChange(opt)
-                    setIsOpen(false)
-                  }}
-                  className="w-full text-left px-4 py-3 text-xs font-medium transition-colors hover:bg-red-500/10 hover:text-red-500 flex items-center justify-between group"
-                  style={{ color: value === opt ? '#E50914' : 'rgba(255,255,255,0.7)' }}
-                >
-                  {opt}
-                  {value === opt && <div className="h-1.5 w-1.5 rounded-full bg-red-500" />}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  }
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm animate-fadeIn">
       <div 
@@ -572,3 +520,65 @@ const VideoUploadUI = React.memo(function VideoUploadUI({ onClose }: VideoUpload
 })
 
 export default VideoUploadUI
+
+/* ──────────────────────── Custom Dropdown Component ──────────────────────── */
+function CustomDropdown({ value, options, onChange, label }: { value: string; options: string[]; onChange: (v: string) => void; label: string }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  return (
+    <div className="space-y-1.5 relative" ref={dropdownRef}>
+      <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: C.textSec }}>{label}</label>
+      <button 
+        type="button"
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          setIsOpen(!isOpen)
+        }}
+        className="w-full flex items-center justify-between p-3 rounded-xl border text-sm text-white transition-all hover:bg-white/[0.02]"
+        style={{ background: C.inputBg, borderColor: C.border }}
+      >
+        <span className="truncate">{value}</span>
+        <ChevronDown size={14} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} style={{ color: C.textDim }} />
+      </button>
+
+      {isOpen && (
+        <div 
+          className="absolute z-[110] left-0 right-0 mt-2 rounded-2xl border shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200"
+          style={{ background: '#111111', borderColor: C.border, backdropFilter: 'blur(10px)' }}
+        >
+          <div className="max-h-[240px] overflow-y-auto custom-scrollbar">
+            {options.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onChange(opt)
+                  setIsOpen(false)
+                }}
+                className="w-full text-left px-4 py-3 text-xs font-medium transition-colors hover:bg-red-500/10 hover:text-red-500 flex items-center justify-between group"
+                style={{ color: value === opt ? '#E50914' : 'rgba(255,255,255,0.7)' }}
+              >
+                {opt}
+                {value === opt && <div className="h-1.5 w-1.5 rounded-full bg-red-500" />}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
