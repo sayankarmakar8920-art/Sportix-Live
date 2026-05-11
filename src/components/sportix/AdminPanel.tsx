@@ -4367,7 +4367,7 @@ function renderPage(page: AdminPage, setActivePage: (p: AdminPage) => void): Rea
   if (page === 'ads-manager') return <AdsManagerWrapper onNavigate={setActivePage} />
   if (page === 'create-ad') return <CreateNewAdSection setActivePage={setActivePage} />
   if (page === 'hero-ads') return <HeroFooterAdsManager />
-  if (page === 'video-ads') return <VideoAdsManager />
+  if (page === 'video-ads') return <VideoAdsManager onNavigate={setActivePage} />
   if (page === 'video-ads-analytics') return <VideoAdsAnalyticsPage onNavigate={setActivePage} />
   if (page === 'rtmp-config') return <RTMPConfigPage />
   return null
@@ -4389,6 +4389,40 @@ export default function AdminPanel() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [currentTime, setCurrentTime] = useState('')
   const [currentDate, setCurrentDate] = useState('')
+  
+  // ── ADMIN LOCK & REFRESH ──
+  const [clickCount, setClickCount] = useState(0)
+  const [isLocked, setIsLocked] = useState(false)
+  const lastClickTime = useRef(0)
+
+  const handleLogoClick = useCallback(() => {
+    const now = Date.now()
+    const diff = now - lastClickTime.current
+    
+    if (diff < 500) {
+      // Rapid clicking
+      const newCount = clickCount + 1
+      if (newCount >= 7) {
+        setIsLocked(prev => !prev)
+        setClickCount(0)
+      } else {
+        setClickCount(newCount)
+      }
+    } else {
+      // Single click - Fast Refresh Data (not full reload to preserve state)
+      // We can just trigger a re-fetch of the current page's data if it supports it
+      // or just do a silent refresh. For now, let's just toast or log
+      console.log('Fast Refresh triggered')
+      setClickCount(1)
+    }
+    lastClickTime.current = now
+  }, [clickCount])
+
+  // Reset click count after 1s of inactivity
+  useEffect(() => {
+    const timer = setTimeout(() => setClickCount(0), 1000)
+    return () => clearTimeout(timer)
+  }, [clickCount])
 
   useEffect(() => {
     const tick = () => {
@@ -4410,7 +4444,7 @@ export default function AdminPanel() {
         style={{ width: 280, background: C.sidebar, borderColor: C.border }}
       >
         {/* Logo */}
-        <div className="flex h-12 items-center gap-3 border-b px-4" style={{ borderColor: C.border }}>
+        <div className="flex h-12 items-center gap-3 border-b px-4 cursor-pointer" style={{ borderColor: C.border }} onClick={handleLogoClick}>
           <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: C.accent, boxShadow: `0 4px 16px ${C.accentGlow}` }}>
             <Activity className="h-4.5 w-4.5 text-white" />
           </div>
@@ -4536,17 +4570,40 @@ export default function AdminPanel() {
             <Clock className="h-3 w-3" style={{ color: C.textDim }} />
             {currentTime}
           </div>
+
+          {/* Fast Refresh Button */}
+          <button 
+            onClick={() => window.location.reload()} 
+            className="flex h-9 w-9 items-center justify-center rounded-xl border transition-all hover:bg-white/[0.05] hover:rotate-180 duration-500"
+            style={{ borderColor: C.border, color: C.textSec }}
+            title="Fast Refresh"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </button>
         </header>
 
         {/* ─── Page Content ─── */}
-        <main className="flex-1 p-2.5 sm:p-3 md:p-4 lg:p-5">
-          <Suspense fallback={
-            <div className="flex h-64 w-full items-center justify-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-[#E50914]" />
+        <main className="flex-1 p-2.5 sm:p-3 md:p-4 lg:p-5 relative">
+          {isLocked ? (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xl">
+              <div className="text-center p-8 rounded-3xl border border-white/10 bg-[#141414] shadow-2xl">
+                <Shield className="h-16 w-16 text-[#E50914] mx-auto mb-4 animate-pulse" />
+                <h2 className="text-2xl font-bold text-white mb-2">Admin Panel Locked</h2>
+                <p className="text-zinc-500 text-sm mb-6">Security lock active. Perform gesture to unlock.</p>
+                <div className="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
+                   <div className="h-full bg-[#E50914] animate-shimmer" style={{ width: '100%', backgroundSize: '200% 100%', backgroundImage: 'linear-gradient(90deg, #E50914 0%, #ff4d4d 50%, #E50914 100%)' }} />
+                </div>
+              </div>
             </div>
-          }>
-            {renderPage(activePage, setActivePage)}
-          </Suspense>
+          ) : (
+            <Suspense fallback={
+              <div className="flex h-64 w-full items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-[#E50914]" />
+              </div>
+            }>
+              {renderPage(activePage, setActivePage)}
+            </Suspense>
+          )}
         </main>
       </div>
     </div>

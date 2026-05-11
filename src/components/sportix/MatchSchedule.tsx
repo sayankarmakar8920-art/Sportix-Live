@@ -52,7 +52,7 @@ export default function MatchSchedule() {
     // Real-time subscription
     const channel = supabase
       .channel('match_updates')
-      .on('postgres_changes' as any, { event: '*', table: 'Match' }, () => {
+      .on('postgres_changes' as any, { event: '*', table: 'Stream' }, () => {
         fetchMatches()
       })
       .subscribe()

@@ -519,7 +519,19 @@ export default function VideosPage() {
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { fetchVideos() }, [fetchVideos])
+  useEffect(() => { 
+    fetchVideos() 
+    
+    // REAL-TIME SUBSCRIPTION
+    const channel = supabase
+      .channel('videos_realtime')
+      .on('postgres_changes' as any, { event: '*', table: 'Video' }, () => fetchVideos())
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [fetchVideos])
 
   /* Extract unique categories */
   const categories = useMemo(() => {

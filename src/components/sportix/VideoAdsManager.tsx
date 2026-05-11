@@ -540,7 +540,7 @@ function SvgDonutChart({ data, size = 180, innerR = 55, outerR = 80 }: {
 /* ═══════════════════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════ */
-export default function VideoAdsManager() {
+export default function VideoAdsManager({ onNavigate }: { onNavigate?: (p: any) => void }) {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState<string>('all')
@@ -1013,7 +1013,7 @@ export default function VideoAdsManager() {
             <Download className="h-3.5 w-3.5" /> Export Report
           </button>
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => onNavigate ? onNavigate('create-ad') : setShowCreateModal(true)}
             className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-white transition-all hover:brightness-110"
             style={{ background: C.accent, boxShadow: `0 4px 20px ${C.accentGlow}` }}
           >
