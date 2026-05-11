@@ -298,6 +298,17 @@ export default function HeroBannerAds() {
 
   useEffect(() => {
     fetchAds()
+
+    const channel = supabase
+      .channel('hero_banner_ads_realtime')
+      .on('postgres_changes' as any, { event: '*', table: 'Ad', filter: 'position=eq.hero' }, () => {
+        fetchAds()
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [fetchAds])
 
   // Re-fetch on resize (device change)

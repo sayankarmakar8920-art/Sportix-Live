@@ -393,6 +393,31 @@ export default function VideoAdsAnalyticsPage({ onNavigate }: { onNavigate?: (p:
     finally { setUploading(false); uploadCancelRef.current = null }
   }, [uploadTab])
 
+  const toggleAdStatus = useCallback(async (adId: string, currentStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('Ad')
+        .update({ isActive: currentStatus !== 'Active' })
+        .eq('id', adId)
+      if (error) throw error
+    } catch (err) {
+      console.error('Error toggling ad status:', err)
+    }
+  }, [])
+
+  const deleteAd = useCallback(async (adId: string) => {
+    if (!confirm('Are you sure you want to delete this ad?')) return
+    try {
+      const { error } = await supabase
+        .from('Ad')
+        .delete()
+        .eq('id', adId)
+      if (error) throw error
+    } catch (err) {
+      console.error('Error deleting ad:', err)
+    }
+  }, [])
+
   /* ── Filtered Ads ── */
   const filteredAds = useMemo(() => {
     return ads.filter(ad => {
@@ -933,10 +958,19 @@ export default function VideoAdsAnalyticsPage({ onNavigate }: { onNavigate?: (p:
                     </td>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-1.5">
-                        <button className="h-7 w-7 rounded-lg flex items-center justify-center transition-colors hover:bg-white/[0.06]" style={{ color: C.textSec }}>
-                          <Edit3 className="h-3.5 w-3.5" />
+                        <button 
+                          onClick={() => toggleAdStatus(ad.id, ad.status)}
+                          className="h-7 w-7 rounded-lg flex items-center justify-center transition-colors hover:bg-white/[0.06]" 
+                          style={{ color: ad.status === 'Active' ? C.green : C.orange }}
+                          title={ad.status === 'Active' ? 'Pause Ad' : 'Activate Ad'}
+                        >
+                          {ad.status === 'Active' ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
                         </button>
-                        <button className="h-7 w-7 rounded-lg flex items-center justify-center transition-colors hover:bg-white/[0.06]" style={{ color: C.textSec }}>
+                        <button 
+                          onClick={() => deleteAd(ad.id)}
+                          className="h-7 w-7 rounded-lg flex items-center justify-center transition-colors hover:bg-red-500/10" 
+                          style={{ color: C.accent }}
+                        >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>

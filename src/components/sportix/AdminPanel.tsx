@@ -1326,6 +1326,23 @@ function BannerAnalyticsPage() {
     }
   }, [])
 
+  const toggleBanner = useCallback(async (id: string, current: boolean) => {
+    try {
+      await supabase.from('Ad').update({ isActive: !current }).eq('id', id)
+    } catch (err) {
+      console.error('Error toggling banner:', err)
+    }
+  }, [])
+
+  const deleteBanner = useCallback(async (id: string) => {
+    if (!confirm('Delete this banner?')) return
+    try {
+      await supabase.from('Ad').delete().eq('id', id)
+    } catch (err) {
+      console.error('Error deleting banner:', err)
+    }
+  }, [])
+
   const calculateMetrics = (data: any[]) => {
     const totalImpressions = data.reduce((sum, b) => sum + (b.impressions || 0), 0)
     const totalClicks = data.reduce((sum, b) => sum + (b.clicks || 0), 0)
@@ -1428,7 +1445,7 @@ function BannerAnalyticsPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[600px]">
               <thead><tr className="border-b" style={{ borderColor: C.border }}>
-                {['#', 'Banner', 'Impressions', 'Clicks', 'CTR', 'Revenue'].map(h => <th key={h} className="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap" style={{ color: C.textDim }}>{h}</th>)}
+                {['#', 'Banner', 'Impressions', 'Clicks', 'CTR', 'Revenue', 'Actions'].map(h => <th key={h} className="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap" style={{ color: C.textDim }}>{h}</th>)}
               </tr></thead>
               <tbody>{banners.slice(0, 5).map((b, i) => (
                 <tr key={b.id} className="border-b transition-colors hover:bg-white/[0.02]" style={{ borderColor: C.border }}>
@@ -1438,6 +1455,16 @@ function BannerAnalyticsPage() {
                   <td className="py-2.5 text-[11px]">{formatNumber(b.clicks)}</td>
                   <td className="py-2.5 text-[11px] font-semibold" style={{ color: C.success }}>{b.impressions > 0 ? ((b.clicks/b.impressions)*100).toFixed(2) : '0.00'}%</td>
                   <td className="py-2.5 text-[11px] font-semibold" style={{ color: C.accent }}>₹{formatNumber(b.clicks * (b.cpc || 3.5))}</td>
+                  <td className="py-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => toggleBanner(b.id, b.isActive)} className="h-6 w-6 rounded-lg flex items-center justify-center transition-all hover:bg-white/[0.05]" style={{ color: b.isActive ? C.success : C.warning }}>
+                        {b.isActive ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                      </button>
+                      <button onClick={() => deleteBanner(b.id)} className="h-6 w-6 rounded-lg flex items-center justify-center transition-all hover:bg-red-500/10" style={{ color: C.accent }}>
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}</tbody>
             </table>

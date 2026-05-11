@@ -506,6 +506,31 @@ export default function HeroFooterAdsManager() {
     finally { setUploading(false); uploadCancelRef.current = null }
   }, [uploadedFile, createTab, adLink, adEnabled])
 
+  const toggleAdStatus = useCallback(async (adId: string, currentStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('Ad')
+        .update({ isActive: currentStatus !== 'Active' })
+        .eq('id', adId)
+      if (error) throw error
+    } catch (err) {
+      console.error('Error toggling ad status:', err)
+    }
+  }, [])
+
+  const deleteAd = useCallback(async (adId: string) => {
+    if (!confirm('Are you sure you want to delete this ad?')) return
+    try {
+      const { error } = await supabase
+        .from('Ad')
+        .delete()
+        .eq('id', adId)
+      if (error) throw error
+    } catch (err) {
+      console.error('Error deleting ad:', err)
+    }
+  }, [])
+
   const isVideoFile = uploadedFile?.type.startsWith('video/')
   const perPage = 8
 
@@ -927,9 +952,28 @@ export default function HeroFooterAdsManager() {
                         <td className="px-3 py-2.5 font-medium text-white whitespace-nowrap">{fmtCur(ad.revenue)}</td>
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-1">
-                            <button className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-white/[0.06]" style={{ color: C.textSec }}><Edit3 className="h-3.5 w-3.5" /></button>
-                            <button className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-white/[0.06]" style={{ color: C.textSec }}><Download className="h-3.5 w-3.5" /></button>
-                            <button className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-red-500/10" style={{ color: C.accent }}><Trash2 className="h-3.5 w-3.5" /></button>
+                            <button 
+                              onClick={() => { /* Implement edit modal logic if needed, or just redirect to create tab with data */ }}
+                              className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-white/[0.06]" 
+                              style={{ color: C.textSec }}
+                            >
+                              <Edit3 className="h-3.5 w-3.5" />
+                            </button>
+                            <button 
+                              onClick={() => toggleAdStatus(ad.id, ad.status)}
+                              className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-white/[0.06]" 
+                              style={{ color: ad.status === 'Active' ? C.success : C.warning }}
+                              title={ad.status === 'Active' ? 'Pause Ad' : 'Activate Ad'}
+                            >
+                              {ad.status === 'Active' ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                            </button>
+                            <button 
+                              onClick={() => deleteAd(ad.id)}
+                              className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-red-500/10" 
+                              style={{ color: C.accent }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         </td>
                       </tr>

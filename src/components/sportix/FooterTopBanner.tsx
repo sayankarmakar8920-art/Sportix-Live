@@ -90,6 +90,17 @@ export default function FooterTopBanner() {
 
   useEffect(() => {
     fetchAds()
+
+    const channel = supabase
+      .channel('footer_ads_realtime')
+      .on('postgres_changes' as any, { event: '*', table: 'Ad', filter: 'position=eq.footer' }, () => {
+        fetchAds()
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [fetchAds])
 
   // ── Auto-rotate every 12 seconds ──
