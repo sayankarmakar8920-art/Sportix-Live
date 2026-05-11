@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import {
   X, Video, Upload, CloudUpload, Trash2, Link as LinkIcon,
   Play, Pause, Volume2, Settings, Maximize, CheckCircle2,
-  AlertCircle, ShieldCheck, Clock, ChevronDown, Eraser,
+  AlertCircle, ShieldCheck, Clock, ChevronDown, RefreshCw,
   Image as ImageIcon
 } from 'lucide-react'
 
@@ -163,15 +163,15 @@ const VideoUploadUI = React.memo(function VideoUploadUI({ onClose }: VideoUpload
         {/* Header */}
         <div className="flex items-center justify-between p-6 pb-0">
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">Upload New Highlight</h1>
-            <p className="text-xs mt-1" style={{ color: C.textSec }}>Upload high-quality videos for the platform — processing is automatic</p>
+            <h1 className="text-2xl font-bold text-white tracking-tight">Upload Video</h1>
+            <p className="text-[11px] mt-1" style={{ color: C.textSec }}>Upload a video — preview is auto-generated</p>
           </div>
           <button 
             onClick={onClose}
             className="p-2 rounded-xl transition-colors hover:bg-white/5"
             style={{ color: C.textSec }}
           >
-            <X size={20} />
+            <X size={24} />
           </button>
         </div>
 
@@ -221,20 +221,18 @@ const VideoUploadUI = React.memo(function VideoUploadUI({ onClose }: VideoUpload
             {/* File Info Card */}
             {file && (
               <div 
-                className="flex items-center gap-4 p-4 rounded-2xl border transition-all animate-scaleIn"
-                style={{ background: 'rgba(70,211,105,0.05)', borderColor: 'rgba(70,211,105,0.2)' }}
+                className="flex items-center gap-4 p-3 rounded-2xl border"
+                style={{ background: 'rgba(255,255,255,0.02)', borderColor: C.border }}
               >
-                <div className="h-12 w-20 rounded-xl overflow-hidden bg-black/40 flex-shrink-0 border border-white/5">
+                <div className="h-10 w-16 rounded-lg overflow-hidden bg-white/5 flex-shrink-0">
                   {previewUrl && <video src={previewUrl} className="w-full h-full object-cover" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-white truncate">{file.name}</p>
-                  <p className="text-[10px] font-medium" style={{ color: C.textSec }}>
-                    {(file.size / (1024 * 1024)).toFixed(1)} MB • {file.type.split('/')[1].toUpperCase()} • Ready to Upload
-                  </p>
-                </div>
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#46d369]/20">
-                  <CheckCircle2 size={18} style={{ color: '#46d369' }} />
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-semibold text-white truncate">{file.name}</p>
+                    <CheckCircle2 size={14} style={{ color: C.success }} />
+                  </div>
+                  <p className="text-[10px]" style={{ color: C.textDim }}>1920 × 1080 • {(file.size / (1024 * 1024)).toFixed(1)} MB • {duration}</p>
                 </div>
               </div>
             )}
@@ -285,20 +283,22 @@ const VideoUploadUI = React.memo(function VideoUploadUI({ onClose }: VideoUpload
             </div>
 
             {/* Divider */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-white/5" />
-              <span className="text-[10px] font-bold" style={{ color: C.textDim }}>OR</span>
+              <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">OR</span>
               <div className="flex-1 h-px bg-white/5" />
             </div>
 
             {/* Paste URL */}
-            <button 
-              className="w-full flex items-center justify-center gap-2 p-3 rounded-2xl border text-xs font-semibold transition-all hover:bg-white/5"
-              style={{ background: C.glass, borderColor: C.border, color: 'rgba(255,255,255,0.7)' }}
-            >
-              <LinkIcon size={14} />
-              Paste video URL
-            </button>
+            <div className="flex justify-center">
+              <button 
+                className="flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl border text-xs font-semibold transition-all hover:bg-white/5"
+                style={{ background: 'transparent', borderColor: C.border, color: 'rgba(255,255,255,0.7)' }}
+              >
+                <LinkIcon size={14} />
+                Paste video URL
+              </button>
+            </div>
 
             {/* Thumbnail Selection */}
             <div className="space-y-3">
@@ -426,43 +426,45 @@ const VideoUploadUI = React.memo(function VideoUploadUI({ onClose }: VideoUpload
               </div>
 
               {/* Checkboxes */}
-              <div className="flex flex-wrap gap-4 pt-2">
-                {[
-                  { label: 'Featured', state: isFeatured, setter: setIsFeatured, color: C.accent },
-                  { label: 'Trending', state: isTrending, setter: setIsTrending, color: C.info },
-                  { label: 'Live Content', state: isLive, setter: setIsLive, color: C.success },
-                ].map((item) => (
-                  <button 
-                    key={item.label}
-                    onClick={() => item.setter(!item.state)}
-                    className="flex items-center gap-2.5 px-4 py-2 rounded-xl border transition-all hover:bg-white/[0.04]"
-                    style={{ 
-                      background: item.state ? `${item.color}15` : 'transparent',
-                      borderColor: item.state ? item.color : C.border,
-                      color: item.state ? '#ffffff' : C.textSec
-                    }}
-                  >
-                    <div className={`h-1.5 w-1.5 rounded-full ${item.state ? 'animate-pulse' : ''}`} style={{ background: item.state ? item.color : C.textDim }} />
-                    <span className="text-[11px] font-bold uppercase tracking-wider">{item.label}</span>
-                  </button>
-                ))}
+              <div className="flex items-center gap-8 pt-2">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <div className={`h-4 w-4 rounded border flex items-center justify-center transition-all ${isFeatured ? 'bg-red-500 border-red-500' : 'border-white/20 group-hover:border-white/40'}`}>
+                    {isFeatured && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                  </div>
+                  <input type="checkbox" className="hidden" checked={isFeatured} onChange={() => setIsFeatured(!isFeatured)} />
+                  <span className="text-[11px] font-medium text-white/50 group-hover:text-white transition-colors">Featured</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <div className={`h-4 w-4 rounded border flex items-center justify-center transition-all ${isTrending ? 'bg-red-500 border-red-500' : 'border-white/20 group-hover:border-white/40'}`}>
+                    {isTrending && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                  </div>
+                  <input type="checkbox" className="hidden" checked={isTrending} onChange={() => setIsTrending(!isTrending)} />
+                  <span className="text-[11px] font-medium text-white/50 group-hover:text-white transition-colors">Trending</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <div className={`h-4 w-4 rounded border flex items-center justify-center transition-all ${isLive ? 'bg-red-500 border-red-500' : 'border-white/20 group-hover:border-white/40'}`}>
+                    {isLive && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                  </div>
+                  <input type="checkbox" className="hidden" checked={isLive} onChange={() => setIsLive(!isLive)} />
+                  <span className="text-[11px] font-medium text-white/50 group-hover:text-white transition-colors">Live</span>
+                </label>
               </div>
 
               {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-4 pt-6">
+              <div className="flex items-center gap-4 pt-6">
                 <button 
                   onClick={clearForm}
                   disabled={isUploading}
-                  className="flex items-center justify-center gap-2 p-3 rounded-2xl border text-xs font-bold transition-all hover:bg-white/5 disabled:opacity-50"
-                  style={{ background: 'rgba(255,255,255,0.02)', borderColor: C.border, color: 'rgba(255,255,255,0.8)' }}
+                  className="flex items-center justify-center gap-2 px-8 py-3 rounded-xl border text-xs font-bold transition-all hover:bg-white/5 disabled:opacity-50"
+                  style={{ background: 'transparent', borderColor: C.border, color: 'white' }}
                 >
-                  <Eraser size={14} />
+                  <RefreshCw size={14} />
                   Clear
                 </button>
                 <button 
                   onClick={handleUpload}
                   disabled={isUploading || !file}
-                  className="flex items-center justify-center gap-2 p-3 rounded-2xl text-xs font-bold text-white shadow-lg shadow-red-500/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:grayscale"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold text-white shadow-lg shadow-red-500/20 active:scale-[0.98] transition-all disabled:opacity-50 disabled:grayscale"
                   style={{ background: C.accent }}
                 >
                   {isUploading ? (
