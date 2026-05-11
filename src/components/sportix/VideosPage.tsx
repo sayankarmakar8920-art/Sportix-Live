@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { uploadFile, type UploadProgress } from '@/lib/upload-utils'
 import { captureVideoThumbnail, getVideoDuration } from '@/lib/video-utils'
+import { supabase } from '@/lib/supabase'
 
 /* ═══════════════════════════════════════════════════════════════
    DESIGN TOKENS (matches AdminPanel)
