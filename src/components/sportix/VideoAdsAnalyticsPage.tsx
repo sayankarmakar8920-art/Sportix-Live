@@ -5,7 +5,7 @@ import {
   Calendar, Download, Plus, ChevronDown, Search, Filter,
   CloudUpload, Upload, FileVideo, Image as ImageIcon, Edit3, Trash2,
   Info, TrendingUp, LayoutDashboard, Eye, MousePointerClick, DollarSign,
-  Target, BarChart3, Play, Clock, ArrowUpRight, Monitor, Smartphone,
+  Target, BarChart3, Play, Pause, Clock, ArrowUpRight, Monitor, Smartphone,
   Tablet, Settings, MoreHorizontal, GripVertical, X, Check,
 } from 'lucide-react'
 import { uploadFile, getUploadStatusMessage, type UploadProgress } from '@/lib/upload-utils'
