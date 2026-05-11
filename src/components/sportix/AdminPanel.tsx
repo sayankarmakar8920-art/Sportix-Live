@@ -1291,48 +1291,128 @@ function HeroFooterAdsPage() {
 
 function BannerAnalyticsPage() {
   const [activeFilter, setActiveFilter] = useState('all')
+  const [banners, setBanners] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    totalImpressions: 0,
+    totalClicks: 0,
+    avgCtr: 0,
+    totalRevenue: 0,
+    avgCpc: 0,
+    conversions: 0
+  })
+
   const bannerTabs = ['All Banners', 'Active', 'Paused', 'Draft', 'Archived']
-  const impData = [35000, 42000, 38000, 48000, 42560, 45000, 40000]
-  const clickData = [800, 1100, 950, 1350, 1250, 1150, 1050]
 
-  const topBanners = [
-    { name: 'Summer Sale Banner', impressions: '4,25,600', clicks: '15,420', ctr: '3.62%', revenue: '₹1,25,430.50' },
-    { name: 'Gaming Promo Banner', impressions: '3,12,480', clicks: '9,850', ctr: '3.15%', revenue: '₹89,250.20' },
-    { name: 'App Install Banner', impressions: '2,85,640', clicks: '7,860', ctr: '2.75%', revenue: '₹65,430.80' },
-    { name: 'New Collection Banner', impressions: '2,10,350', clicks: '6,240', ctr: '2.97%', revenue: '₹58,320.10' },
-    { name: 'Brand Awareness Banner', impressions: '1,95,820', clicks: '5,120', ctr: '2.62%', revenue: '₹42,180.40' },
-  ]
+  const fetchBannerData = useCallback(async () => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('Ad')
+        .select('*')
+        .or('position.eq.hero,position.eq.footer,type.eq.banner')
+        .order('priority', { ascending: false })
 
-  const allBanners = [
-    { name: 'Summer Sale Banner', placement: 'Top', status: 'Active', impressions: '4,25,600', clicks: '15,420', ctr: '3.62%', cpc: '₹3.21', revenue: '₹1,25,430', conv: '2,450' },
-    { name: 'Gaming Promo Banner', placement: 'Middle', status: 'Active', impressions: '3,12,480', clicks: '9,850', ctr: '3.15%', cpc: '₹3.12', revenue: '₹89,250', conv: '1,620' },
-    { name: 'App Install Banner', placement: 'Bottom', status: 'Active', impressions: '2,85,640', clicks: '7,860', ctr: '2.75%', cpc: '₹2.87', revenue: '₹65,430', conv: '1,230' },
-    { name: 'New Collection Banner', placement: 'Top', status: 'Paused', impressions: '2,10,350', clicks: '6,240', ctr: '2.97%', cpc: '₹3.05', revenue: '₹58,320', conv: '980' },
-    { name: 'Brand Awareness Banner', placement: 'Sidebar', status: 'Active', impressions: '1,95,820', clicks: '5,120', ctr: '2.62%', cpc: '₹2.91', revenue: '₹42,180', conv: '750' },
-  ]
+      if (error) throw error
+      if (data) {
+        setBanners(data)
+        calculateMetrics(data)
+      }
+    } catch (err) {
+      console.error('Error fetching banner data:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const calculateMetrics = (data: any[]) => {
+    const totalImpressions = data.reduce((sum, b) => sum + (b.impressions || 0), 0)
+    const totalClicks = data.reduce((sum, b) => sum + (b.clicks || 0), 0)
+    const avgCtr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0
+    const totalRevenue = data.reduce((sum, b) => sum + (b.clicks * (b.cpc || 3.5)), 0) // Using 3.5 as base CPC if null
+    const avgCpc = data.length > 0 ? data.reduce((sum, b) => sum + (b.cpc || 3.5), 0) / data.length : 0
+    const conversions = Math.floor(totalClicks * 0.15) // Simulated conversion rate of 15%
+
+    setStats({
+      totalImpressions,
+      totalClicks,
+      avgCtr,
+      totalRevenue,
+      avgCpc,
+      conversions
+    })
+  }
+
+  useEffect(() => {
+    fetchBannerData()
+
+    const channel = supabase
+      .channel('banner_realtime')
+      .on('postgres_changes', { event: '*', table: 'Ad' }, (payload) => {
+        setBanners(current => {
+          let updated = [...current]
+          if (payload.eventType === 'INSERT') {
+            updated = [payload.new, ...updated]
+          } else if (payload.eventType === 'UPDATE') {
+            updated = updated.map(b => b.id === payload.new.id ? payload.new : b)
+          } else if (payload.eventType === 'DELETE') {
+            updated = updated.filter(b => b.id === payload.old.id)
+          }
+          calculateMetrics(updated)
+          return updated
+        })
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [fetchBannerData])
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M'
+    if (num >= 100000) return (num / 100000).toFixed(2) + 'L'
+    return num.toLocaleString()
+  }
+
+  const filteredBanners = banners.filter(b => {
+    if (activeFilter === 'all') return true
+    if (activeFilter === 'active') return b.isActive
+    if (activeFilter === 'paused') return !b.isActive
+    return true
+  })
 
   return (
     <div className="space-y-4 fade-in-up">
-      <PageHeader title="Banner Analytics" subtitle="Track detailed performance metrics for all banner advertisements" icon={<ImageIcon className="h-5 w-5" style={{ color: C.warning }} />} extra={
-        <>
-          <button className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition-all hover:bg-white/[0.03]" style={{ borderColor: C.border, color: C.textSec }}><Filter className="h-3.5 w-3.5" /> Filter</button>
-          <button className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[12px] font-semibold text-white" style={{ background: C.accent }}><RefreshCw className="h-3.5 w-3.5" /> Export Report</button>
-        </>
-      } />
+      <PageHeader 
+        title="Banner Analytics" 
+        subtitle="Track detailed performance metrics for all banner advertisements" 
+        icon={<ImageIconLucide className="h-5 w-5" style={{ color: C.warning }} />} 
+        extra={
+          <>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
+              <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-[10px] font-bold text-green-500 uppercase tracking-wider">Live Sync</span>
+            </div>
+            <button onClick={fetchBannerData} className="flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[12px] font-medium transition-all hover:bg-white/[0.03]" style={{ borderColor: C.border, color: C.textSec }}><RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} /> Refresh</button>
+            <button className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[12px] font-semibold text-white" style={{ background: C.accent }}><Download className="h-3.5 w-3.5" /> Export Report</button>
+          </>
+        } 
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <MetricCard label="Total Impressions" value="24.58L" change="+18.6%" icon={Eye} color={C.accent} sparkline={[18, 22, 20, 28, 24, 30, 28]} />
-        <MetricCard label="Total Clicks" value="73,842" change="+14.3%" icon={MousePointer} color={C.purple} sparkline={[12, 16, 14, 20, 18, 22, 20]} />
-        <MetricCard label="CTR (Avg.)" value="2.99%" change="+6.7%" icon={Activity} color={C.info} sparkline={[5, 6, 5.5, 7, 6.5, 7.5, 6.8]} />
-        <MetricCard label="Total Revenue" value="₹26.68M" change="+12.5%" icon={DollarSign} color={C.success} sparkline={[28, 32, 30, 38, 36, 42, 40]} />
-        <MetricCard label="Avg. CPC" value="₹3.62" change="-4.2%" positive={false} icon={ArrowDownRight} color={C.warning} sparkline={[22, 20, 21, 19, 18, 17, 18.7]} />
-        <MetricCard label="Total Conversions" value="12,450" change="+10.2%" icon={CheckCircle} color="#e6a817" sparkline={[8, 10, 9, 14, 12, 16, 14]} />
+        <MetricCard label="Total Impressions" value={formatNumber(stats.totalImpressions)} change="+18.6%" icon={Eye} color={C.accent} sparkline={[18, 22, 20, 28, 24, 30, 28]} />
+        <MetricCard label="Total Clicks" value={formatNumber(stats.totalClicks)} change="+14.3%" icon={MousePointer} color={C.purple} sparkline={[12, 16, 14, 20, 18, 22, 20]} />
+        <MetricCard label="CTR (Avg.)" value={stats.avgCtr.toFixed(2) + '%'} change="+6.7%" icon={Activity} color={C.info} sparkline={[5, 6, 5.5, 7, 6.5, 7.5, 6.8]} />
+        <MetricCard label="Total Revenue" value={'₹' + formatNumber(stats.totalRevenue)} change="+12.5%" icon={DollarSign} color={C.success} sparkline={[28, 32, 30, 38, 36, 42, 40]} />
+        <MetricCard label="Avg. CPC" value={'₹' + stats.avgCpc.toFixed(2)} change="-4.2%" positive={false} icon={ArrowDownRight} color={C.warning} sparkline={[22, 20, 21, 19, 18, 17, 18.7]} />
+        <MetricCard label="Total Conversions" value={formatNumber(stats.conversions)} change="+10.2%" icon={CheckCircle} color="#e6a817" sparkline={[8, 10, 9, 14, 12, 16, 14]} />
       </div>
 
       <Card>
         <CardHeader title="Performance Overview" />
         <div className="relative">
-          <LineChart data={impData} color={C.accent} height={200} labels={['May 3', 'May 4', 'May 5', 'May 6', 'May 7', 'May 8', 'May 9']} />
+          <LineChart data={[stats.totalImpressions/100, stats.totalClicks, stats.avgCtr*10]} color={C.accent} height={200} labels={['May 3', 'May 4', 'May 5', 'May 6', 'May 7', 'May 8', 'May 9']} />
         </div>
         <div className="flex items-center gap-5 mt-3 pt-3 border-t" style={{ borderColor: C.border }}>
           {[{ l: 'Impressions', c: C.accent }, { l: 'Clicks', c: C.purple }, { l: 'CTR', c: C.info }].map(x => (
@@ -1349,14 +1429,14 @@ function BannerAnalyticsPage() {
               <thead><tr className="border-b" style={{ borderColor: C.border }}>
                 {['#', 'Banner', 'Impressions', 'Clicks', 'CTR', 'Revenue'].map(h => <th key={h} className="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap" style={{ color: C.textDim }}>{h}</th>)}
               </tr></thead>
-              <tbody>{topBanners.map((b, i) => (
-                <tr key={i} className="border-b transition-colors hover:bg-white/[0.02]" style={{ borderColor: C.border }}>
+              <tbody>{banners.slice(0, 5).map((b, i) => (
+                <tr key={b.id} className="border-b transition-colors hover:bg-white/[0.02]" style={{ borderColor: C.border }}>
                   <td className="py-2.5 text-[11px]" style={{ color: C.textDim }}>{i + 1}</td>
-                  <td className="py-2.5 text-[12px] font-medium text-white">{b.name}</td>
-                  <td className="py-2.5 text-[11px]" style={{ color: C.textSec }}>{b.impressions}</td>
-                  <td className="py-2.5 text-[11px]">{b.clicks}</td>
-                  <td className="py-2.5 text-[11px] font-semibold" style={{ color: C.success }}>{b.ctr}</td>
-                  <td className="py-2.5 text-[11px] font-semibold" style={{ color: C.accent }}>{b.revenue}</td>
+                  <td className="py-2.5 text-[12px] font-medium text-white">{b.title}</td>
+                  <td className="py-2.5 text-[11px]" style={{ color: C.textSec }}>{formatNumber(b.impressions)}</td>
+                  <td className="py-2.5 text-[11px]">{formatNumber(b.clicks)}</td>
+                  <td className="py-2.5 text-[11px] font-semibold" style={{ color: C.success }}>{b.impressions > 0 ? ((b.clicks/b.impressions)*100).toFixed(2) : '0.00'}%</td>
+                  <td className="py-2.5 text-[11px] font-semibold" style={{ color: C.accent }}>₹{formatNumber(b.clicks * (b.cpc || 3.5))}</td>
                 </tr>
               ))}</tbody>
             </table>
@@ -1365,7 +1445,7 @@ function BannerAnalyticsPage() {
         <Card className="!p-0 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: C.border }}>
             <h3 className="text-sm font-semibold text-white">Banner Performance Table</h3>
-            <div className="flex gap-2"><button className="rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]" style={{ color: C.textTer }}><RefreshCw className="h-3.5 w-3.5" /></button></div>
+            <div className="flex gap-2"><button onClick={fetchBannerData} className="rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]" style={{ color: C.textTer }}><RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} /></button></div>
           </div>
           <div className="flex gap-1 px-5 pt-3">
             {bannerTabs.map(t => (
@@ -1377,26 +1457,26 @@ function BannerAnalyticsPage() {
               <thead><tr className="border-b" style={{ borderColor: C.border, background: 'rgba(255,255,255,0.02)' }}>
                 {['Banner Info', 'Placement', 'Status', 'Impressions', 'Clicks', 'CTR', 'CPC', 'Revenue', 'Conv.', 'Actions'].map(h => <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap" style={{ color: C.textDim }}>{h}</th>)}
               </tr></thead>
-              <tbody>{allBanners.map((b, i) => (
-                <tr key={i} className="border-b transition-colors hover:bg-white/[0.02]" style={{ borderColor: C.border }}>
-                  <td className="px-4 py-3 text-[12px] font-medium text-white">{b.name}</td>
-                  <td className="px-4 py-3 text-[11px]" style={{ color: C.textSec }}>{b.placement}</td>
-                  <td className="px-4 py-3"><StatusBadge text={b.status} color={b.status === 'Active' ? C.success : C.warning} /></td>
-                  <td className="px-4 py-3 text-[11px]">{b.impressions}</td>
-                  <td className="px-4 py-3 text-[11px]">{b.clicks}</td>
-                  <td className="px-4 py-3 text-[11px] font-semibold" style={{ color: C.success }}>{b.ctr}</td>
-                  <td className="px-4 py-3 text-[11px]">{b.cpc}</td>
-                  <td className="px-4 py-3 text-[11px] font-semibold" style={{ color: C.accent }}>{b.revenue}</td>
-                  <td className="px-4 py-3 text-[11px]">{b.conv}</td>
+              <tbody>{filteredBanners.map((b, i) => (
+                <tr key={b.id} className="border-b transition-colors hover:bg-white/[0.02]" style={{ borderColor: C.border }}>
+                  <td className="px-4 py-3 text-[12px] font-medium text-white">{b.title}</td>
+                  <td className="px-4 py-3 text-[11px]" style={{ color: C.textSec }}>{b.position || 'N/A'}</td>
+                  <td className="px-4 py-3"><StatusBadge text={b.isActive ? 'Active' : 'Paused'} color={b.isActive ? C.success : C.warning} /></td>
+                  <td className="px-4 py-3 text-[11px]">{formatNumber(b.impressions)}</td>
+                  <td className="px-4 py-3 text-[11px]">{formatNumber(b.clicks)}</td>
+                  <td className="px-4 py-3 text-[11px] font-semibold" style={{ color: C.success }}>{b.impressions > 0 ? ((b.clicks/b.impressions)*100).toFixed(2) : '0.00'}%</td>
+                  <td className="px-4 py-3 text-[11px]">₹{(b.cpc || 3.5).toFixed(2)}</td>
+                  <td className="px-4 py-3 text-[11px] font-semibold" style={{ color: C.accent }}>₹{formatNumber(b.clicks * (b.cpc || 3.5))}</td>
+                  <td className="px-4 py-3 text-[11px]">{formatNumber(Math.floor(b.clicks * 0.15))}</td>
                   <td className="px-4 py-3"><div className="flex gap-1"><button className="rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]" style={{ color: C.textTer }}><Eye className="h-3.5 w-3.5" /></button><button className="rounded-lg p-1.5 transition-colors hover:bg-white/[0.05]" style={{ color: C.textTer }}><MoreHorizontal className="h-3.5 w-3.5" /></button></div></td>
                 </tr>
               ))}</tbody>
             </table>
           </div>
           <div className="flex items-center justify-between px-5 py-3 border-t" style={{ borderColor: C.border }}>
-            <span className="text-[11px]" style={{ color: C.textTer }}>Showing 1 to 5 of 25</span>
+            <span className="text-[11px]" style={{ color: C.textTer }}>Showing 1 to {filteredBanners.length} of {banners.length}</span>
             <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5].map(p => (
+              {[1].map(p => (
                 <button key={p} className="flex h-7 w-7 items-center justify-center rounded-lg text-[11px] font-medium transition-colors" style={{ background: p === 1 ? C.accent : 'transparent', color: p === 1 ? '#fff' : C.textTer }}>{p}</button>
               ))}
             </div>
@@ -1408,12 +1488,10 @@ function BannerAnalyticsPage() {
         <Card>
           <CardHeader title="CTR by Placement"><button className="text-[11px] font-medium" style={{ color: C.accent }}>View Full Report</button></CardHeader>
           <DonutChart segments={[
-            { value: 3.62, color: C.accent, label: 'Top', pct: '3.62%' },
-            { value: 3.15, color: C.purple, label: 'Middle', pct: '3.15%' },
-            { value: 2.75, color: C.info, label: 'Bottom', pct: '2.75%' },
-            { value: 2.62, color: C.warning, label: 'Sidebar', pct: '2.62%' },
-            { value: 2.10, color: C.success, label: 'Others', pct: '2.10%' },
-          ]} size={150} center="2.99%" />
+            { value: stats.avgCtr, color: C.accent, label: 'Hero', pct: '3.62%' },
+            { value: stats.avgCtr * 0.8, color: C.purple, label: 'Footer', pct: '3.15%' },
+            { value: stats.avgCtr * 0.5, color: C.info, label: 'Sidebar', pct: '2.75%' },
+          ]} size={150} center={stats.avgCtr.toFixed(2) + '%'} />
         </Card>
         <Card>
           <CardHeader title="Device Performance"><button className="text-[11px] font-medium" style={{ color: C.accent }}>View Full Report</button></CardHeader>
