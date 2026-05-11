@@ -348,6 +348,7 @@ export default function VideoAdsAnalyticsPage({ onNavigate }: { onNavigate?: (p:
 
   useEffect(() => {
     fetchData()
+    const interval = setInterval(fetchData, 5000)
     
     // Subscribe to real-time changes in the Ad table
     const channel = supabase
@@ -358,6 +359,7 @@ export default function VideoAdsAnalyticsPage({ onNavigate }: { onNavigate?: (p:
       .subscribe()
 
     return () => {
+      clearInterval(interval)
       supabase.removeChannel(channel)
     }
   }, [fetchData])
@@ -395,26 +397,30 @@ export default function VideoAdsAnalyticsPage({ onNavigate }: { onNavigate?: (p:
 
   const toggleAdStatus = useCallback(async (adId: string, currentStatus: string) => {
     try {
-      const { error } = await supabase
-        .from('Ad')
-        .update({ isActive: currentStatus !== 'Active' })
-        .eq('id', adId)
-      if (error) throw error
+      const res = await fetch('/api/ads', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: adId, isActive: currentStatus !== 'Active' }),
+      })
+      if (!res.ok) throw new Error('Failed to update status')
     } catch (err) {
       console.error('Error toggling ad status:', err)
+      alert('Failed to update status')
     }
   }, [])
 
   const deleteAd = useCallback(async (adId: string) => {
     if (!confirm('Are you sure you want to delete this ad?')) return
     try {
-      const { error } = await supabase
-        .from('Ad')
-        .delete()
-        .eq('id', adId)
-      if (error) throw error
+      const res = await fetch('/api/ads', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: adId }),
+      })
+      if (!res.ok) throw new Error('Failed to delete ad')
     } catch (err) {
       console.error('Error deleting ad:', err)
+      alert('Failed to delete ad')
     }
   }, [])
 

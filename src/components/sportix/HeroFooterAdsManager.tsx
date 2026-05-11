@@ -443,6 +443,7 @@ export default function HeroFooterAdsManager() {
 
   useEffect(() => {
     fetchAds()
+    const interval = setInterval(fetchAds, 5000)
 
     const channel = supabase
       .channel('hero_footer_ads')
@@ -450,6 +451,7 @@ export default function HeroFooterAdsManager() {
       .subscribe()
 
     return () => {
+      clearInterval(interval)
       supabase.removeChannel(channel)
     }
   }, [fetchAds])
@@ -508,26 +510,32 @@ export default function HeroFooterAdsManager() {
 
   const toggleAdStatus = useCallback(async (adId: string, currentStatus: string) => {
     try {
-      const { error } = await supabase
-        .from('Ad')
-        .update({ isActive: currentStatus !== 'Active' })
-        .eq('id', adId)
-      if (error) throw error
+      const res = await fetch('/api/ads', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: adId, isActive: currentStatus !== 'Active' }),
+      })
+      if (!res.ok) throw new Error('Failed to update status')
+      // fetchAds will be called by realtime listener
     } catch (err) {
       console.error('Error toggling ad status:', err)
+      alert('Failed to update status')
     }
   }, [])
 
   const deleteAd = useCallback(async (adId: string) => {
     if (!confirm('Are you sure you want to delete this ad?')) return
     try {
-      const { error } = await supabase
-        .from('Ad')
-        .delete()
-        .eq('id', adId)
-      if (error) throw error
+      const res = await fetch('/api/ads', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: adId }),
+      })
+      if (!res.ok) throw new Error('Failed to delete ad')
+      // fetchAds will be called by realtime listener
     } catch (err) {
       console.error('Error deleting ad:', err)
+      alert('Failed to delete ad')
     }
   }, [])
 

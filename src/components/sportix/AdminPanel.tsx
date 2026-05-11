@@ -1328,18 +1328,30 @@ function BannerAnalyticsPage() {
 
   const toggleBanner = useCallback(async (id: string, current: boolean) => {
     try {
-      await supabase.from('Ad').update({ isActive: !current }).eq('id', id)
+      const res = await fetch('/api/ads', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, isActive: !current }),
+      })
+      if (!res.ok) throw new Error('Update failed')
     } catch (err) {
       console.error('Error toggling banner:', err)
+      alert('Failed to update banner')
     }
   }, [])
 
   const deleteBanner = useCallback(async (id: string) => {
     if (!confirm('Delete this banner?')) return
     try {
-      await supabase.from('Ad').delete().eq('id', id)
+      const res = await fetch('/api/ads', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      if (!res.ok) throw new Error('Delete failed')
     } catch (err) {
       console.error('Error deleting banner:', err)
+      alert('Failed to delete banner')
     }
   }, [])
 
@@ -1363,6 +1375,7 @@ function BannerAnalyticsPage() {
 
   useEffect(() => {
     fetchBannerData()
+    const interval = setInterval(fetchBannerData, 5000)
 
     const channel = supabase
       .channel('banner_realtime')
@@ -1374,7 +1387,7 @@ function BannerAnalyticsPage() {
           } else if (payload.eventType === 'UPDATE') {
             updated = updated.map(b => b.id === payload.new.id ? payload.new : b)
           } else if (payload.eventType === 'DELETE') {
-            updated = updated.filter(b => b.id === payload.old.id)
+            updated = updated.filter(b => b.id !== payload.old.id)
           }
           calculateMetrics(updated)
           return updated
@@ -1383,6 +1396,7 @@ function BannerAnalyticsPage() {
       .subscribe()
 
     return () => {
+      clearInterval(interval)
       supabase.removeChannel(channel)
     }
   }, [fetchBannerData])

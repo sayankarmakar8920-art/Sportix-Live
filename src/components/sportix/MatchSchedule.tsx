@@ -44,23 +44,20 @@ export default function MatchSchedule() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchMatches()
-
-    // Real-time subscription
+    const interval = setInterval(fetchMatches, 5000)
     const channel = supabase
       .channel('match_updates')
-      .on('postgres_changes' as any, { event: '*', table: 'Stream' }, () => {
-        fetchMatches()
-      })
+      .on('postgres_changes' as any, { event: '*', table: 'Stream' }, () => fetchMatches())
       .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
+    return () => { 
+      clearInterval(interval)
+      supabase.removeChannel(channel) 
     }
-  }, [])
+  }, [fetchMatches])
 
   const filteredMatches = matches.filter(m => {
     if (filter === 'all') return true

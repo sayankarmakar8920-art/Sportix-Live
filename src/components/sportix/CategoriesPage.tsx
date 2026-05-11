@@ -65,17 +65,16 @@ export default function CategoriesPage() {
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { 
-    fetchCategories() 
-
-    // REAL-TIME SUBSCRIPTION
+  useEffect(() => {
+    fetchCategories()
+    const interval = setInterval(fetchCategories, 5000)
     const channel = supabase
-      .channel('categories_realtime')
+      .channel('categories_updates')
       .on('postgres_changes' as any, { event: '*', table: 'Category' }, () => fetchCategories())
       .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
+    return () => { 
+      clearInterval(interval)
+      supabase.removeChannel(channel) 
     }
   }, [fetchCategories])
 

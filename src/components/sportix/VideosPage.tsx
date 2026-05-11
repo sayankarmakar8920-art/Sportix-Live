@@ -520,17 +520,16 @@ export default function VideosPage() {
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { 
-    fetchVideos() 
-    
-    // REAL-TIME SUBSCRIPTION
+  useEffect(() => {
+    fetchVideos()
+    const interval = setInterval(fetchVideos, 5000)
     const channel = supabase
-      .channel('videos_realtime')
+      .channel('videos_updates')
       .on('postgres_changes' as any, { event: '*', table: 'Video' }, () => fetchVideos())
       .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
+    return () => { 
+      clearInterval(interval)
+      supabase.removeChannel(channel) 
     }
   }, [fetchVideos])
 

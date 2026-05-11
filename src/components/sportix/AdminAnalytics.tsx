@@ -62,7 +62,7 @@ const AdminAnalytics = React.memo(function AdminAnalytics() {
 
   useEffect(() => {
     fetchAnalytics()
-    const interval = setInterval(fetchAnalytics, 30000)
+    const interval = setInterval(fetchAnalytics, 5000)
 
     const channel = supabase
       .channel('analytics_realtime_full')
