@@ -1,7 +1,7 @@
 'use client'
 
 import { supabase } from '@/lib/supabase'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Search, Bell, Plus, MoreHorizontal, ChevronDown,
   DollarSign, Users, Video, Clock, CheckCircle, Megaphone,
@@ -37,14 +37,17 @@ const C = {
    ═══════════════════════════════════════════════════════════════ */
 
 function Sparkline({ data, color, width = 100, height = 36 }: { data: number[]; color: string; width?: number; height?: number }) {
-  const max = Math.max(...data)
-  const min = Math.min(...data)
+  if (!data || data.length === 0) return null
+  const max = Math.max(...data, 1)
+  const min = Math.min(...data, 0)
   const range = max - min || 1
-  const points = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * width
-    const y = height - ((v - min) / range) * (height - 4) - 2
-    return `${x},${y}`
-  }).join(' ')
+  const points = data.length > 1 
+    ? data.map((v, i) => {
+        const x = (i / (data.length - 1)) * width
+        const y = height - ((v - min) / range) * (height - 4) - 2
+        return `${x},${y}`
+      }).join(' ')
+    : `${width / 2},${height / 2}`
 
   const areaPoints = `0,${height} ${points} ${width},${height}`
 
@@ -90,26 +93,36 @@ function DualLineChart({
     return () => ro.disconnect()
   }, [])
 
-  const allData = [...series1, ...series2]
-  const max = Math.max(...allData) * 1.15
+  const s1 = series1 || []
+  const s2 = series2 || []
+  const allData = [...s1, ...s2]
+  const max = allData.length > 0 ? Math.max(...allData) * 1.15 : 100
   const min = 0
   const range = max - min || 1
 
-  const makePoints = (data: number[]) =>
-    data.map((v, i) => {
+  const makePoints = (data: number[]) => {
+    if (data.length === 0) return []
+    if (data.length === 1) return [{ x: padding.left + chartW / 2, y: padding.top + chartH / 2 }]
+    return data.map((v, i) => {
       const x = padding.left + (i / (data.length - 1)) * chartW
       const y = padding.top + chartH - ((v - min) / range) * chartH
       return { x, y }
     })
+  }
 
   const pts1 = makePoints(series1)
   const pts2 = makePoints(series2)
 
-  const toPath = (pts: { x: number; y: number }[]) =>
-    pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
+  const toPath = (pts: { x: number; y: number }[]) => {
+    if (pts.length === 0) return ''
+    return pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
+  }
 
-  const toArea = (pts: { x: number; y: number }[]) =>
-    `${toPath(pts)} L${pts[pts.length - 1].x},${padding.top + chartH} L${pts[0].x},${padding.top + chartH} Z`
+  const toArea = (pts: { x: number; y: number }[]) => {
+    if (pts.length === 0) return ''
+    const path = toPath(pts)
+    return `${path} L${pts[pts.length - 1].x},${padding.top + chartH} L${pts[0].x},${padding.top + chartH} Z`
+  }
 
   const gridLines = 5
   const gridY = Array.from({ length: gridLines }, (_, i) =>
@@ -185,7 +198,7 @@ function DonutChart({ segments, size = 160, strokeWidth = 22 }: {
   segments: { value: number; color: string; label: string; pct: string }[]
   size?: number; strokeWidth?: number
 }) {
-  const total = segments.reduce((a, s) => a + s.value, 0)
+  const total = segments.reduce((a, s) => a + s.value, 0) || 1
   const r = (size - strokeWidth) / 2
   const circ = 2 * Math.PI * r
   const offsets: number[] = []

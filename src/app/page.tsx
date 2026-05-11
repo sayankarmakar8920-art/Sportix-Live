@@ -853,7 +853,7 @@ function AdminLoginDialog() {
    ═══════════════════════════════════════════════════════════════════ */
 
 export default function Home() {
-  const { currentView, favorites, myList, toggleFavorite, toggleMyList, settings, updateSettings } = useAppStore()
+  const { currentView, favorites, myList, toggleFavorite, toggleMyList, settings, updateSettings, showAdminLogin } = useAppStore()
   const session = useRef<any>(null).current
 
   const [streams, setStreams] = useState<StreamData[]>([])
@@ -1005,9 +1005,11 @@ export default function Home() {
   // ── Admin Panel: lazy loaded ──
   if (currentView === 'admin' || currentView === 'live-control-room') {
     return (
-      <Suspense fallback={<AdminLoadingFallback />}>
-        {currentView === 'admin' ? <AdminPanel /> : <LiveControlRoom />}
-      </Suspense>
+      <ErrorBoundary>
+        <Suspense fallback={<AdminLoadingFallback />}>
+          {currentView === 'admin' ? <AdminPanel /> : <LiveControlRoom />}
+        </Suspense>
+      </ErrorBoundary>
     )
   }
 
@@ -1249,7 +1251,10 @@ export default function Home() {
         </footer>
 
         <BottomNav />
-        <AdminLoginDialog />
+        {/* ── Admin Login Dialog ── */}
+        <ErrorBoundary>
+          {showAdminLogin && <AdminLoginDialog />}
+        </ErrorBoundary>
       </div>
       </ErrorBoundary>
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
 import { useAppStore } from '@/lib/store'
 import { io as socketIo } from 'socket.io-client'
 import { uploadFile, getUploadStatusMessage, type UploadProgress } from '@/lib/upload-utils'
@@ -91,7 +91,6 @@ const ReplaysPage = lazy(() => import('./ReplaysPage'))
 const ReportsPage = lazy(() => import('./ReportsPage'))
 const HeroFooterAdsManager = lazy(() => import('./HeroFooterAdsManager'))
 const VideoAdsAnalyticsPage = lazy(() => import('./VideoAdsAnalyticsPage'))
-import { Suspense } from 'react'
 import AdminAnalytics from './AdminAnalytics'
 import VideoUploadUI from './VideoUploadUI'
 
@@ -4265,6 +4264,7 @@ function SchedulesPage() {
    ═══════════════════════════════════════════════════ */
 
 function renderPage(page: AdminPage): React.ReactNode {
+  console.log('AdminPanel: Rendering page ->', page)
   if (page === 'dashboard') return <DashboardPage />
   if (page === 'live-monitor') return <LiveMonitorPage />
   if (page === 'analytics') return <AdminAnalytics />
@@ -4298,6 +4298,11 @@ function renderPage(page: AdminPage): React.ReactNode {
    ═══════════════════════════════════════════════════════════════ */
 
 export default function AdminPanel() {
+  useEffect(() => {
+    console.log('AdminPanel: Component mounted')
+    return () => console.log('AdminPanel: Component unmounted')
+  }, [])
+
   const { setCurrentView } = useAppStore()
   const [activePage, setActivePage] = useState<AdminPage>('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(false)

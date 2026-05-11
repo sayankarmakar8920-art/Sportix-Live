@@ -154,7 +154,7 @@ export default function MatchSchedule() {
                   <div className="flex items-center gap-1.5">
                     <Clock className="h-3.5 w-3.5 text-white/20" />
                     <span className="text-[11px] font-medium text-white/40">
-                      {new Date(match.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {match.startTime ? new Date(match.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
