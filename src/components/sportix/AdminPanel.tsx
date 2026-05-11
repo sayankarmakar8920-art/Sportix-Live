@@ -100,7 +100,7 @@ import { supabase } from '@/lib/supabase'
    ═══════════════════════════════════════════════════════════════ */
 
 const C = {
-  bg: '#141414',
+  bg: '#0a0a0a',
   sidebar: '#181818',
   card: '#1a1a1a',
   cardHover: '#222222',

@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAppStore } from '@/lib/store'
-import { ArrowLeft, Settings, Maximize, Volume2, VolumeX, Users, Radio } from 'lucide-react'
+import { ArrowLeft, Settings, Maximize, Volume2, VolumeX, Users, Radio, X } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 import LiveChat from './LiveChat'
 import InPlayerAd from './InPlayerAd'
 import { useVideoAds } from '@/lib/useVideoAds'
 
-const QUALITY_OPTIONS = ['Auto', '1080p', '720p', '480p', '360p']
+const QUALITY_OPTIONS = ['Auto', '4K', '2K', '1080p', '720p', '480p', '360p']
 const VIDEO_DURATION = 5400 // 90 min simulated
 
 export default function VideoPlayer() {
@@ -112,9 +112,20 @@ export default function VideoPlayer() {
             {adPhase === 'pre-roll' ? 'Ad' : adPhase === 'mid-roll' ? 'Ad Break' : 'Sponsored'}
           </span>
         )}
-        <div className="flex items-center gap-1.5 text-xs text-white/40">
-          <Users className="h-3.5 w-3.5" />
-          {formatViewers(viewerCount)}
+        <div className="flex items-center gap-3 text-xs text-white/40">
+          <div className="flex items-center gap-1.5">
+            <Users className="h-3.5 w-3.5" />
+            {formatViewers(viewerCount)}
+          </div>
+          <button
+            onClick={() => {
+              setCurrentView('home')
+              setSelectedStream(null)
+            }}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-white/40 transition-all hover:bg-white/5 hover:text-white touch-active"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
       </header>
 

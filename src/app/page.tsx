@@ -865,48 +865,27 @@ export default function Home() {
 
   const loadData = useCallback(async () => {
     try {
-      const [streamsRes, videosRes] = await Promise.all([
-        fetch('/api/streams', { signal: AbortSignal.timeout(5000) }).catch(() => null),
-        fetch('/api/videos', { signal: AbortSignal.timeout(5000) }).catch(() => null),
+      const [streamsResult, videosResult] = await Promise.all([
+        supabase.from('Stream').select('*').order('isFeatured', { ascending: false }).order('createdAt', { ascending: false }),
+        supabase.from('Video').select('*').order('isFeatured', { ascending: false }).order('createdAt', { ascending: false }),
       ])
-      // Safely parse streams — skip if response is not valid JSON
-      if (streamsRes && streamsRes.ok) {
-        try {
-          const ct = streamsRes.headers.get('content-type') || ''
-          if (ct.includes('application/json')) {
-            const streamsData = await streamsRes.json()
-            if (Array.isArray(streamsData)) setStreams(streamsData)
-          }
-        } catch { /* skip bad response */ }
-      }
-      // Safely parse videos
-      if (videosRes && videosRes.ok) {
-        try {
-          const ct = videosRes.headers.get('content-type') || ''
-          if (ct.includes('application/json')) {
-            const videosData = await videosRes.json()
-            if (Array.isArray(videosData)) setVideos(videosData)
-          }
-        } catch { /* skip bad response */ }
-      }
 
-      // Load continue watching from localStorage (client-only)
-      try {
-        const saved = localStorage.getItem('sportix-continue')
-        if (saved) {
-          setContinueWatching(JSON.parse(saved))
-        } else {
-          setContinueWatching([
-            { id: 'cw1', videoId: 'cw1', title: 'Man City Road to UCL Final', thumbnail: '/thumbnails/ucl-semi.png', duration: 1200, progress: 0.65, watchedAt: new Date().toISOString() },
-            { id: 'cw2', videoId: 'cw2', title: 'NBA Playoffs Game 3 Highlights', thumbnail: '/thumbnails/nba-playoffs.png', duration: 900, progress: 0.32, watchedAt: new Date().toISOString() },
-            { id: 'cw3', videoId: 'cw3', title: 'Premier League Review Show', thumbnail: '/thumbnails/epl-goals.png', duration: 2700, progress: 0.88, watchedAt: new Date().toISOString() },
-          ])
-        }
-      } catch { /* localStorage not available */ }
-    } catch {
-      // Silent fail — data will remain empty, UI shows empty states
-    } finally {
-      setLoading(false)
+      if (streamsResult.data) setStreams(streamsResult.data as any)
+      if (videosResult.data) setVideos(videosResult.data as any)
+
+      // Fast-load continue watching
+      const saved = localStorage.getItem('sportix-continue')
+      if (saved) {
+        setContinueWatching(JSON.parse(saved))
+      } else {
+        setContinueWatching([
+          { id: 'cw1', videoId: 'cw1', title: 'Man City Road to UCL Final', thumbnail: '/thumbnails/ucl-semi.png', duration: 1200, progress: 0.65, watchedAt: new Date().toISOString() },
+          { id: 'cw2', videoId: 'cw2', title: 'NBA Playoffs Game 3 Highlights', thumbnail: '/thumbnails/nba-playoffs.png', duration: 900, progress: 0.32, watchedAt: new Date().toISOString() },
+          { id: 'cw3', videoId: 'cw3', title: 'Premier League Review Show', thumbnail: '/thumbnails/epl-goals.png', duration: 2700, progress: 0.88, watchedAt: new Date().toISOString() },
+        ])
+      }
+    } catch (err) {
+      console.error('Speed-load failed:', err)
     }
   }, [])
 
@@ -997,6 +976,48 @@ export default function Home() {
       if (socket) {
         try { socket.disconnect() } catch (e) { /* ignore */ }
       }
+    }
+  }, [])
+
+  // ── Real-time Supabase Subscriptions ──
+  useEffect(() => {
+    const videoChannel = supabase
+      .channel('video-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'Video' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setVideos(prev => [payload.new as VideoData, ...prev])
+          } else if (payload.eventType === 'UPDATE') {
+            setVideos(prev => prev.map(v => v.id === payload.new.id ? { ...v, ...payload.new } : v))
+          } else if (payload.eventType === 'DELETE') {
+            setVideos(prev => prev.filter(v => v.id === payload.old.id))
+          }
+        }
+      )
+      .subscribe()
+
+    const streamChannel = supabase
+      .channel('stream-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'Stream' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setStreams(prev => [payload.new as StreamData, ...prev])
+          } else if (payload.eventType === 'UPDATE') {
+            setStreams(prev => prev.map(s => s.id === payload.new.id ? { ...s, ...payload.new } : s))
+          } else if (payload.eventType === 'DELETE') {
+            setStreams(prev => prev.filter(s => s.id === payload.old.id))
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(videoChannel)
+      supabase.removeChannel(streamChannel)
     }
   }, [])
 
