@@ -274,39 +274,115 @@ const DashboardPage = React.memo(function DashboardPage() {
     { label: 'Ad Revenue', value: 0, prefix: '₹', suffix: '', change: 0, icon: Megaphone, color: C.accent, sparkData: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
   ])
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await fetch('/api/admin/dashboard')
-        if (!res.ok) throw new Error('Failed to fetch dashboard stats')
-        const json = await res.json()
-        if (json.success && json.data) {
-          const d = json.data.overview
-          setKpis([
-            { label: 'Total Revenue', value: d.totalRevenue, prefix: '₹', suffix: '', change: 12.5, icon: DollarSign, color: C.accent, sparkData: [45, 52, 48, 61, 55, 67, 72, 68, 75, 82] },
-            { label: 'Total Users', value: d.totalUsers, prefix: '', suffix: '', change: 8.2, icon: Users, color: C.purple, sparkData: [2100, 2400, 2200, 2800, 2600, 3100, 2900, 3400, 3200, 3800] },
-            { label: 'Total Videos', value: d.totalVideos, prefix: '', suffix: '', change: 4.3, icon: Video, color: C.blue, sparkData: [450, 480, 460, 510, 490, 540, 520, 570, 550, 600] },
-            { label: 'Watch Time', value: d.watchTime, prefix: '', suffix: 'h', change: 15.1, icon: Clock, color: C.orange, sparkData: [1200, 1400, 1300, 1600, 1500, 1800, 1700, 2000, 1900, 2200] },
-            { label: 'Subscriptions', value: Math.floor(d.totalUsers * 0.12), prefix: '', suffix: '', change: 9.7, icon: CheckCircle, color: C.green, sparkData: [120, 140, 130, 160, 150, 180, 170, 200, 190, 220] },
-            { label: 'Ad Revenue', value: d.adRevenue, prefix: '₹', suffix: '', change: 18.4, icon: Megaphone, color: C.accent, sparkData: [25, 32, 28, 41, 35, 47, 42, 51, 45, 58] },
-          ])
-          
-          // Update recent activities if needed
-          if (json.data.recentActivity) {
-            // We could map these to the activity list if we wanted to replace the mock activities
-          }
-        }
-      } catch (err) {
-        console.error('Stats fetch error:', err)
-      }
-    }
+  const [revenueOverview, setRevenueOverview] = useState({
+    total: '₹0',
+    change: '0%',
+    series1: [0, 0, 0, 0, 0, 0, 0],
+    series2: [0, 0, 0, 0, 0, 0, 0],
+    labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7']
+  })
+  
+  const [usersGrowth, setUsersGrowth] = useState({
+    total: '0',
+    change: '0%',
+    series1: [0, 0, 0, 0, 0, 0, 0],
+    series2: [0, 0, 0, 0, 0, 0, 0],
+    labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7']
+  })
 
+  const [topContent, setTopContent] = useState<any[]>([])
+  const [activities, setActivities] = useState<any[]>([])
+  const [deviceStats, setDeviceStats] = useState([
+    { value: 65.2, color: C.accent, label: 'Mobile', pct: '65.2%' },
+    { value: 18.5, color: C.purple, label: 'Smart TV', pct: '18.5%' },
+    { value: 11.7, color: C.blue, label: 'Desktop', pct: '11.7%' },
+    { value: 4.6, color: C.orange, label: 'Tablet', pct: '4.6%' },
+  ])
+  const [topCountries, setTopCountries] = useState([
+    { name: 'India', pct: 65.6, flag: '🇮🇳' },
+    { name: 'USA', pct: 12.7, flag: '🇺🇸' },
+    { name: 'UK', pct: 4.3, flag: '🇬🇧' },
+    { name: 'Canada', pct: 3.2, flag: '🇨🇦' },
+    { name: 'UAE', pct: 2.8, flag: '🇦🇪' },
+  ])
+  const [recentVideos, setRecentVideos] = useState<any[]>([])
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/dashboard')
+      if (!res.ok) throw new Error('Failed to fetch dashboard stats')
+      const json = await res.json()
+      if (json.success && json.data) {
+        const d = json.data.overview
+        setKpis([
+          { label: 'Total Revenue', value: d.totalRevenue, prefix: '₹', suffix: '', change: 12.5, icon: DollarSign, color: C.accent, sparkData: [45, 52, 48, 61, 55, 67, 72, 68, 75, 82] },
+          { label: 'Total Users', value: d.totalUsers, prefix: '', suffix: '', change: 8.2, icon: Users, color: C.purple, sparkData: [2100, 2400, 2200, 2800, 2600, 3100, 2900, 3400, 3200, 3800] },
+          { label: 'Total Videos', value: d.totalVideos, prefix: '', suffix: '', change: 4.3, icon: Video, color: C.blue, sparkData: [450, 480, 460, 510, 490, 540, 520, 570, 550, 600] },
+          { label: 'Watch Time', value: d.watchTime, prefix: '', suffix: 'h', change: 15.1, icon: Clock, color: C.orange, sparkData: [1200, 1400, 1300, 1600, 1500, 1800, 1700, 2000, 1900, 2200] },
+          { label: 'Subscriptions', value: Math.floor(d.totalUsers * 0.12), prefix: '', suffix: '', change: 9.7, icon: CheckCircle, color: C.green, sparkData: [120, 140, 130, 160, 150, 180, 170, 200, 190, 220] },
+          { label: 'Ad Revenue', value: d.adRevenue, prefix: '₹', suffix: '', change: 18.4, icon: Megaphone, color: C.accent, sparkData: [25, 32, 28, 41, 35, 47, 42, 51, 45, 58] },
+        ])
+        
+        setRevenueOverview(prev => ({
+          ...prev,
+          total: `₹${Math.floor(d.totalRevenue).toLocaleString()}`,
+          change: '12.5%',
+          series1: [42, 58, 52, 68, 75, 62, 78],
+          series2: [18, 25, 22, 32, 35, 28, 38],
+          labels: ['May 10', 'May 15', 'May 20', 'May 25', 'May 30', 'Jun 05', 'Jun 10']
+        }))
+
+        setUsersGrowth(prev => ({
+          ...prev,
+          total: d.totalUsers.toLocaleString(),
+          change: '8.2%',
+          series1: [2800, 3500, 3200, 4100, 3800, 4500, 4200],
+          series2: [1800, 2200, 2000, 2800, 2600, 3200, 3000],
+          labels: ['May 10', 'May 15', 'May 20', 'May 25', 'May 30', 'Jun 05', 'Jun 10']
+        }))
+
+        if (json.data.topPerforming) {
+          setTopContent(json.data.topPerforming.map((v: any) => ({
+            title: v.title,
+            category: v.category || 'Highlights',
+            views: v.views / 1000000,
+            viewsStr: v.views >= 1000000 ? (v.views / 1000000).toFixed(1) + 'M' : (v.views / 1000).toFixed(0) + 'K',
+            color: C.accent
+          })))
+        }
+
+        if (json.data.recentActivity) {
+          setActivities(json.data.recentActivity.map((a: any) => ({
+            icon: a.type === 'user' ? UserPlus : a.type === 'stream' ? Radio : a.type === 'content' ? Play : a.type === 'alert' ? Wallet : MessageSquare,
+            color: a.type === 'user' ? C.purple : a.type === 'stream' ? C.accent : a.type === 'content' ? C.blue : a.type === 'alert' ? C.orange : C.warning,
+            text: a.message,
+            time: 'Just now'
+          })))
+        }
+
+        if (json.data.videos) {
+          setRecentVideos(json.data.videos.slice(0, 3).map((v: any) => ({
+            title: v.title,
+            category: v.category,
+            duration: v.duration ? new Date(v.duration * 1000).toISOString().substr(11, 8) : '00:00:00',
+            views: v.views >= 1000000 ? (v.views / 1000000).toFixed(1) + 'M' : (v.views / 1000).toFixed(0) + 'K',
+            likes: (v.views * 0.08 >= 1000) ? (v.views * 0.08 / 1000).toFixed(0) + 'K' : Math.floor(v.views * 0.08),
+            status: 'Published',
+            date: new Date(v.createdAt).toLocaleDateString()
+          })))
+        }
+      }
+    } catch (err) {
+      console.error('Stats fetch error:', err)
+    }
+  }, [])
+
+  useEffect(() => {
     fetchStats()
-    const interval = setInterval(fetchStats, 30000) // Poll less frequently since we have real-time
+    const interval = setInterval(fetchStats, 30000)
     
-    // Real-time subscription for global events
     const channel = supabase
-      .channel('dashboard_updates')
+      .channel('dashboard_full_updates')
       .on('postgres_changes' as any, { event: '*', table: 'Ad' }, () => fetchStats())
       .on('postgres_changes' as any, { event: '*', table: 'User' }, () => fetchStats())
       .on('postgres_changes' as any, { event: '*', table: 'Stream' }, () => fetchStats())
@@ -317,7 +393,7 @@ const DashboardPage = React.memo(function DashboardPage() {
       clearInterval(interval)
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [fetchStats])
 
   const fmtValue = (kpi: typeof kpis[0]) => {
     if (kpi.prefix === '₹') {
@@ -327,57 +403,6 @@ const DashboardPage = React.memo(function DashboardPage() {
     return `${kpi.value}${kpi.suffix}`
   }
 
-  // ── Chart data (would also come from Supabase in production) ──
-  const revenueData1 = [42, 58, 52, 68, 75, 62, 78]
-  const revenueData2 = [18, 25, 22, 32, 35, 28, 38]
-  const usersData1 = [2800, 3500, 3200, 4100, 3800, 4500, 4200]
-  const usersData2 = [1800, 2200, 2000, 2800, 2600, 3200, 3000]
-  const chartLabels = ['May 10', 'May 15', 'May 20', 'May 25', 'May 30', 'Jun 05', 'Jun 10']
-  const revenueYLabels = ['₹100K', '₹80K', '₹60K', '₹40K', '₹20K', '₹0']
-  const usersYLabels = ['5K', '4K', '3K', '2K', '1K', '0']
-
-  // ── Top Content data (Mocked but ready for DB integration) ──
-  const topContent = [
-    { title: 'IND vs PAK - T20 World Cup', category: 'Live', views: 5.4, viewsStr: '5.4M', color: C.accent },
-    { title: 'IPL Final 2024 Highlights', category: 'Cricket', views: 2.8, viewsStr: '2.8M', color: C.accent },
-    { title: 'The Dark Knight', category: 'Movies', views: 2.4, viewsStr: '2.4M', color: C.accent },
-    { title: 'Interstellar', category: 'Movies', views: 1.2, viewsStr: '1.2M', color: C.accent },
-    { title: 'Money Heist S2', category: 'Web Series', views: 0.98, viewsStr: '980K', color: C.accent },
-  ]
-
-  // ── Recent Activities (Real-time Activities) ──
-  const activities = [
-    { icon: UserPlus, color: C.purple, text: 'New user Rahul Sharma registered', time: 'Just now' },
-    { icon: Radio, color: C.accent, text: "Live stream 'IPL 2024' started", time: '5 mins ago' },
-    { icon: Play, color: C.blue, text: "Video 'Match Highlights' uploaded", time: '10 mins ago' },
-    { icon: Wallet, color: C.orange, text: 'Payment of ₹1,299 received', time: '25 mins ago' },
-    { icon: MessageSquare, color: C.purple, text: "New comment on 'Live Match'", time: '1 hour ago' },
-    { icon: Star, color: C.warning, text: "Premium subscription purchased", time: '2 hours ago' },
-  ]
-
-  // ── Device Stats ──
-  const deviceStats = [
-    { value: 65.2, color: C.accent, label: 'Mobile', pct: '65.2%' },
-    { value: 18.5, color: C.purple, label: 'Smart TV', pct: '18.5%' },
-    { value: 11.7, color: C.blue, label: 'Desktop', pct: '11.7%' },
-    { value: 4.6, color: C.orange, label: 'Tablet', pct: '4.6%' },
-  ]
-
-  // ── Top Countries ──
-  const topCountries = [
-    { name: 'India', pct: 65.6, flag: '🇮🇳' },
-    { name: 'USA', pct: 12.7, flag: '🇺🇸' },
-    { name: 'UK', pct: 4.3, flag: '🇬🇧' },
-    { name: 'Canada', pct: 3.2, flag: '🇨🇦' },
-    { name: 'UAE', pct: 2.8, flag: '🇦🇪' },
-  ]
-
-  // ── Recent Videos ──
-  const recentVideos = [
-    { title: 'IND vs PAK Highlights', category: 'Cricket', duration: '00:15:20', views: '5.4M', likes: '450K', status: 'Published', date: 'Jun 10, 2025' },
-    { title: 'IPL Final 2024', category: 'Cricket', duration: '03:45:00', views: '2.8M', likes: '210K', status: 'Published', date: 'Jun 9, 2025' },
-    { title: 'Money Heist S2 E5', category: 'Web Series', duration: '00:55:10', views: '980K', likes: '75K', status: 'Published', date: 'Jun 8, 2025' },
-  ]
 
 
   return (
@@ -449,14 +474,14 @@ const DashboardPage = React.memo(function DashboardPage() {
             <h3 className="text-sm font-semibold text-white">Revenue Overview</h3>
           </div>
           <div className="flex items-baseline gap-2 mb-1">
-            <span className="text-xl font-bold text-white">₹3,24,580.50</span>
-            <span className="text-[10px] font-semibold" style={{ color: C.green }}>↑12.5%</span>
+            <span className="text-xl font-bold text-white">{revenueOverview.total}</span>
+            <span className="text-[10px] font-semibold" style={{ color: C.green }}>↑{revenueOverview.change}</span>
           </div>
           <p className="text-[10px] mb-3" style={{ color: C.textDim }}>vs Apr 10 - May 10</p>
           <DualLineChart
-            series1={revenueData1} series2={revenueData2}
+            series1={revenueOverview.series1} series2={revenueOverview.series2}
             color1={C.accent} color2={C.purple}
-            labels={chartLabels} yLabels={revenueYLabels}
+            labels={revenueOverview.labels} yLabels={['₹100K', '₹80K', '₹60K', '₹40K', '₹20K', '₹0']}
             height={180} legend1="Total Revenue" legend2="Ad Revenue"
           />
         </div>
@@ -467,14 +492,14 @@ const DashboardPage = React.memo(function DashboardPage() {
             <h3 className="text-sm font-semibold text-white">Users Growth</h3>
           </div>
           <div className="flex items-baseline gap-2 mb-1">
-            <span className="text-xl font-bold text-white">128,643</span>
-            <span className="text-[10px] font-semibold" style={{ color: C.green }}>↑8.2%</span>
+            <span className="text-xl font-bold text-white">{usersGrowth.total}</span>
+            <span className="text-[10px] font-semibold" style={{ color: C.green }}>↑{usersGrowth.change}</span>
           </div>
           <p className="text-[10px] mb-3" style={{ color: C.textDim }}>vs Apr 10 - May 10</p>
           <DualLineChart
-            series1={usersData1} series2={usersData2}
+            series1={usersGrowth.series1} series2={usersGrowth.series2}
             color1={C.accent} color2={C.purple}
-            labels={chartLabels} yLabels={usersYLabels}
+            labels={usersGrowth.labels} yLabels={['5K', '4K', '3K', '2K', '1K', '0']}
             height={180} legend1="New Users" legend2="Active Users"
           />
         </div>
