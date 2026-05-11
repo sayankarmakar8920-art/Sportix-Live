@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Calendar, Clock, Trophy, Filter, Search, Plus, MapPin, Radio, ChevronRight, MoreHorizontal } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
@@ -29,7 +29,7 @@ export default function MatchSchedule() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'live' | 'upcoming'>('all')
 
-  const fetchMatches = async () => {
+  const fetchMatches = useCallback(async () => {
     try {
       setLoading(true)
       const { data, error } = await supabase
