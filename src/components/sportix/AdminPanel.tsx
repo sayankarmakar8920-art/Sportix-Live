@@ -4263,7 +4263,7 @@ function SchedulesPage() {
    PAGE ROUTER
    ═══════════════════════════════════════════════════ */
 
-function renderPage(page: AdminPage): React.ReactNode {
+function renderPage(page: AdminPage, setActivePage: (p: AdminPage) => void): React.ReactNode {
   console.log('AdminPanel: Rendering page ->', page)
   if (page === 'dashboard') return <DashboardPage />
   if (page === 'live-monitor') return <LiveMonitorPage />
@@ -4465,7 +4465,7 @@ export default function AdminPanel() {
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-[#E50914]" />
             </div>
           }>
-            {renderPage(activePage)}
+            {renderPage(activePage, setActivePage)}
           </Suspense>
         </main>
       </div>
