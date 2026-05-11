@@ -29,21 +29,24 @@ export default function MatchSchedule() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'live' | 'upcoming'>('all')
 
-  const fetchMatches = useCallback(async () => {
-    try {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('Stream')
-        .select('*')
-        .order('startTime', { ascending: true })
+  const fetchMatches = useCallback(() => {
+    const performFetch = async () => {
+      try {
+        setLoading(true)
+        const { data, error } = await supabase
+          .from('Stream')
+          .select('*')
+          .order('startTime', { ascending: true })
 
-      if (error) throw error
-      setMatches(data || [])
-    } catch (err) {
-      console.error('Error fetching matches:', err)
-    } finally {
-      setLoading(false)
+        if (error) throw error
+        setMatches(data || [])
+      } catch (err) {
+        console.error('Error fetching matches:', err)
+      } finally {
+        setLoading(false)
+      }
     }
+    performFetch()
   }, [])
 
   useEffect(() => {
