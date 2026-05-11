@@ -35,20 +35,23 @@ export default function Header() {
     // Clear previous timer
     if (clickTimerRef.current) clearTimeout(clickTimerRef.current)
 
-    // 7 clicks = show admin login dialog
+    // 7 clicks = open/toggle admin login
     if (clickCountRef.current === 7) {
       clickCountRef.current = 0
       setShowAdminLogin(true)
       return
     }
 
-    // Wait 400ms — if user stopped clicking before 7, navigate home
+    // Wait 300ms — if user stopped at 1 click, trigger fast refresh
     clickTimerRef.current = setTimeout(() => {
-      if (clickCountRef.current > 0 && clickCountRef.current < 7) {
+      if (clickCountRef.current === 1) {
+        clickCountRef.current = 0
+        window.location.reload()
+      } else {
         clickCountRef.current = 0
         setCurrentView('home')
       }
-    }, 400)
+    }, 300)
   }, [setShowAdminLogin, setCurrentView])
 
   if (currentView === 'admin' || currentView === 'live-control-room') return null
