@@ -20,9 +20,12 @@ const C = {
   text: '#ffffff',
   textSec: 'rgba(255, 255, 255, 0.45)',
   textDim: 'rgba(255, 255, 255, 0.25)',
-  success: '#22c55e',
+  success: '#46d369',
+  warning: '#f5c518',
+  info: '#0071eb',
   glass: 'rgba(255, 255, 255, 0.03)',
-  inputBg: 'rgba(255, 255, 255, 0.03)',
+  glassHover: 'rgba(255, 255, 255, 0.06)',
+  inputBg: 'rgba(255, 255, 255, 0.02)',
 }
 
 interface VideoUploadUIProps {
@@ -160,8 +163,8 @@ const VideoUploadUI = React.memo(function VideoUploadUI({ onClose }: VideoUpload
         {/* Header */}
         <div className="flex items-center justify-between p-6 pb-0">
           <div>
-            <h1 className="text-xl font-bold text-white">Upload Video</h1>
-            <p className="text-xs mt-1" style={{ color: C.textSec }}>Upload a video — preview is auto-generated</p>
+            <h1 className="text-xl font-bold text-white tracking-tight">Upload New Highlight</h1>
+            <p className="text-xs mt-1" style={{ color: C.textSec }}>Upload high-quality videos for the platform — processing is automatic</p>
           </div>
           <button 
             onClick={onClose}
@@ -218,17 +221,21 @@ const VideoUploadUI = React.memo(function VideoUploadUI({ onClose }: VideoUpload
             {/* File Info Card */}
             {file && (
               <div 
-                className="flex items-center gap-4 p-3 rounded-2xl border"
-                style={{ background: C.glass, borderColor: C.border }}
+                className="flex items-center gap-4 p-4 rounded-2xl border transition-all animate-scaleIn"
+                style={{ background: 'rgba(70,211,105,0.05)', borderColor: 'rgba(70,211,105,0.2)' }}
               >
-                <div className="h-10 w-16 rounded-lg overflow-hidden bg-white/5 flex-shrink-0">
+                <div className="h-12 w-20 rounded-xl overflow-hidden bg-black/40 flex-shrink-0 border border-white/5">
                   {previewUrl && <video src={previewUrl} className="w-full h-full object-cover" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-white truncate">{file.name}</p>
-                  <p className="text-[10px]" style={{ color: C.textDim }}>1920 × 1080 • {(file.size / (1024 * 1024)).toFixed(1)} MB • {duration}</p>
+                  <p className="text-sm font-bold text-white truncate">{file.name}</p>
+                  <p className="text-[10px] font-medium" style={{ color: C.textSec }}>
+                    {(file.size / (1024 * 1024)).toFixed(1)} MB • {file.type.split('/')[1].toUpperCase()} • Ready to Upload
+                  </p>
                 </div>
-                <CheckCircle2 size={18} style={{ color: C.success }} />
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#46d369]/20">
+                  <CheckCircle2 size={18} style={{ color: '#46d369' }} />
+                </div>
               </div>
             )}
 
@@ -241,29 +248,38 @@ const VideoUploadUI = React.memo(function VideoUploadUI({ onClose }: VideoUpload
                 <>
                   <video src={previewUrl} className="w-full h-full object-cover" />
                   {/* Custom Controls Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-5 opacity-0 group-hover:opacity-100 transition-all duration-300">
                     <div className="flex items-center gap-4">
-                      <button className="text-white"><Play size={16} fill="currentColor" /></button>
-                      <div className="flex-1 h-1 rounded-full bg-white/20">
+                      <button className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors">
+                        <Play size={16} fill="white" className="ml-0.5" />
+                      </button>
+                      <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
                         <div className="h-full w-1/3 rounded-full" style={{ background: C.accent }} />
                       </div>
-                      <span className="text-[10px] text-white">0:00 / {duration}</span>
-                      <button className="text-white"><Volume2 size={16} /></button>
-                      <button className="text-white"><Settings size={16} /></button>
-                      <button className="text-white"><Maximize size={16} /></button>
+                      <span className="text-[10px] font-bold text-white/70 tabular-nums">0:00 / {duration}</span>
+                      <button className="text-white/70 hover:text-white transition-colors"><Volume2 size={16} /></button>
+                      <button className="text-white/70 hover:text-white transition-colors"><Maximize size={16} /></button>
                     </div>
                   </div>
                 </>
               ) : (
                 <div 
-                  className="absolute inset-0 flex flex-col items-center justify-center gap-3 cursor-pointer"
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-white/[0.02] transition-colors"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <div className="h-12 w-12 rounded-2xl bg-red-500/10 flex items-center justify-center">
-                    <CloudUpload size={24} style={{ color: C.accent }} />
+                  <div className="h-16 w-16 rounded-[2rem] bg-red-500/10 flex items-center justify-center animate-pulse">
+                    <CloudUpload size={32} style={{ color: C.accent }} />
                   </div>
-                  <p className="text-sm font-medium text-white">Drag & drop your video here</p>
-                  <p className="text-xs" style={{ color: C.textDim }}>or click to <span style={{ color: C.accent }}>browse files</span></p>
+                  <div className="text-center">
+                    <p className="text-base font-bold text-white">Drag & drop your cinematic highlight</p>
+                    <p className="text-xs mt-1" style={{ color: C.textSec }}>MP4, MOV or WEBM up to <span className="font-bold text-white">2GB</span></p>
+                  </div>
+                  <button 
+                    className="mt-2 px-6 py-2.5 rounded-xl border text-xs font-bold transition-all hover:scale-105 active:scale-95"
+                    style={{ background: 'rgba(255,255,255,0.03)', borderColor: C.border, color: 'rgba(255,255,255,0.9)' }}
+                  >
+                    Browse Files
+                  </button>
                 </div>
               )}
             </div>
@@ -410,28 +426,26 @@ const VideoUploadUI = React.memo(function VideoUploadUI({ onClose }: VideoUpload
               </div>
 
               {/* Checkboxes */}
-              <div className="flex flex-wrap gap-6 pt-2">
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <div className={`h-4 w-4 rounded border flex items-center justify-center transition-all ${isFeatured ? 'bg-red-500 border-red-500' : 'border-white/20'}`}>
-                    {isFeatured && <CheckCircle2 size={12} className="text-white" />}
-                  </div>
-                  <input type="checkbox" className="hidden" checked={isFeatured} onChange={() => setIsFeatured(!isFeatured)} />
-                  <span className="text-[11px] font-medium group-hover:text-white transition-colors" style={{ color: C.textSec }}>Featured</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <div className={`h-4 w-4 rounded border flex items-center justify-center transition-all ${isTrending ? 'bg-red-500 border-red-500' : 'border-white/20'}`}>
-                    {isTrending && <CheckCircle2 size={12} className="text-white" />}
-                  </div>
-                  <input type="checkbox" className="hidden" checked={isTrending} onChange={() => setIsTrending(!isTrending)} />
-                  <span className="text-[11px] font-medium group-hover:text-white transition-colors" style={{ color: C.textSec }}>Trending</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <div className={`h-4 w-4 rounded border flex items-center justify-center transition-all ${isLive ? 'bg-red-500 border-red-500' : 'border-white/20'}`}>
-                    {isLive && <CheckCircle2 size={12} className="text-white" />}
-                  </div>
-                  <input type="checkbox" className="hidden" checked={isLive} onChange={() => setIsLive(!isLive)} />
-                  <span className="text-[11px] font-medium group-hover:text-white transition-colors" style={{ color: C.textSec }}>Live</span>
-                </label>
+              <div className="flex flex-wrap gap-4 pt-2">
+                {[
+                  { label: 'Featured', state: isFeatured, setter: setIsFeatured, color: C.accent },
+                  { label: 'Trending', state: isTrending, setter: setIsTrending, color: C.info },
+                  { label: 'Live Content', state: isLive, setter: setIsLive, color: C.success },
+                ].map((item) => (
+                  <button 
+                    key={item.label}
+                    onClick={() => item.setter(!item.state)}
+                    className="flex items-center gap-2.5 px-4 py-2 rounded-xl border transition-all hover:bg-white/[0.04]"
+                    style={{ 
+                      background: item.state ? `${item.color}15` : 'transparent',
+                      borderColor: item.state ? item.color : C.border,
+                      color: item.state ? '#ffffff' : C.textSec
+                    }}
+                  >
+                    <div className={`h-1.5 w-1.5 rounded-full ${item.state ? 'animate-pulse' : ''}`} style={{ background: item.state ? item.color : C.textDim }} />
+                    <span className="text-[11px] font-bold uppercase tracking-wider">{item.label}</span>
+                  </button>
+                ))}
               </div>
 
               {/* Action Buttons */}
@@ -464,15 +478,21 @@ const VideoUploadUI = React.memo(function VideoUploadUI({ onClose }: VideoUpload
 
               {/* Progress Feedback */}
               {isUploading && (
-                <div className="pt-4 space-y-2">
-                  <div className="flex justify-between text-[10px] font-bold" style={{ color: C.textSec }}>
-                    <span>{uploadStatus}</span>
-                    <span>{uploadProgress}%</span>
+                <div className="pt-4 space-y-3 animate-fadeIn">
+                  <div className="flex justify-between items-end">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Status</p>
+                      <p className="text-xs font-bold text-white">{uploadStatus}</p>
+                    </div>
+                    <span className="text-lg font-black text-white tabular-nums">{uploadProgress}%</span>
                   </div>
-                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                  <div className="h-2 rounded-full overflow-hidden bg-white/5 border border-white/5 p-[1px]">
                     <div 
-                      className="h-full rounded-full transition-all duration-300" 
-                      style={{ width: `${uploadProgress}%`, background: `linear-gradient(90deg, ${C.accent}, #ff4d58)` }}
+                      className="h-full rounded-full transition-all duration-500 ease-out shadow-[0_0_15px_rgba(229,9,20,0.3)]" 
+                      style={{ 
+                        width: `${uploadProgress}%`, 
+                        background: `linear-gradient(90deg, ${C.accent}, #ff4d58, #ff8c94)` 
+                      }}
                     />
                   </div>
                 </div>
@@ -484,16 +504,16 @@ const VideoUploadUI = React.memo(function VideoUploadUI({ onClose }: VideoUpload
         {/* Footer */}
         <div className="p-6 pt-0 mt-auto">
           <div 
-            className="flex items-center gap-3 p-3 rounded-2xl border"
+            className="flex items-center gap-4 p-4 rounded-3xl border transition-colors hover:bg-white/[0.02]"
             style={{ background: 'rgba(255,255,255,0.01)', borderColor: C.border }}
           >
-            <div className="h-8 w-8 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
-              <ShieldCheck size={16} style={{ color: C.accent }} />
+            <div className="h-10 w-10 rounded-[1.25rem] bg-red-500/10 flex items-center justify-center flex-shrink-0 border border-red-500/20">
+              <ShieldCheck size={20} style={{ color: C.accent }} />
             </div>
-            <p className="text-[10px] leading-relaxed" style={{ color: C.textSec }}>
-              By uploading, you confirm that you own the rights to this content and agree to our 
-              <span className="mx-1" style={{ color: C.accent }}>Terms of Service</span> and 
-              <span className="ml-1" style={{ color: C.accent }}>Community Guidelines</span>.
+            <p className="text-[11px] leading-relaxed font-medium" style={{ color: C.textSec }}>
+              Secure Multipart Upload active. By uploading, you confirm that you own the rights to this content and agree to our 
+              <span className="mx-1 font-bold transition-colors hover:text-white cursor-pointer" style={{ color: C.accent }}>Terms</span> and 
+              <span className="ml-1 font-bold transition-colors hover:text-white cursor-pointer" style={{ color: C.accent }}>Guidelines</span>.
             </p>
           </div>
         </div>
